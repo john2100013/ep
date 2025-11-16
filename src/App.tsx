@@ -4,7 +4,7 @@ import { Box } from '@mui/material';
 import { useAuth } from './contexts/AuthContext';
 
 // Components
-import Navbar from './components/Navbar';
+import Header from './components/Header';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Screens
@@ -38,7 +38,7 @@ function App() {
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#f8f9fa' }}>
-      <Navbar />
+      <Header />
       <Routes>
         {/* Public routes */}
         <Route 
