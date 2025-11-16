@@ -332,15 +332,31 @@ Your Business Name`;
 
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: 3 }}>
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
-          {error}
-        </Alert>
-      )}
+    <Box sx={{ 
+      display: 'flex', 
+      justifyContent: 'center',
+      backgroundColor: '#f5f5f5',
+      minHeight: '100vh',
+      p: 2,
+      overflowX: 'auto'
+    }}>
+      <Box sx={{ 
+        width: '100%',
+        maxWidth: '900px'
+      }}>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
+            {error}
+          </Alert>
+        )}
 
-      {/* Invoice Content - This will be captured for PDF */}
-      <div ref={invoiceRef} style={{ backgroundColor: 'white', padding: '20px', minHeight: '800px' }}>
+        {/* Invoice Content - This will be captured for PDF */}
+        <div ref={invoiceRef} style={{ 
+          backgroundColor: 'white', 
+          padding: '40px', 
+          minHeight: '800px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        }}>
         {/* Company Header */}
         <Box sx={{ mb: 4, borderBottom: '3px solid #1976d2', pb: 3 }}>
           <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: 2 }}>
@@ -618,9 +634,9 @@ Your Business Name`;
       </div>
 
       {/* Action Buttons - Outside of PDF capture area */}
-      <Card sx={{ elevation: 4, mt: 3 }}>
+      <Card sx={{ elevation: 4, mt: 3, mb: 4 }}>
         <CardContent>
-          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mb: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mb: 2, flexWrap: 'wrap' }}>
             <Button 
               variant="contained" 
               startIcon={isGenerating ? <CircularProgress size={20} color="inherit" /> : <PdfIcon />}
@@ -690,7 +706,8 @@ Your Business Name`;
           <ListItemText>Email</ListItemText>
         </MenuItem>
       </Menu>
-    </Container>
+      </Box>
+    </Box>
   );
 };
 
