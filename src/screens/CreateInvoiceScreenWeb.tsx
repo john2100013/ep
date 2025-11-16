@@ -364,7 +364,8 @@ const CreateInvoiceScreen: React.FC = () => {
       } else {
         response = await ApiService.createInvoice(invoiceData);
         if (response.success) {
-          setSuccess('Invoice created successfully!');
+          const invoiceNumber = response.data?.invoice_number || response.data?.invoiceNumber || 'Unknown';
+          setSuccess(`Invoice created successfully! Invoice #${invoiceNumber}`);
         } else {
           throw new Error(response.message || 'Failed to create invoice');
         }

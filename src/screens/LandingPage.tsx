@@ -33,6 +33,10 @@ import {
   Description as FileTextIcon,
   AccessTime as ClockIcon,
   Lock,
+  LocalPharmacy as PharmacyIcon,
+  ShoppingCart as POSIcon,
+  Handshake as ServiceIcon,
+  CreditCard as BillingIcon,
 } from '@mui/icons-material';
 
 const LandingPage: React.FC = () => {
@@ -90,7 +94,7 @@ const LandingPage: React.FC = () => {
         'API access',
       ],
       icon: ZapIcon,
-      color: '#8B5CF6',
+      color: '#667eea',
       popular: true,
     },
     {
@@ -146,6 +150,26 @@ const LandingPage: React.FC = () => {
       icon: Lock,
       title: 'Secure & Reliable',
       description: 'Enterprise-grade security for your data',
+    },
+    {
+      icon: PharmacyIcon,
+      title: 'Pharmacy Module',
+      description: 'Complete pharmacy management and prescription tracking',
+    },
+    {
+      icon: POSIcon,
+      title: 'Point of Sale System',
+      description: 'Fast and efficient sales processing with inventory control',
+    },
+    {
+      icon: ServiceIcon,
+      title: 'Service Management',
+      description: 'Schedule and manage service appointments efficiently',
+    },
+    {
+      icon: BillingIcon,
+      title: 'Comprehensive Billing',
+      description: 'Flexible billing options and automated payment processing',
     },
   ];
 
@@ -246,8 +270,8 @@ const LandingPage: React.FC = () => {
       >
         <Toolbar>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexGrow: 1 }}>
-            <Receipt sx={{ fontSize: 32, color: '#8B5CF6' }} />
-            <Typography variant="h6" fontWeight="bold" sx={{ color: '#8B5CF6' }}>
+            <Receipt sx={{ fontSize: 32, color: '#667eea' }} />
+            <Typography variant="h6" fontWeight="bold" sx={{ color: '#667eea' }}>
               InvoiceHub
             </Typography>
           </Box>
@@ -264,7 +288,7 @@ const LandingPage: React.FC = () => {
                     textDecoration: 'none',
                     color: '#6b7280',
                     fontWeight: 500,
-                    '&:hover': { color: '#8B5CF6' },
+                    '&:hover': { color: '#667eea' },
                   }}
                 >
                   {item.label}
@@ -273,8 +297,8 @@ const LandingPage: React.FC = () => {
               <Button
                 variant="outlined"
                 sx={{
-                  borderColor: '#8B5CF6',
-                  color: '#8B5CF6',
+                  borderColor: '#667eea',
+                  color: '#667eea',
                   fontWeight: 'bold',
                   '&:hover': { backgroundColor: '#f3e8ff' },
                 }}
@@ -285,9 +309,9 @@ const LandingPage: React.FC = () => {
               <Button
                 variant="contained"
                 sx={{
-                  backgroundColor: '#8B5CF6',
+                  backgroundColor: '#667eea',
                   fontWeight: 'bold',
-                  '&:hover': { backgroundColor: '#7c3aed' },
+                  '&:hover': { backgroundColor: '#5568d3' },
                 }}
                 onClick={() => navigate('/register')}
               >
@@ -297,7 +321,7 @@ const LandingPage: React.FC = () => {
           ) : (
             <>
               <IconButton onClick={toggleDrawer(true)}>
-                <MenuIcon sx={{ color: '#8B5CF6' }} />
+                <MenuIcon sx={{ color: '#667eea' }} />
               </IconButton>
               <Drawer anchor="right" open={mobileDrawerOpen} onClose={toggleDrawer(false)}>
                 <Box sx={{ width: 250, pt: 2 }}>
@@ -320,8 +344,8 @@ const LandingPage: React.FC = () => {
                       fullWidth
                       variant="outlined"
                       sx={{
-                        borderColor: '#8B5CF6',
-                        color: '#8B5CF6',
+                        borderColor: '#667eea',
+                        color: '#667eea',
                       }}
                       onClick={() => {
                         setMobileDrawerOpen(false);
@@ -333,7 +357,7 @@ const LandingPage: React.FC = () => {
                     <Button
                       fullWidth
                       variant="contained"
-                      sx={{ backgroundColor: '#8B5CF6' }}
+                      sx={{ backgroundColor: '#667eea' }}
                       onClick={() => {
                         setMobileDrawerOpen(false);
                         navigate('/register');
@@ -371,8 +395,8 @@ const LandingPage: React.FC = () => {
               'radial-gradient(circle at 20% 50%, #fff 0%, transparent 50%), radial-gradient(circle at 80% 80%, #fff 0%, transparent 50%)',
           }}
         />
-        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 4, alignItems: 'center' }}>
+        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'center' }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 6, alignItems: 'center', width: '100%', maxWidth: '1200px' }}>
             <Box>
               <Typography
                 variant="h3"
@@ -403,7 +427,7 @@ const LandingPage: React.FC = () => {
                   size="large"
                   sx={{
                     backgroundColor: 'white',
-                    color: '#8B5CF6',
+                    color: '#667eea',
                     fontWeight: 'bold',
                     py: 1.5,
                     px: 4,
@@ -429,12 +453,19 @@ const LandingPage: React.FC = () => {
                 </Button>
               </Stack>
             </Box>
-            <Box>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
               <Box
                 sx={{
                   display: 'flex',
                   justifyContent: 'center',
                   alignItems: 'center',
+                  width: '100%',
                   height: '400px',
                   background: 'rgba(255, 255, 255, 0.1)',
                   borderRadius: '20px',
@@ -482,7 +513,7 @@ const LandingPage: React.FC = () => {
             Everything you need to manage invoices, quotations, and customer relationships
           </Typography>
 
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' }, gap: 4 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: 4 }}>
             {features.map((feature, index) => {
               const IconComponent = feature.icon;
               return (
@@ -495,7 +526,7 @@ const LandingPage: React.FC = () => {
                     '&:hover': {
                       transform: 'translateY(-8px)',
                       boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
-                      borderColor: '#8B5CF6',
+                      borderColor: '#667eea',
                     },
                   }}
                 >
@@ -503,7 +534,7 @@ const LandingPage: React.FC = () => {
                     <IconComponent
                       sx={{
                         fontSize: 48,
-                        color: '#8B5CF6',
+                        color: '#667eea',
                         mb: 2,
                       }}
                     />
@@ -585,7 +616,7 @@ const LandingPage: React.FC = () => {
               </Typography>
               <Stack spacing={2}>
                 <Box sx={{ display: 'flex', gap: 2 }}>
-                  <ZapIcon sx={{ color: '#8B5CF6', flexShrink: 0 }} />
+                  <ZapIcon sx={{ color: '#667eea', flexShrink: 0 }} />
                   <Box>
                     <Typography variant="h6" fontWeight="bold">
                       Lightning Fast
@@ -596,7 +627,7 @@ const LandingPage: React.FC = () => {
                   </Box>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2 }}>
-                  <Shield sx={{ color: '#8B5CF6', flexShrink: 0 }} />
+                  <Shield sx={{ color: '#667eea', flexShrink: 0 }} />
                   <Box>
                     <Typography variant="h6" fontWeight="bold">
                       Secure & Reliable
@@ -607,7 +638,7 @@ const LandingPage: React.FC = () => {
                   </Box>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2 }}>
-                  <ClockIcon sx={{ color: '#8B5CF6', flexShrink: 0 }} />
+                  <ClockIcon sx={{ color: '#667eea', flexShrink: 0 }} />
                   <Box>
                     <Typography variant="h6" fontWeight="bold">
                       24/7 Support
@@ -645,7 +676,7 @@ const LandingPage: React.FC = () => {
               size="large"
               sx={{
                 backgroundColor: 'white',
-                color: '#8B5CF6',
+                color: '#667eea',
                 fontWeight: 'bold',
                 py: 1.5,
                 px: 4,
@@ -686,7 +717,7 @@ const LandingPage: React.FC = () => {
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: 4, mb: 4 }}>
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <Receipt sx={{ fontSize: 28, color: '#8B5CF6' }} />
+                <Receipt sx={{ fontSize: 28, color: '#667eea' }} />
                 <Typography variant="h6" fontWeight="bold" sx={{ color: '#fff' }}>
                   InvoiceHub
                 </Typography>
@@ -700,10 +731,10 @@ const LandingPage: React.FC = () => {
                 Product
               </Typography>
               <Stack spacing={1}>
-                <Typography component="a" href="#features" sx={{ textDecoration: 'none', color: 'inherit', '&:hover': { color: '#8B5CF6' }, cursor: 'pointer' }}>
+                <Typography component="a" href="#features" sx={{ textDecoration: 'none', color: 'inherit', '&:hover': { color: '#667eea' }, cursor: 'pointer' }}>
                   Features
                 </Typography>
-                <Typography component="a" href="#pricing" sx={{ textDecoration: 'none', color: 'inherit', '&:hover': { color: '#8B5CF6' }, cursor: 'pointer' }}>
+                <Typography component="a" href="#pricing" sx={{ textDecoration: 'none', color: 'inherit', '&:hover': { color: '#667eea' }, cursor: 'pointer' }}>
                   Pricing
                 </Typography>
               </Stack>
@@ -713,10 +744,10 @@ const LandingPage: React.FC = () => {
                 Company
               </Typography>
               <Stack spacing={1}>
-                <Typography component="a" href="#about" sx={{ textDecoration: 'none', color: 'inherit', '&:hover': { color: '#8B5CF6' }, cursor: 'pointer' }}>
+                <Typography component="a" href="#about" sx={{ textDecoration: 'none', color: 'inherit', '&:hover': { color: '#667eea' }, cursor: 'pointer' }}>
                   About Us
                 </Typography>
-                <Typography component="a" href="#" sx={{ textDecoration: 'none', color: 'inherit', '&:hover': { color: '#8B5CF6' }, cursor: 'pointer' }}>
+                <Typography component="a" href="#" sx={{ textDecoration: 'none', color: 'inherit', '&:hover': { color: '#667eea' }, cursor: 'pointer' }}>
                   Blog
                 </Typography>
               </Stack>
@@ -726,10 +757,10 @@ const LandingPage: React.FC = () => {
                 Legal
               </Typography>
               <Stack spacing={1}>
-                <Typography component="a" href="#" sx={{ textDecoration: 'none', color: 'inherit', '&:hover': { color: '#8B5CF6' }, cursor: 'pointer' }}>
+                <Typography component="a" href="#" sx={{ textDecoration: 'none', color: 'inherit', '&:hover': { color: '#667eea' }, cursor: 'pointer' }}>
                   Privacy Policy
                 </Typography>
-                <Typography component="a" href="#" sx={{ textDecoration: 'none', color: 'inherit', '&:hover': { color: '#8B5CF6' }, cursor: 'pointer' }}>
+                <Typography component="a" href="#" sx={{ textDecoration: 'none', color: 'inherit', '&:hover': { color: '#667eea' }, cursor: 'pointer' }}>
                   Terms of Service
                 </Typography>
               </Stack>
