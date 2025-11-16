@@ -423,17 +423,38 @@ const CreateQuotationScreen: React.FC = () => {
                 <Typography variant="h6" sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
                   Items
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 1, flexDirection: { xs: 'column', sm: 'row' }, width: { xs: '100%', sm: 'auto' } }}>
-                  <TextField
-                    placeholder="Search by code or name..."
-                    value={itemSearchQuery}
-                    onChange={(e) => setItemSearchQuery(e.target.value)}
-                    size="small"
-                    sx={{ width: { xs: '100%', sm: 200 }, flexShrink: 0 }}
+                <Box sx={{ display: 'flex', gap: 1, flexDirection: { xs: 'column', sm: 'row' }, width: { xs: '100%', sm: 'auto' }, flex: 1, minWidth: { xs: '100%', sm: 'auto' } }}>
+                  <Autocomplete
+                    options={filteredItems}
+                    getOptionLabel={(option) => `${option.item_name} (${option.code})`}
+                    value={null}
+                    onChange={(_, newValue) => {
+                      if (newValue) {
+                        // Add a new line with this item
+                        const newLine = {
+                          item_id: newValue.id || null,
+                          quantity: 1,
+                          unit_price: newValue.unit_price || 0,
+                          total: 1 * (newValue.unit_price || 0),
+                          description: newValue.description || '',
+                          code: newValue.code || '',
+                          uom: newValue.uom || '',
+                          item_name: newValue.item_name || ''
+                        };
+                        setLines([...lines, newLine]);
+                        // Clear search query
+                        setItemSearchQuery('');
+                      }
+                    }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        placeholder="Search by code or name..."
+                        size="small"
+                        sx={{ width: { xs: '100%', sm: 300 }, flexShrink: 0 }}
+                      />
+                    )}
                   />
-                  <Button startIcon={<AddIcon />} onClick={addLine} sx={{ width: { xs: '100%', sm: 'auto' } }}>
-                    Add Item
-                  </Button>
                 </Box>
               </Box>
 

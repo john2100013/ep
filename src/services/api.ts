@@ -182,6 +182,11 @@ export class ApiService {
     return response.data;
   }
 
+  static async getNextInvoiceNumber() {
+    const response = await api.get('/invoices/next-invoice-number');
+    return response.data;
+  }
+
   static async createInvoice(invoiceData: {
     customer_name: string;
     customer_address?: string;

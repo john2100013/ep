@@ -59,6 +59,7 @@ interface LocationState {
   validUntil?: string;
   paymentTerms?: string;
   notes?: string;
+  invoiceNumber?: string;
 }
 
 const InvoicePreviewScreen: React.FC = () => {
@@ -67,6 +68,7 @@ const InvoicePreviewScreen: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState('');
   const [shareMenuAnchor, setShareMenuAnchor] = useState<null | HTMLElement>(null);
+  const [invoiceNumber, setInvoiceNumber] = useState<string>('');
   const [businessSettings, setBusinessSettings] = useState<BusinessSettings>({
     businessName: 'Your Business Name',
     street: 'Business Address Line 1',
@@ -95,7 +97,35 @@ const InvoicePreviewScreen: React.FC = () => {
 
   useEffect(() => {
     loadBusinessSettings();
-  }, []);
+    // Set invoice number from state or generate one
+    if (state?.invoiceNumber) {
+      setInvoiceNumber(state.invoiceNumber);
+    } else if (isInvoice) {
+      // For invoices, fetch the next invoice number from backend
+      const fetchInvoiceNumber = async () => {
+        try {
+          const response = await fetch('/api/invoices/next-invoice-number', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.data?.invoiceNumber) {
+              setInvoiceNumber(data.data.invoiceNumber);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching invoice number:', error);
+        }
+      };
+      
+      fetchInvoiceNumber();
+    }
+  }, [state?.invoiceNumber, isInvoice]);
 
   const loadBusinessSettings = async () => {
     try {
@@ -250,7 +280,7 @@ const InvoicePreviewScreen: React.FC = () => {
     
     try {
       const docType = isQuotation ? 'QUOTATION' : 'INVOICE';
-      const docNumber = isQuotation ? quotationNo : 'INV-0001';
+      const docNumber = isQuotation ? quotationNo : (invoiceNumber || 'INV-0001');
       
       // Create a text message with document details
       const message = `*${docType}*
@@ -287,7 +317,7 @@ Thank you for your business!`;
     
     try {
       const docType = isQuotation ? 'Quotation' : 'Invoice';
-      const docNumber = isQuotation ? quotationNo : 'INV-0001';
+      const docNumber = isQuotation ? quotationNo : (invoiceNumber || 'INV-0001');
       const subject = `${docType} ${docNumber} - ${state?.customerName}`;
       const body = `Dear ${state?.customerName},
 
@@ -388,7 +418,7 @@ Your Business Name`;
               </Typography>
               <Box sx={{ textAlign: 'right' }}>
                 <Typography variant="body1" sx={{ mb: 0.5 }}>
-                  <strong>No:</strong> {isQuotation ? quotationNo : 'INV-0001'}
+                  <strong>No:</strong> {isQuotation ? quotationNo : (invoiceNumber || 'INV-0001')}
                 </Typography>
                 <Typography variant="body1">
                   <strong>Date:</strong> {currentDate}
@@ -474,7 +504,7 @@ Your Business Name`;
                     {item.quantity}
                   </TableCell>
                   <TableCell align="center" sx={{ fontSize: '13px', py: 1.5, border: '1px solid #ddd' }}>
-                    {item.uom || 'PCS'}
+                    {item.uom}
                   </TableCell>
                   <TableCell align="right" sx={{ fontSize: '13px', py: 1.5, border: '1px solid #ddd' }}>
                     {item.unit_price.toFixed(2)}

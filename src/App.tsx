@@ -8,6 +8,7 @@ import Header from './components/Header';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Screens
+import LandingPage from './screens/LandingPage';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import HomeScreen from './screens/HomeScreen';
@@ -38,153 +39,215 @@ function App() {
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#f8f9fa' }}>
-      <Header />
       <Routes>
-        {/* Public routes */}
+        {/* Public routes - Landing page without header */}
+        <Route 
+          path="/landing" 
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LandingPage />} 
+        />
+        
+        {/* Auth routes - without header */}
         <Route 
           path="/login" 
-          element={isAuthenticated ? <Navigate to="/" replace /> : <LoginScreen />} 
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginScreen />} 
         />
         <Route 
           path="/register" 
-          element={isAuthenticated ? <Navigate to="/" replace /> : <RegisterScreen />} 
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegisterScreen />} 
         />
 
-        {/* Protected routes */}
+        {/* Protected routes - with header */}
+        <Route 
+          path="/dashboard" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <HomeScreen />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+        
+        {/* Redirect / to landing page for non-authenticated, or dashboard for authenticated */}
         <Route 
           path="/" 
-          element={
-            <ProtectedRoute>
-              <HomeScreen />
-            </ProtectedRoute>
-          } 
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/landing" replace />} 
         />
         <Route 
           path="/add-item" 
           element={
-            <ProtectedRoute>
-              <AddItemScreen />
-            </ProtectedRoute>
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <AddItemScreen />
+              </ProtectedRoute>
+            </Box>
           } 
         />
         <Route 
           path="/items-list" 
           element={
-            <ProtectedRoute>
-              <ItemsListScreen />
-            </ProtectedRoute>
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <ItemsListScreen />
+              </ProtectedRoute>
+            </Box>
           } 
         />
         <Route 
           path="/invoices" 
           element={
-            <ProtectedRoute>
-              <InvoiceListScreen />
-            </ProtectedRoute>
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <InvoiceListScreen />
+              </ProtectedRoute>
+            </Box>
           } 
         />
         <Route 
           path="/invoices/:id" 
           element={
-            <ProtectedRoute>
-              <InvoicePreviewScreen />
-            </ProtectedRoute>
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <InvoicePreviewScreen />
+              </ProtectedRoute>
+            </Box>
           } 
         />
         <Route 
           path="/invoices/:invoiceId/edit" 
           element={
-            <ProtectedRoute>
-              <CreateInvoiceScreenWeb />
-            </ProtectedRoute>
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <CreateInvoiceScreenWeb />
+              </ProtectedRoute>
+            </Box>
           } 
         />
         <Route 
           path="/quotations" 
           element={
-            <ProtectedRoute>
-              <QuotationListScreen />
-            </ProtectedRoute>
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <QuotationListScreen />
+              </ProtectedRoute>
+            </Box>
           } 
         />
         <Route 
           path="/create-quotation" 
           element={
-            <ProtectedRoute>
-              <CreateQuotationScreen />
-            </ProtectedRoute>
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <CreateQuotationScreen />
+              </ProtectedRoute>
+            </Box>
           } 
         />
         <Route 
           path="/create-invoice" 
           element={
-            <ProtectedRoute>
-              <CreateInvoiceScreenWeb />
-            </ProtectedRoute>
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <CreateInvoiceScreenWeb />
+              </ProtectedRoute>
+            </Box>
           } 
         />
         <Route 
           path="/create-invoice/:quotationId" 
           element={
-            <ProtectedRoute>
-              <CreateInvoiceScreenWeb />
-            </ProtectedRoute>
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <CreateInvoiceScreenWeb />
+              </ProtectedRoute>
+            </Box>
           } 
         />
         <Route 
           path="/invoice-preview" 
           element={
-            <ProtectedRoute>
-              <InvoicePreviewScreen />
-            </ProtectedRoute>
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <InvoicePreviewScreen />
+              </ProtectedRoute>
+            </Box>
           } 
         />
         <Route 
           path="/order-signatures" 
           element={
-            <ProtectedRoute>
-              <OrderSignatureScreen />
-            </ProtectedRoute>
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <OrderSignatureScreen />
+              </ProtectedRoute>
+            </Box>
           } 
         />
         <Route 
           path="/business-settings" 
           element={
-            <ProtectedRoute>
-              <BusinessSettingsScreen />
-            </ProtectedRoute>
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <BusinessSettingsScreen />
+              </ProtectedRoute>
+            </Box>
           } 
         />
         <Route 
           path="/financial-accounts" 
           element={
-            <ProtectedRoute>
-              <FinancialAccountsScreen />
-            </ProtectedRoute>
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <FinancialAccountsScreen />
+              </ProtectedRoute>
+            </Box>
           } 
         />
         <Route 
           path="/goods-returns" 
           element={
-            <ProtectedRoute>
-              <GoodsReturnScreen />
-            </ProtectedRoute>
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <GoodsReturnScreen />
+              </ProtectedRoute>
+            </Box>
           } 
         />
         <Route 
           path="/damage-tracking" 
           element={
-            <ProtectedRoute>
-              <DamageTrackingScreen />
-            </ProtectedRoute>
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <DamageTrackingScreen />
+              </ProtectedRoute>
+            </Box>
           } 
         />
         <Route 
           path="/analytics" 
           element={
-            <ProtectedRoute>
-              <AnalyticsScreen />
-            </ProtectedRoute>
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <AnalyticsScreen />
+              </ProtectedRoute>
+            </Box>
           } 
         />
 

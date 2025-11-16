@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { Receipt } from '@mui/icons-material';
 
 const RegisterScreen: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -54,7 +55,7 @@ const RegisterScreen: React.FC = () => {
     try {
       const { confirmPassword, ...registerData } = formData;
       await register(registerData);
-      navigate('/');
+      navigate('/dashboard');
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -63,117 +64,198 @@ const RegisterScreen: React.FC = () => {
   };
 
   return (
-    <Container component="main" maxWidth="sm">
-      <Box
-        sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
-        <Paper elevation={3} sx={{ padding: 4, width: '100%' }}>
-          <Typography component="h1" variant="h4" align="center" gutterBottom>
-            Invoice App
-          </Typography>
-          <Typography variant="h6" align="center" color="text.secondary" gutterBottom>
-            Create your business account
-          </Typography>
-
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
-
-          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', '& > *': { flex: '1 1 250px', minWidth: '200px' } }}>
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                id="first_name"
-                label="First Name"
-                name="first_name"
-                autoComplete="given-name"
-                value={formData.first_name}
-                onChange={handleChange}
-              />
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                id="last_name"
-                label="Last Name"
-                name="last_name"
-                autoComplete="family-name"
-                value={formData.last_name}
-                onChange={handleChange}
-              />
-            </Box>
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="business_name"
-              label="Business Name"
-              name="business_name"
-              autoComplete="organization"
-              value={formData.business_name}
-              onChange={handleChange}
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="email"
-              label="Email Address"
-              name="email"
-              autoComplete="email"
-              value={formData.email}
-              onChange={handleChange}
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="password"
-              label="Password"
-              type="password"
-              id="password"
-              autoComplete="new-password"
-              value={formData.password}
-              onChange={handleChange}
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="confirmPassword"
-              label="Confirm Password"
-              type="password"
-              id="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-            />
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ mt: 3, mb: 2 }}
-              disabled={loading}
-            >
-              {loading ? 'Creating Account...' : 'Sign Up'}
-            </Button>
-            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-              <Link component={RouterLink} to="/login" variant="body2">
-                Already have an account? Sign In
-              </Link>
-            </Box>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f9fafb' }}>
+      {/* Header with logo and back link */}
+      <Box sx={{ p: 2, bgcolor: 'white', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)' }}>
+        <Container maxWidth="sm">
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Receipt sx={{ fontSize: 32, color: '#8B5CF6' }} />
+            <Typography variant="h6" fontWeight="bold" sx={{ color: '#8B5CF6' }}>
+              InvoiceHub
+            </Typography>
           </Box>
-        </Paper>
+        </Container>
       </Box>
-    </Container>
+
+      <Container component="main" maxWidth="sm">
+        <Box
+          sx={{
+            marginTop: 8,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+          }}
+        >
+          <Paper
+            elevation={3}
+            sx={{
+              padding: 4,
+              width: '100%',
+              borderRadius: '12px',
+              backgroundColor: 'white',
+            }}
+          >
+            <Typography component="h1" variant="h4" align="center" gutterBottom fontWeight="bold">
+              Create Account
+            </Typography>
+            <Typography variant="body2" align="center" color="text.secondary" gutterBottom sx={{ mb: 3 }}>
+              Set up your business account
+            </Typography>
+
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
+
+            <Box component="form" onSubmit={handleSubmit}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  id="first_name"
+                  label="First Name"
+                  name="first_name"
+                  autoComplete="given-name"
+                  value={formData.first_name}
+                  onChange={handleChange}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '&:hover fieldset': {
+                        borderColor: '#8B5CF6',
+                      },
+                    },
+                  }}
+                />
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  id="last_name"
+                  label="Last Name"
+                  name="last_name"
+                  autoComplete="family-name"
+                  value={formData.last_name}
+                  onChange={handleChange}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '&:hover fieldset': {
+                        borderColor: '#8B5CF6',
+                      },
+                    },
+                  }}
+                />
+              </Box>
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                id="business_name"
+                label="Business Name"
+                name="business_name"
+                autoComplete="organization"
+                value={formData.business_name}
+                onChange={handleChange}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '&:hover fieldset': {
+                      borderColor: '#8B5CF6',
+                    },
+                  },
+                }}
+              />
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                id="email"
+                label="Email Address"
+                name="email"
+                autoComplete="email"
+                value={formData.email}
+                onChange={handleChange}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '&:hover fieldset': {
+                      borderColor: '#8B5CF6',
+                    },
+                  },
+                }}
+              />
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                name="password"
+                label="Password"
+                type="password"
+                id="password"
+                autoComplete="new-password"
+                value={formData.password}
+                onChange={handleChange}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '&:hover fieldset': {
+                      borderColor: '#8B5CF6',
+                    },
+                  },
+                }}
+              />
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                name="confirmPassword"
+                label="Confirm Password"
+                type="password"
+                id="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '&:hover fieldset': {
+                      borderColor: '#8B5CF6',
+                    },
+                  },
+                }}
+              />
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                sx={{
+                  mt: 3,
+                  mb: 2,
+                  py: 1.5,
+                  backgroundColor: '#8B5CF6',
+                  fontWeight: 'bold',
+                  '&:hover': { backgroundColor: '#7c3aed' },
+                }}
+                disabled={loading}
+              >
+                {loading ? 'Creating Account...' : 'Sign Up'}
+              </Button>
+
+              <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mt: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Already have an account?
+                </Typography>
+                <Link component={RouterLink} to="/login" variant="body2" sx={{ fontWeight: 'bold', color: '#8B5CF6' }}>
+                  Sign In
+                </Link>
+              </Box>
+
+              <Box sx={{ textAlign: 'center', mt: 3 }}>
+                <Link component={RouterLink} to="/landing" variant="body2" sx={{ color: '#6b7280', '&:hover': { color: '#8B5CF6' } }}>
+                  Back to Home
+                </Link>
+              </Box>
+            </Box>
+          </Paper>
+        </Box>
+      </Container>
+    </Box>
   );
 };
 
