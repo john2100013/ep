@@ -131,23 +131,25 @@ const ItemsListScreen: React.FC = () => {
 
   return (
     <Box sx={{ display: 'flex', width: '100vw', minHeight: '100vh', margin: 0 }}>
-      {/* Sidebar */}
-      <Sidebar
-        title="Items Management"
-        currentStats={currentStats}
-      />
+      {/* Sidebar - hidden on mobile */}
+      <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+        <Sidebar
+          title="Items Management"
+          currentStats={currentStats}
+        />
+      </Box>
 
       {/* Main Content */}
       <Box sx={{ 
-        marginLeft: '350px', 
-        width: 'calc(100vw - 350px - 24px)', 
-        p: 3, 
-        paddingRight: '24px',
-        overflow: 'hidden' 
+        marginLeft: { xs: 0, md: '350px' }, 
+        width: { xs: '100%', md: 'calc(100vw - 350px - 24px)' }, 
+        p: { xs: 2, md: 3 }, 
+        paddingRight: { xs: 0, md: '24px' },
+        overflow: 'auto'
       }}>
         {/* Header */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h4" component="h1">
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, gap: 2, mb: 3 }}>
+          <Typography variant="h4" component="h1" sx={{ fontSize: { xs: '1.5rem', md: '2.125rem' } }}>
             Items List
           </Typography>
           <Button
@@ -160,7 +162,7 @@ const ItemsListScreen: React.FC = () => {
         </Box>
 
         {/* Search */}
-        <Paper sx={{ p: 2, mb: 3 }}>
+        <Paper sx={{ p: { xs: 1.5, md: 2 }, mb: 3 }}>
           <TextField
             placeholder="Search items..."
             value={searchQuery}
@@ -184,20 +186,20 @@ const ItemsListScreen: React.FC = () => {
         )}
 
       {/* Items Table */}
-      <Card sx={{ elevation: 4 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
+      <Card sx={{ elevation: 4, overflowX: { xs: 'auto', md: 'visible' } }}>
+        <CardContent sx={{ p: { xs: 1.5, md: 2 } }}>
+          <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
             Items ({filteredItems.length})
           </Typography>
           
           {/* Hint */}
           {filteredItems.length > 0 && (
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontSize: { xs: '0.75rem', md: '0.875rem' } }}>
               💡 Scroll horizontally to see all columns
             </Typography>
           )}
 
-          <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 600 }}>
+          <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: { xs: 400, md: 600 }, fontSize: { xs: '0.75rem', md: '0.875rem' } }}>
             <Table stickyHeader size="small">
               <TableHead>
                 <TableRow>
@@ -254,8 +256,8 @@ const ItemsListScreen: React.FC = () => {
 
           {/* Scroll Hint */}
           {filteredItems.length > 0 && (
-            <Box sx={{ mt: 2, p: 1, bgcolor: 'grey.50', borderRadius: 1, textAlign: 'center' }}>
-              <Typography variant="caption" color="text.secondary">
+            <Box sx={{ mt: 2, p: { xs: 1, md: 1.5 }, bgcolor: 'grey.50', borderRadius: 1, textAlign: 'center' }}>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', md: '0.75rem' } }}>
                 💡 Swipe left/right for columns • Scroll up/down for more items
               </Typography>
             </Box>
@@ -269,8 +271,8 @@ const ItemsListScreen: React.FC = () => {
         aria-label="add item"
         sx={{
           position: 'fixed',
-          bottom: 16,
-          right: 16,
+          bottom: { xs: 16, md: 24 },
+          right: { xs: 16, md: 24 },
         }}
         onClick={() => navigate('/add-item')}
       >

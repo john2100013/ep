@@ -316,26 +316,28 @@ const QuotationListScreen: React.FC = () => {
 
   return (
     <Box sx={{ display: 'flex', width: '100vw', minHeight: '100vh', margin: 0 }}>
-      {/* Sidebar */}
-      <Sidebar
-        title="Quotation Management"
-        currentStats={currentStats}
-        statusFilter={statusFilter}
-        onStatusFilterChange={handleStatusFilterChange}
-        statusOptions={statusOptions}
-      />
+      {/* Sidebar - hidden on mobile */}
+      <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+        <Sidebar
+          title="Quotation Management"
+          currentStats={currentStats}
+          statusFilter={statusFilter}
+          onStatusFilterChange={handleStatusFilterChange}
+          statusOptions={statusOptions}
+        />
+      </Box>
 
       {/* Main Content */}
       <Box sx={{ 
-        marginLeft: '350px', 
-        width: 'calc(100vw - 350px - 24px)', 
-        p: 3, 
-        paddingRight: '24px',
-        overflow: 'hidden' 
+        marginLeft: { xs: 0, md: '350px' }, 
+        width: { xs: '100%', md: 'calc(100vw - 350px - 24px)' }, 
+        p: { xs: 2, md: 3 }, 
+        paddingRight: { xs: 0, md: '24px' },
+        overflow: 'auto'
       }}>
         {/* Header */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h4" component="h1">
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, gap: 2, mb: 3 }}>
+          <Typography variant="h4" component="h1" sx={{ fontSize: { xs: '1.5rem', md: '2.125rem' } }}>
             Quotations
           </Typography>
           <Button
@@ -343,13 +345,14 @@ const QuotationListScreen: React.FC = () => {
             color="primary"
             startIcon={<AddIcon />}
             onClick={() => navigate('/create-quotation')}
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
           >
             Create Quotation
           </Button>
         </Box>
 
         {/* Search */}
-        <Paper sx={{ p: 2, mb: 3 }}>
+        <Paper sx={{ p: { xs: 1.5, md: 2 }, mb: 3 }}>
           <TextField
             placeholder="Search quotations..."
             value={searchTerm}
@@ -393,7 +396,7 @@ const QuotationListScreen: React.FC = () => {
           </Button>
         </Paper>
       ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 1.5, md: 2 } }}>
           {quotations.map((quotation) => (
             <Card 
               key={quotation.id}
@@ -403,11 +406,11 @@ const QuotationListScreen: React.FC = () => {
                 transition: 'all 0.3s ease'
               }}
             >
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <Box sx={{ flex: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                      <Typography variant="h6" component="h3">
+              <CardContent sx={{ p: { xs: 2, md: 2.5 } }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, md: 2 }, mb: 1, flexWrap: 'wrap' }}>
+                      <Typography variant="h6" component="h3" sx={{ fontSize: { xs: '1rem', md: '1.25rem' }, fontWeight: 'bold' }}>
                         {quotation.quotation_number}
                       </Typography>
                       <Chip 
@@ -425,15 +428,15 @@ const QuotationListScreen: React.FC = () => {
                       )}
                     </Box>
                     
-                    <Typography color="text.secondary" gutterBottom>
+                    <Typography color="text.secondary" gutterBottom variant="body2">
                       Customer: {quotation.customer_name}
                     </Typography>
                     
-                    <Box sx={{ display: 'flex', gap: 4, mb: 2 }}>
+                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 1, sm: 2, md: 4 }, mb: 2 }}>
                       <Typography variant="body2">
                         Amount: <strong>{formatCurrency(quotation.total_amount)}</strong>
                       </Typography>
-                      <Typography variant="body2">
+                      <Typography variant="body2" sx={{ display: { xs: 'none', sm: 'block' } }}>
                         Valid Until: {format(new Date(quotation.valid_until), 'MMM dd, yyyy')}
                       </Typography>
                       <Typography variant="body2">

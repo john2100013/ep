@@ -36,7 +36,6 @@ import {
   Delete as DeleteIcon,
   Save as SaveIcon,
   Receipt as InvoiceIcon,
-  ArrowBack as BackIcon,
   List as ListIcon,
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -45,6 +44,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { ApiService } from '../services/api';
 import { format } from 'date-fns';
+import Sidebar from '../components/Sidebar';
 
 interface Item {
   id: number;
@@ -391,25 +391,39 @@ const CreateInvoiceScreen: React.FC = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ p: 3 }}>
-        {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <IconButton onClick={() => navigate('/invoices')} sx={{ mr: 2 }}>
-            <BackIcon />
-          </IconButton>
-          <InvoiceIcon sx={{ mr: 2, fontSize: 32 }} />
-          <Typography variant="h4" component="h1" sx={{ flex: 1 }}>
-            {isEditMode ? 'Edit Invoice' : quotationId ? 'Convert Quotation to Invoice' : 'Create Invoice'}
-          </Typography>
-          <Button
-            variant="outlined"
-            startIcon={<ListIcon />}
-            onClick={() => setQuotationDialogOpen(true)}
-            sx={{ ml: 2 }}
-          >
-            From Quotation
-          </Button>
+      <Box sx={{ display: 'flex', width: '100vw', minHeight: '100vh', margin: 0 }}>
+        {/* Sidebar - hidden on mobile */}
+        <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+          <Sidebar title="Invoice Management" />
         </Box>
+
+        {/* Main Content */}
+        <Box sx={{ 
+          marginLeft: { xs: 0, md: '350px' }, 
+          width: { xs: '100%', md: 'calc(100vw - 350px - 24px)' }, 
+          p: { xs: 2, md: 3 }, 
+          paddingRight: { xs: 0, md: '24px' },
+          overflow: 'auto'
+        }}>
+          {/* Header */}
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2, mb: 3 }}>
+            <Box sx={{ flex: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <InvoiceIcon sx={{ fontSize: { xs: 24, md: 32 } }} />
+                <Typography variant="h4" component="h1" sx={{ fontSize: { xs: '1.5rem', md: '2.125rem' } }}>
+                  {isEditMode ? 'Edit Invoice' : quotationId ? 'Convert Quotation to Invoice' : 'Create Invoice'}
+                </Typography>
+              </Box>
+            </Box>
+            <Button
+              variant="outlined"
+              startIcon={<ListIcon />}
+              onClick={() => setQuotationDialogOpen(true)}
+              sx={{ width: { xs: '100%', sm: 'auto' } }}
+            >
+              From Quotation
+            </Button>
+          </Box>
 
         {/* Success Alert */}
         {success && (
@@ -436,26 +450,28 @@ const CreateInvoiceScreen: React.FC = () => {
           {/* Customer Information */}
           <Card sx={{ mb: 3 }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
                 Customer Information
               </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-                  <Box sx={{ flex: 1, minWidth: '300px' }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+                  <Box sx={{ flex: 1 }}>
                     <TextField
                       fullWidth
                       label="Customer Name *"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
                       required
+                      size="small"
                     />
                   </Box>
-                  <Box sx={{ flex: 1, minWidth: '300px' }}>
+                  <Box sx={{ flex: 1 }}>
                     <TextField
                       fullWidth
                       label="Customer PIN"
                       value={customerPin}
                       onChange={(e) => setCustomerPin(e.target.value)}
+                      size="small"
                     />
                   </Box>
                 </Box>
@@ -466,6 +482,7 @@ const CreateInvoiceScreen: React.FC = () => {
                   rows={3}
                   value={customerAddress}
                   onChange={(e) => setCustomerAddress(e.target.value)}
+                  size="small"
                 />
               </Box>
             </CardContent>
@@ -474,12 +491,12 @@ const CreateInvoiceScreen: React.FC = () => {
           {/* Invoice Details */}
           <Card sx={{ mb: 3 }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
                 Invoice Details
               </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-                  <Box sx={{ flex: 1, minWidth: '300px' }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
+                  <Box sx={{ flex: 1 }}>
                     <DatePicker
                       label="Due Date *"
                       value={dueDate}
@@ -532,21 +549,21 @@ const CreateInvoiceScreen: React.FC = () => {
                 </Button>
               </Box>
 
-              <TableContainer component={Paper} variant="outlined">
-                <Table>
+              <TableContainer component={Paper} variant="outlined" sx={{ overflowX: { xs: 'auto', md: 'unset' } }}>
+                <Table sx={{ fontSize: { xs: '0.75rem', md: 'inherit' } }}>
                   <TableHead>
                     <TableRow>
-                      <TableCell>Item</TableCell>
-                      <TableCell>Quantity</TableCell>
-                      <TableCell>Unit Price</TableCell>
-                      <TableCell>Total</TableCell>
-                      <TableCell width={50}></TableCell>
+                      <TableCell sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' } }}>Item</TableCell>
+                      <TableCell align="center" sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' }, width: { xs: 70, md: 'auto' } }}>Qty</TableCell>
+                      <TableCell align="right" sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' }, width: { xs: 80, md: 'auto' } }}>Price</TableCell>
+                      <TableCell align="right" sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' }, width: { xs: 80, md: 'auto' } }}>Total</TableCell>
+                      <TableCell width={40} sx={{ padding: { xs: '4px 8px', md: '16px' } }}></TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {lines.map((line, index) => (
                       <TableRow key={index}>
-                        <TableCell sx={{ minWidth: 300 }}>
+                        <TableCell sx={{ minWidth: { xs: 200, md: 300 }, padding: { xs: '8px 4px', md: '16px' } }}>
                           <Autocomplete
                             options={items}
                             getOptionLabel={(option) => `${option.item_name} (${option.code})`}
@@ -555,43 +572,44 @@ const CreateInvoiceScreen: React.FC = () => {
                             renderInput={(params) => (
                               <TextField
                                 {...params}
-                                label="Select Item"
+                                label="Item"
                                 size="small"
                                 required
                               />
                             )}
                           />
                         </TableCell>
-                        <TableCell>
+                        <TableCell align="center" sx={{ padding: { xs: '8px 4px', md: '16px' } }}>
                           <TextField
                             type="number"
                             size="small"
                             value={line.quantity}
                             onChange={(e) => handleLineChange(index, 'quantity', parseFloat(e.target.value) || 0)}
                             inputProps={{ min: 0.01, step: 0.01 }}
-                            sx={{ width: 100 }}
+                            sx={{ width: { xs: 60, md: 100 } }}
                           />
                         </TableCell>
-                        <TableCell>
+                        <TableCell align="right" sx={{ padding: { xs: '8px 4px', md: '16px' } }}>
                           <TextField
                             type="number"
                             size="small"
                             value={line.unit_price}
                             onChange={(e) => handleLineChange(index, 'unit_price', parseFloat(e.target.value) || 0)}
                             inputProps={{ min: 0, step: 0.01 }}
-                            sx={{ width: 120 }}
+                            sx={{ width: { xs: 70, md: 120 } }}
                           />
                         </TableCell>
-                        <TableCell>
+                        <TableCell align="right" sx={{ padding: { xs: '8px 4px', md: '16px' }, fontSize: { xs: '0.85rem', md: '1rem' } }}>
                           {formatCurrency(line.total)}
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ padding: { xs: '4px 0', md: '16px' } }}>
                           <IconButton
                             onClick={() => removeLine(index)}
                             disabled={lines.length === 1}
                             color="error"
+                            size="small"
                           >
-                            <DeleteIcon />
+                            <DeleteIcon fontSize="small" />
                           </IconButton>
                         </TableCell>
                       </TableRow>
@@ -605,22 +623,22 @@ const CreateInvoiceScreen: React.FC = () => {
           {/* Totals */}
           <Card sx={{ mb: 3 }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
                 Summary
               </Typography>
-              <Box sx={{ maxWidth: 400, ml: 'auto' }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography>Subtotal:</Typography>
-                  <Typography>{formatCurrency(subtotal)}</Typography>
+              <Box sx={{ maxWidth: { xs: '100%', md: 400 }, ml: { xs: 0, md: 'auto' } }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, gap: 2 }}>
+                  <Typography variant="body2">Subtotal:</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{formatCurrency(subtotal)}</Typography>
                 </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography>VAT (16%):</Typography>
-                  <Typography>{formatCurrency(vatAmount)}</Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, gap: 2 }}>
+                  <Typography variant="body2">VAT (16%):</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{formatCurrency(vatAmount)}</Typography>
                 </Box>
                 <Divider sx={{ my: 1 }} />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                  <Typography variant="h6">Total:</Typography>
-                  <Typography variant="h6">{formatCurrency(totalAmount)}</Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, gap: 2 }}>
+                  <Typography sx={{ fontSize: { xs: '1rem', md: '1.5rem' }, fontWeight: 'bold' }}>Total:</Typography>
+                  <Typography sx={{ fontSize: { xs: '1rem', md: '1.5rem' }, fontWeight: 'bold' }}>{formatCurrency(totalAmount)}</Typography>
                 </Box>
                 
                 {/* Payment Information */}
@@ -711,11 +729,11 @@ const CreateInvoiceScreen: React.FC = () => {
           </Card>
 
           {/* Submit Button */}
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column-reverse', sm: 'row' }, justifyContent: 'flex-end', gap: 2 }}>
             <Button
               variant="outlined"
               color="primary"
-              size="large"
+              sx={{ width: { xs: '100%', sm: 'auto' } }}
               onClick={() => {
                 if (!customerName || !dueDate || lines.length === 0) {
                   setError('Please fill in all required fields before previewing');
@@ -747,11 +765,11 @@ const CreateInvoiceScreen: React.FC = () => {
               type="submit"
               variant="contained"
               color="primary"
-              size="large"
               startIcon={<SaveIcon />}
               disabled={loading}
+              sx={{ width: { xs: '100%', sm: 'auto' } }}
             >
-              {loading ? (isEditMode ? 'Updating Invoice...' : 'Creating Invoice...') : (isEditMode ? 'Update Invoice' : 'Create Invoice')}
+              {loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Invoice' : 'Create Invoice')}
             </Button>
           </Box>
         </form>
@@ -804,6 +822,7 @@ const CreateInvoiceScreen: React.FC = () => {
             <Button onClick={() => setQuotationDialogOpen(false)}>Cancel</Button>
           </DialogActions>
         </Dialog>
+        </Box>
       </Box>
     </LocalizationProvider>
   );
