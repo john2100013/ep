@@ -94,6 +94,7 @@ const CreateInvoiceScreen: React.FC = () => {
   const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [quotationDialogOpen, setQuotationDialogOpen] = useState(false);
   const [itemSearchQuery, setItemSearchQuery] = useState('');
+  const [generatedInvoiceNumber, setGeneratedInvoiceNumber] = useState<string | null>(null);
   
   // Invoice form data
   const [customerName, setCustomerName] = useState('');
@@ -266,6 +267,29 @@ const CreateInvoiceScreen: React.FC = () => {
     }
     
     setLines(newLines);
+  };
+
+  const fetchInvoiceNumber = async () => {
+    try {
+      const response = await fetch('/api/invoices/next-invoice-number', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data?.invoiceNumber) {
+          setGeneratedInvoiceNumber(data.data.invoiceNumber);
+          return data.data.invoiceNumber;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching invoice number:', error);
+    }
+    return null;
   };
 
   const addLine = () => {
@@ -771,7 +795,7 @@ const CreateInvoiceScreen: React.FC = () => {
               variant="outlined"
               color="primary"
               sx={{ width: { xs: '100%', sm: 'auto' } }}
-              onClick={() => {
+              onClick={async () => {
                 if (!customerName || !dueDate || lines.length === 0) {
                   setError('Please fill in all required fields before previewing');
                   return;
@@ -781,6 +805,10 @@ const CreateInvoiceScreen: React.FC = () => {
                   setError('Please ensure all lines have valid items and quantities');
                   return;
                 }
+                
+                // Fetch invoice number before navigating to preview
+                const invoiceNumber = await fetchInvoiceNumber();
+                
                 navigate('/invoice-preview', {
                   state: {
                     lines,
@@ -790,7 +818,8 @@ const CreateInvoiceScreen: React.FC = () => {
                     documentType: 'invoice',
                     dueDate: dueDate?.toISOString(),
                     paymentTerms,
-                    notes
+                    notes,
+                    invoiceNumber: invoiceNumber || generatedInvoiceNumber
                   }
                 });
               }}

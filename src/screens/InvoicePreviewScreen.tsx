@@ -68,6 +68,7 @@ const InvoicePreviewScreen: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState('');
   const [shareMenuAnchor, setShareMenuAnchor] = useState<null | HTMLElement>(null);
+  const [invoiceNumber, setInvoiceNumber] = useState<string>('');
   const [businessSettings, setBusinessSettings] = useState<BusinessSettings>({
     businessName: 'Your Business Name',
     street: 'Business Address Line 1',
@@ -96,7 +97,11 @@ const InvoicePreviewScreen: React.FC = () => {
 
   useEffect(() => {
     loadBusinessSettings();
-  }, []);
+    // Set invoice number from state
+    if (state?.invoiceNumber) {
+      setInvoiceNumber(state.invoiceNumber);
+    }
+  }, [state?.invoiceNumber]);
 
   const loadBusinessSettings = async () => {
     try {
@@ -190,7 +195,7 @@ const InvoicePreviewScreen: React.FC = () => {
 
       // Generate filename based on document type
       const docType = isQuotation ? 'Quotation' : 'Invoice';
-      const docNumber = isQuotation ? quotationNo : (state?.validUntil ? 'Draft' : 'Draft');
+      const docNumber = isQuotation ? quotationNo : (invoiceNumber || 'Draft');
       const fileName = `${docType}_${docNumber}_${state?.customerName?.replace(/\s+/g, '_') || 'Document'}.pdf`;
       
       // Save the PDF to device
@@ -251,7 +256,7 @@ const InvoicePreviewScreen: React.FC = () => {
     
     try {
       const docType = isQuotation ? 'QUOTATION' : 'INVOICE';
-      const docNumber = isQuotation ? quotationNo : 'PENDING';
+      const docNumber = isQuotation ? quotationNo : (invoiceNumber || 'PENDING');
       
       // Create a text message with document details
       const message = `*${docType}*
@@ -288,7 +293,7 @@ Thank you for your business!`;
     
     try {
       const docType = isQuotation ? 'Quotation' : 'Invoice';
-      const docNumber = isQuotation ? quotationNo : 'PENDING';
+      const docNumber = isQuotation ? quotationNo : (invoiceNumber || 'PENDING');
       const subject = `${docType} ${docNumber} - ${state?.customerName}`;
       const body = `Dear ${state?.customerName},
 
@@ -389,7 +394,7 @@ Your Business Name`;
               </Typography>
               <Box sx={{ textAlign: 'right' }}>
                 <Typography variant="body1" sx={{ mb: 0.5 }}>
-                  <strong>No:</strong> {isQuotation ? quotationNo : 'Will be generated on save'}
+                  <strong>No:</strong> {isQuotation ? quotationNo : (invoiceNumber || 'TBD')}
                 </Typography>
                 <Typography variant="body1">
                   <strong>Date:</strong> {currentDate}
