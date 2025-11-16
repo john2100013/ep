@@ -223,68 +223,71 @@ const FinancialAccountsScreen: React.FC = () => {
 
   return (
     <Box sx={{ display: 'flex', width: '100vw', minHeight: '100vh', margin: 0 }}>
-      {/* Sidebar */}
-      <Sidebar 
-        title="Financial Accounts"
-        currentStats={currentStats}
-      />
+      {/* Sidebar - hidden on mobile */}
+      <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+        <Sidebar 
+          title="Financial Accounts"
+          currentStats={currentStats}
+        />
+      </Box>
 
       {/* Main Content */}
       <Box sx={{ 
-        marginLeft: '350px', 
-        width: 'calc(100vw - 350px - 24px)', 
-        p: 3, 
-        paddingRight: '24px',
-        overflow: 'hidden',
+        marginLeft: { xs: 0, md: '350px' }, 
+        width: { xs: '100%', md: 'calc(100vw - 350px - 24px)' }, 
+        p: { xs: 2, md: 3 }, 
+        paddingRight: { xs: 0, md: '24px' },
+        overflow: 'auto',
         display: 'flex',
         justifyContent: 'center'
       }}>
         <Box sx={{ maxWidth: 'lg', width: '100%' }}>
-      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h4" component="h1">
-          Financial Accounts
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenDialog()}
-        >
-          Add Account
-        </Button>
-      </Box>
+          <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 1, sm: 2 } }}>
+            <Typography variant="h4" component="h1" sx={{ fontSize: { xs: '1.5rem', md: '2.125rem' } }}>
+              Financial Accounts
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => handleOpenDialog()}
+              sx={{ width: { xs: '100%', sm: 'auto' } }}
+            >
+              Add Account
+            </Button>
+          </Box>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
+          {error && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {error}
+            </Alert>
+          )}
 
-      <Paper sx={{ mb: 3, p: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Total Balance: {formatCurrency(totalBalance)}
-        </Typography>
-      </Paper>
+          <Paper sx={{ mb: 3, p: { xs: 1.5, md: 3 } }}>
+            <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
+              Total Balance: {formatCurrency(totalBalance)}
+            </Typography>
+          </Paper>
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Account Name</TableCell>
-              <TableCell>Type</TableCell>
-              <TableCell>Account Number</TableCell>
-              <TableCell align="right">Balance</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell align="center">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {accounts.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} align="center">
-                  <Typography variant="body2" color="textSecondary">
-                    No financial accounts found. Add your first account to get started.
-                  </Typography>
-                </TableCell>
+          <TableContainer component={Paper} sx={{ overflowX: { xs: 'auto', md: 'visible' }, fontSize: { xs: '0.75rem', md: '0.875rem' } }}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Account Name</TableCell>
+                  <TableCell>Type</TableCell>
+                  <TableCell>Account Number</TableCell>
+                  <TableCell align="right">Balance</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell align="center">Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {accounts.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center">
+                      <Typography variant="body2" color="textSecondary">
+                        No financial accounts found. Add your first account to get started.
+                      </Typography>
+                    </TableCell>
               </TableRow>
             ) : (
               accounts.map((account) => (
@@ -338,17 +341,17 @@ const FinancialAccountsScreen: React.FC = () => {
                 </TableRow>
               ))
             )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+              </TableBody>
+            </Table>
+          </TableContainer>
 
-      {/* Add/Edit Dialog */}
-      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {editingAccount ? 'Edit Account' : 'Add New Account'}
-        </DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+          {/* Add/Edit Dialog */}
+          <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+            <DialogTitle>
+              {editingAccount ? 'Edit Account' : 'Add New Account'}
+            </DialogTitle>
+            <DialogContent>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 1, md: 2 }, pt: 1 }}>
             <TextField
               label="Account Name"
               value={formData.account_name}
@@ -387,15 +390,15 @@ const FinancialAccountsScreen: React.FC = () => {
               fullWidth
               inputProps={{ step: 0.01 }}
             />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleSubmit} variant="contained">
-            {editingAccount ? 'Update' : 'Create'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+              </Box>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseDialog}>Cancel</Button>
+              <Button onClick={handleSubmit} variant="contained">
+                {editingAccount ? 'Update' : 'Create'}
+              </Button>
+            </DialogActions>
+          </Dialog>
         </Box>
       </Box>
     </Box>

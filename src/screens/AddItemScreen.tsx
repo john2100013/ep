@@ -105,107 +105,109 @@ const AddItemScreen: React.FC = () => {
 
   return (
     <Box sx={{ display: 'flex', width: '100vw', minHeight: '100vh', margin: 0 }}>
-      {/* Sidebar */}
-      <Sidebar title="Add New Item" />
+      {/* Sidebar - hidden on mobile */}
+      <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+        <Sidebar title="Add New Item" />
+      </Box>
 
       {/* Main Content */}
       <Box sx={{ 
-        marginLeft: '350px', 
-        width: 'calc(100vw - 350px - 24px)', 
-        p: 3, 
-        paddingRight: '24px',
-        overflow: 'hidden',
+        marginLeft: { xs: 0, md: '350px' }, 
+        width: { xs: '100%', md: 'calc(100vw - 350px - 24px)' }, 
+        p: { xs: 2, md: 3 }, 
+        paddingRight: { xs: 0, md: '24px' },
+        overflow: 'auto',
         display: 'flex',
         justifyContent: 'center'
       }}>
         <Box sx={{ maxWidth: 'md', width: '100%' }}>
-      <Card elevation={4}>
-        <CardContent>
-          <Typography variant="h4" component="h1" gutterBottom color="primary" align="center">
-            Add New Item
-          </Typography>
-
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
-
-          {success && (
-            <Alert severity="success" sx={{ mb: 2 }}>
-              {success}
-            </Alert>
-          )}
-
-          <Card variant="outlined" sx={{ mt: 3 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Item Information
+          <Card elevation={4}>
+            <CardContent sx={{ p: { xs: 1.5, md: 2 } }}>
+              <Typography variant="h4" component="h1" gutterBottom color="primary" align="center" sx={{ fontSize: { xs: '1.5rem', md: '2.125rem' } }}>
+                Add New Item
               </Typography>
 
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', '& > *': { flex: '1 1 300px', minWidth: '250px' } }}>
-                <TextField
-                  fullWidth
-                  label="Item Name *"
-                  name="item_name"
-                  value={formData.item_name}
-                  onChange={handleChange}
-                  margin="normal"
-                  placeholder="e.g., Product Name"
-                />
-                
-                <TextField
-                  fullWidth
-                  label="Unit (UOM)"
-                  name="unit"
-                  value={formData.unit}
-                  onChange={handleChange}
-                  margin="normal"
-                  placeholder="e.g., PCS, KG, M"
-                />
-              </Box>
+              {error && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  {error}
+                </Alert>
+              )}
 
-              <TextField
-                fullWidth
-                label="Description *"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                margin="normal"
-                multiline
-                rows={3}
-                placeholder="Detailed description of the item"
-              />
+              {success && (
+                <Alert severity="success" sx={{ mb: 2 }}>
+                  {success}
+                </Alert>
+              )}
 
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', '& > *': { flex: '1 1 200px', minWidth: '200px' } }}>
-                <TextField
-                  fullWidth
-                  label="Quantity *"
-                  name="quantity"
-                  type="number"
-                  value={formData.quantity}
-                  onChange={handleChange}
-                  margin="normal"
-                  inputProps={{ min: 0, step: 0.01 }}
-                />
-                
-                <TextField
-                  fullWidth
-                  label="Buying Price *"
-                  name="buying_price"
-                  type="number"
-                  value={formData.buying_price}
-                  onChange={handleChange}
-                  margin="normal"
-                  inputProps={{ min: 0, step: 0.01 }}
-                  InputProps={{
-                    startAdornment: <Typography sx={{ mr: 1 }}>KSH</Typography>,
-                  }}
-                />
-                
-                <TextField
-                  fullWidth
-                  label="Selling Price *"
+              <Card variant="outlined" sx={{ mt: 3 }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
+                    Item Information
+                  </Typography>
+
+                  <Box sx={{ display: 'flex', gap: { xs: 1, md: 2 }, flexWrap: 'wrap', '& > *': { flex: '1 1 100%', md: { flex: '1 1 300px' }, minWidth: '250px' } }}>
+                    <TextField
+                      fullWidth
+                      label="Item Name *"
+                      name="item_name"
+                      value={formData.item_name}
+                      onChange={handleChange}
+                      margin="normal"
+                      placeholder="e.g., Product Name"
+                    />
+                    
+                    <TextField
+                      fullWidth
+                      label="Unit (UOM)"
+                      name="unit"
+                      value={formData.unit}
+                      onChange={handleChange}
+                      margin="normal"
+                      placeholder="e.g., PCS, KG, M"
+                    />
+                      </Box>
+
+                  <TextField
+                    fullWidth
+                    label="Description *"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    margin="normal"
+                    multiline
+                    rows={3}
+                    placeholder="Detailed description of the item"
+                  />
+
+                  <Box sx={{ display: 'flex', gap: { xs: 1, md: 2 }, flexWrap: 'wrap', '& > *': { flex: '1 1 100%', md: { flex: '1 1 200px' }, minWidth: '200px' } }}>
+                    <TextField
+                      fullWidth
+                      label="Quantity *"
+                      name="quantity"
+                      type="number"
+                      value={formData.quantity}
+                      onChange={handleChange}
+                      margin="normal"
+                      inputProps={{ min: 0, step: 0.01 }}
+                    />
+                    
+                    <TextField
+                      fullWidth
+                      label="Buying Price *"
+                      name="buying_price"
+                      type="number"
+                      value={formData.buying_price}
+                      onChange={handleChange}
+                      margin="normal"
+                      inputProps={{ min: 0, step: 0.01 }}
+                      InputProps={{
+                        startAdornment: <Typography sx={{ mr: 1 }}>KSH</Typography>,
+                      }}
+                    />
+                    
+                    <TextField
+                      fullWidth
+                      label="Selling Price *"
                   name="selling_price"
                   type="number"
                   value={formData.selling_price}
@@ -217,44 +219,46 @@ const AddItemScreen: React.FC = () => {
                   }}
                   helperText="This will be used as the default unit price"
                 />
-              </Box>
+                  </Box>
 
-              {formData.quantity && formData.buying_price && formData.selling_price && (
-                <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
-                  <Typography variant="body2" gutterBottom>
-                    <strong>Total Investment: KSH {(parseFloat(formData.quantity) * parseFloat(formData.buying_price)).toFixed(2)}</strong>
-                  </Typography>
-                  <Typography variant="body2" gutterBottom>
-                    <strong>Total Selling Value: KSH {(parseFloat(formData.quantity) * parseFloat(formData.selling_price)).toFixed(2)}</strong>
-                  </Typography>
-                  <Typography variant="body1" color="success.main">
-                    <strong>Potential Profit: KSH {(parseFloat(formData.quantity) * (parseFloat(formData.selling_price) - parseFloat(formData.buying_price))).toFixed(2)}</strong>
-                  </Typography>
-                </Box>
-              )}
+                  {formData.quantity && formData.buying_price && formData.selling_price && (
+                    <Box sx={{ mt: 2, p: { xs: 1.5, md: 2 }, bgcolor: 'grey.100', borderRadius: 1 }}>
+                      <Typography variant="body2" gutterBottom sx={{ fontSize: { xs: '0.8rem', md: '0.875rem' } }}>
+                        <strong>Total Investment: KSH {(parseFloat(formData.quantity) * parseFloat(formData.buying_price)).toFixed(2)}</strong>
+                      </Typography>
+                      <Typography variant="body2" gutterBottom sx={{ fontSize: { xs: '0.8rem', md: '0.875rem' } }}>
+                        <strong>Total Selling Value: KSH {(parseFloat(formData.quantity) * parseFloat(formData.selling_price)).toFixed(2)}</strong>
+                      </Typography>
+                      <Typography variant="body1" color="success.main" sx={{ fontSize: { xs: '0.9rem', md: '1rem' } }}>
+                        <strong>Potential Profit: KSH {(parseFloat(formData.quantity) * (parseFloat(formData.selling_price) - parseFloat(formData.buying_price))).toFixed(2)}</strong>
+                      </Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Box sx={{ mt: 3, display: 'flex', gap: { xs: 1, md: 2 }, justifyContent: { xs: 'stretch', sm: 'flex-end' }, flexDirection: { xs: 'column', sm: 'row' } }}>
+                <Button
+                  variant="outlined"
+                  startIcon={<CancelIcon />}
+                  onClick={handleCancel}
+                  disabled={loading}
+                  sx={{ width: { xs: '100%', sm: 'auto' } }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<SaveIcon />}
+                  onClick={handleSave}
+                  disabled={loading}
+                  sx={{ width: { xs: '100%', sm: 'auto' } }}
+                >
+                  {loading ? 'Saving...' : 'Save Item'}
+                </Button>
+              </Box>
             </CardContent>
           </Card>
-
-          <Box sx={{ mt: 3, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-            <Button
-              variant="outlined"
-              startIcon={<CancelIcon />}
-              onClick={handleCancel}
-              disabled={loading}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<SaveIcon />}
-              onClick={handleSave}
-              disabled={loading}
-            >
-              {loading ? 'Saving...' : 'Save Item'}
-            </Button>
-          </Box>
-        </CardContent>
-      </Card>
         </Box>
       </Box>
     </Box>

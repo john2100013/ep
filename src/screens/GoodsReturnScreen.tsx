@@ -387,37 +387,40 @@ const GoodsReturnScreen: React.FC = () => {
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Box sx={{ display: 'flex', width: '100vw', minHeight: '100vh', margin: 0 }}>
-        {/* Sidebar */}
-        <Sidebar 
-          title="Goods Returns"
-          currentStats={currentStats}
-        />
+        {/* Sidebar - hidden on mobile */}
+        <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+          <Sidebar 
+            title="Goods Returns"
+            currentStats={currentStats}
+          />
+        </Box>
 
         {/* Main Content */}
         <Box sx={{ 
-          marginLeft: '350px', 
-          width: 'calc(100vw - 350px - 24px)', 
-          p: 3, 
-          paddingRight: '24px',
-          overflow: 'hidden'
+          marginLeft: { xs: 0, md: '350px' }, 
+          width: { xs: '100%', md: 'calc(100vw - 350px - 24px)' }, 
+          p: { xs: 2, md: 3 }, 
+          paddingRight: { xs: 0, md: '24px' },
+          overflow: 'auto'
         }}>
-          <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h4" component="h1">
-              <ReturnIcon sx={{ mr: 2, verticalAlign: 'middle' }} />
+          <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 1, sm: 2 } }}>
+            <Typography variant="h4" component="h1" sx={{ fontSize: { xs: '1.5rem', md: '2.125rem' }, display: 'flex', alignItems: 'center' }}>
+              <ReturnIcon sx={{ mr: 2, fontSize: { xs: 20, md: 28 } }} />
               Goods Returns
             </Typography>
             <Button
               variant="contained"
               startIcon={<AddIcon />}
               onClick={handleOpenDialog}
+              sx={{ width: { xs: '100%', sm: 'auto' } }}
             >
               New Return
             </Button>
           </Box>
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
+          {error && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {error}
           </Alert>
         )}
 
@@ -425,20 +428,20 @@ const GoodsReturnScreen: React.FC = () => {
           <Alert severity="success" sx={{ mb: 3 }}>
             {success}
           </Alert>
-        )}
+          )}
 
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Return #</TableCell>
-                <TableCell>Customer</TableCell>
-                <TableCell>Date</TableCell>
-                <TableCell>Invoice</TableCell>
-                <TableCell align="right">Amount</TableCell>
-                <TableCell>Refund Method</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell align="center">Actions</TableCell>
+          <TableContainer component={Paper} sx={{ overflowX: { xs: 'auto', md: 'visible' }, fontSize: { xs: '0.75rem', md: '0.875rem' } }}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Return #</TableCell>
+                  <TableCell>Customer</TableCell>
+                  <TableCell>Date</TableCell>
+                  <TableCell>Invoice</TableCell>
+                  <TableCell align="right">Amount</TableCell>
+                  <TableCell>Refund Method</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -487,14 +490,14 @@ const GoodsReturnScreen: React.FC = () => {
                   </TableRow>
                 ))
               )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableBody>
+            </Table>
+          </TableContainer>
 
-        {/* Create Return Dialog */}
-        <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="lg" fullWidth>
-          <DialogTitle>Create Goods Return</DialogTitle>
-          <DialogContent>
+          {/* Create Return Dialog */}
+          <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="lg" fullWidth>
+            <DialogTitle>Create Goods Return</DialogTitle>
+            <DialogContent>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
               {/* Customer Information */}
               <Card>
@@ -712,47 +715,47 @@ const GoodsReturnScreen: React.FC = () => {
               Create Return
             </Button>
           </DialogActions>
-        </Dialog>
+          </Dialog>
 
-        {/* Invoice Search Dialog */}
-        <Dialog open={invoiceSearchOpen} onClose={() => setInvoiceSearchOpen(false)} maxWidth="md" fullWidth>
-          <DialogTitle>Select Invoice</DialogTitle>
-          <DialogContent>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Invoice #</TableCell>
-                  <TableCell>Customer</TableCell>
-                  <TableCell>Amount</TableCell>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Action</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {invoices.map((invoice) => (
-                  <TableRow key={invoice.id}>
-                    <TableCell>{invoice.invoice_number}</TableCell>
-                    <TableCell>{invoice.customer_name}</TableCell>
-                    <TableCell>{formatCurrency(invoice.total_amount)}</TableCell>
-                    <TableCell>{format(new Date(invoice.created_at), 'MMM dd, yyyy')}</TableCell>
-                    <TableCell>
-                      <Button
-                        size="small"
-                        variant="contained"
-                        onClick={() => handleInvoiceSelect(invoice)}
-                      >
-                        Select
-                      </Button>
-                    </TableCell>
+          {/* Invoice Search Dialog */}
+          <Dialog open={invoiceSearchOpen} onClose={() => setInvoiceSearchOpen(false)} maxWidth="md" fullWidth>
+            <DialogTitle>Select Invoice</DialogTitle>
+            <DialogContent>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Invoice #</TableCell>
+                    <TableCell>Customer</TableCell>
+                    <TableCell>Amount</TableCell>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Action</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setInvoiceSearchOpen(false)}>Cancel</Button>
-          </DialogActions>
-        </Dialog>
+                </TableHead>
+                <TableBody>
+                  {invoices.map((invoice) => (
+                    <TableRow key={invoice.id}>
+                      <TableCell>{invoice.invoice_number}</TableCell>
+                      <TableCell>{invoice.customer_name}</TableCell>
+                      <TableCell>{formatCurrency(invoice.total_amount)}</TableCell>
+                      <TableCell>{format(new Date(invoice.created_at), 'MMM dd, yyyy')}</TableCell>
+                      <TableCell>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          onClick={() => handleInvoiceSelect(invoice)}
+                        >
+                          Select
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setInvoiceSearchOpen(false)}>Cancel</Button>
+            </DialogActions>
+          </Dialog>
         </Box>
       </Box>
     </LocalizationProvider>

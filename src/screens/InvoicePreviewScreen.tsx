@@ -332,7 +332,7 @@ Your Business Name`;
 
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="lg" sx={{ mt: { xs: 2, md: 4 }, mb: { xs: 2, md: 4 }, px: { xs: 1, sm: 2, md: 3 } }}>
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
           {error}
@@ -340,24 +340,24 @@ Your Business Name`;
       )}
 
       {/* Invoice Content - This will be captured for PDF */}
-      <div ref={invoiceRef} style={{ backgroundColor: 'white', padding: '40px', minHeight: '800px' }}>
+      <div ref={invoiceRef} style={{ backgroundColor: 'white', padding: '20px', minHeight: '800px' }}>
         {/* Company Header */}
         <Box sx={{ mb: 4, borderBottom: '3px solid #1976d2', pb: 3 }}>
-          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { xs: 'flex-start', md: 'center' }, gap: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { xs: 'flex-start', md: 'center' }, gap: { xs: 1, md: 2 } }}>
             <Box sx={{ flex: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, md: 3 }, mb: 2, flexWrap: 'wrap' }}>
                 {businessSettings.logo && (
                   <Avatar
                     src={businessSettings.logo}
                     variant="rounded"
-                    sx={{ width: 100, height: 50, border: '1px solid #ddd' }}
+                    sx={{ width: { xs: 60, md: 100 }, height: { xs: 30, md: 50 }, border: '1px solid #ddd' }}
                   />
                 )}
-                <Typography variant="h3" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                <Typography variant="h3" sx={{ fontWeight: 'bold', color: '#1976d2', fontSize: { xs: '1.5rem', md: '2rem' } }}>
                   {businessSettings.businessName}
                 </Typography>
               </Box>
-              <Typography variant="body1" sx={{ color: '#666', lineHeight: 1.6 }}>
+              <Typography variant="body1" sx={{ color: '#666', lineHeight: 1.6, fontSize: { xs: '0.8rem', md: '0.9rem' } }}>
                 {businessSettings.street && `${businessSettings.street}, `}
                 {businessSettings.city && `${businessSettings.city}`}
                 <br />

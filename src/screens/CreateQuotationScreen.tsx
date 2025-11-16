@@ -34,7 +34,6 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { ApiService } from '../services/api';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import Sidebar from '../components/Sidebar';
 
 interface Item {
   id: number;
@@ -311,29 +310,17 @@ const CreateQuotationScreen: React.FC = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ display: 'flex', width: '100vw', minHeight: '100vh', margin: 0 }}>
-        {/* Sidebar - hidden on mobile */}
-        <Box sx={{ display: { xs: 'none', md: 'block' } }}>
-          <Sidebar />
+      <Box sx={{ p: 3 }}>
+        {/* Header */}
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+          <IconButton onClick={() => navigate('/quotations')} sx={{ mr: 2 }}>
+            <BackIcon />
+          </IconButton>
+          <QuoteIcon sx={{ mr: 2, fontSize: 32 }} />
+          <Typography variant="h4" component="h1">
+            Create Quotation
+          </Typography>
         </Box>
-
-        {/* Main Content */}
-        <Box sx={{ 
-          marginLeft: { xs: 0, md: '350px' }, 
-          width: { xs: '100%', md: 'calc(100vw - 350px - 24px)' }, 
-          p: { xs: 2, md: 3 }, 
-          overflow: 'auto'
-        }}>
-          {/* Header */}
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
-            <IconButton onClick={() => navigate('/quotations')} sx={{ mr: 0 }}>
-              <BackIcon />
-            </IconButton>
-            <QuoteIcon sx={{ mr: 0, fontSize: { xs: 24, md: 32 } }} />
-            <Typography variant="h4" component="h1" sx={{ fontSize: { xs: '1.5rem', md: '2.125rem' } }}>
-              Create Quotation
-            </Typography>
-          </Box>
 
         {/* Success Alert */}
         {success && (
@@ -356,8 +343,8 @@ const CreateQuotationScreen: React.FC = () => {
               <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
                 Customer Information
               </Typography>
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 2, md: 3 }, flexWrap: 'wrap' }}>
-                <Box sx={{ flex: 1, minWidth: { xs: '100%', sm: '280px' } }}>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: { xs: 2, md: 3 } }}>
+                <Box sx={{ flex: 1, minWidth: { xs: '100%', md: '280px' } }}>
                   <TextField
                     fullWidth
                     label="Customer Name *"
@@ -366,23 +353,24 @@ const CreateQuotationScreen: React.FC = () => {
                     required
                   />
                 </Box>
-                <Box sx={{ flex: 1, minWidth: { xs: '100%', sm: '280px' } }}>
-                    <TextField
-                      fullWidth
-                      label="Customer PIN"
-                      value={customerPin}
-                      onChange={(e) => setCustomerPin(e.target.value)}
-                    />
-                  </Box>
+                <Box sx={{ flex: 1, minWidth: { xs: '100%', md: '280px' } }}>
+                  <TextField
+                    fullWidth
+                    label="Customer PIN"
+                    value={customerPin}
+                    onChange={(e) => setCustomerPin(e.target.value)}
+                  />
                 </Box>
-                <TextField
-                  fullWidth
-                  label="Customer Address"
-                  multiline
-                  rows={3}
-                  value={customerAddress}
-                  onChange={(e) => setCustomerAddress(e.target.value)}
-                />
+                <Box sx={{ flex: 1, minWidth: { xs: '100%', md: '280px' } }}>
+                  <TextField
+                    fullWidth
+                    label="Customer Address"
+                    multiline
+                    rows={3}
+                    value={customerAddress}
+                    onChange={(e) => setCustomerAddress(e.target.value)}
+                  />
+                </Box>
               </Box>
             </CardContent>
           </Card>
@@ -393,8 +381,8 @@ const CreateQuotationScreen: React.FC = () => {
               <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
                 Quotation Details
               </Typography>
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 2, md: 3 } }}>
-                <Box sx={{ maxWidth: { xs: '100%', sm: '400px' } }}>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: { xs: 2, md: 3 } }}>
+                <Box sx={{ maxWidth: { xs: '100%', md: '400px' } }}>
                   <DatePicker
                     label="Valid Until *"
                     value={validUntil}
@@ -409,13 +397,14 @@ const CreateQuotationScreen: React.FC = () => {
                 </Box>
                 <Box sx={{ flex: 1 }}>
                   <TextField
-                  fullWidth
-                  label="Notes"
-                  multiline
-                  rows={3}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
+                    fullWidth
+                    label="Notes"
+                    multiline
+                    rows={3}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                  />
+                </Box>
               </Box>
             </CardContent>
           </Card>
@@ -504,21 +493,21 @@ const CreateQuotationScreen: React.FC = () => {
 
           {/* Totals */}
           <Card sx={{ mb: 3 }}>
-            <CardContent sx={{ p: { xs: 1.5, md: 2 } }}>
-              <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
                 Summary
               </Typography>
-              <Box sx={{ maxWidth: { xs: '100%', md: 400 }, ml: { xs: 0, md: 'auto' } }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, fontSize: { xs: '0.875rem', md: '1rem' } }}>
+              <Box sx={{ maxWidth: 400, ml: 'auto' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                   <Typography>Subtotal:</Typography>
                   <Typography>{formatCurrency(subtotal)}</Typography>
                 </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, fontSize: { xs: '0.875rem', md: '1rem' } }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                   <Typography>VAT (16%):</Typography>
                   <Typography>{formatCurrency(vatAmount)}</Typography>
                 </Box>
                 <Divider sx={{ my: 1 }} />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: { xs: '1rem', md: '1.125rem' } }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Typography variant="h6">Total:</Typography>
                   <Typography variant="h6">{formatCurrency(totalAmount)}</Typography>
                 </Box>
@@ -527,7 +516,7 @@ const CreateQuotationScreen: React.FC = () => {
           </Card>
 
           {/* Submit Button */}
-          <Box sx={{ display: 'flex', justifyContent: { xs: 'stretch', sm: 'flex-end' }, gap: { xs: 1, md: 2 }, flexDirection: { xs: 'column', sm: 'row' } }}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
             <Button
               variant="outlined"
               color="primary"
@@ -555,7 +544,6 @@ const CreateQuotationScreen: React.FC = () => {
                 });
               }}
               disabled={loading || loadingQuotation}
-              sx={{ width: { xs: '100%', sm: 'auto' } }}
             >
               Preview
             </Button>
@@ -566,13 +554,11 @@ const CreateQuotationScreen: React.FC = () => {
               size="large"
               startIcon={<SaveIcon />}
               disabled={loading || loadingQuotation || lines.length === 0 || !customerName || !validUntil}
-              sx={{ width: { xs: '100%', sm: 'auto' } }}
             >
               {loading ? (isEditing ? 'Updating...' : 'Creating...') : (isEditing ? 'Update Quotation' : 'Create Quotation')}
             </Button>
           </Box>
         </form>
-        </Box>
       </Box>
     </LocalizationProvider>
   );

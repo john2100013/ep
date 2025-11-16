@@ -37,6 +37,7 @@ import RevenueTrends from '../components/analytics/RevenueTrends';
 import ProfitabilityAnalysis from '../components/analytics/ProfitabilityAnalysis';
 import StockMovement from '../components/analytics/StockMovement';
 import PendingActions from '../components/analytics/PendingActions';
+import Sidebar from '../components/Sidebar';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -149,43 +150,58 @@ const AnalyticsScreen: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <AnalyticsIcon sx={{ fontSize: 40, color: 'primary.main' }} />
-          <Typography variant="h4" component="h1" fontWeight="bold">
-            Business Analytics
-          </Typography>
-        </Box>
-        
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>Period</InputLabel>
-            <Select
-              value={dateRange}
-              onChange={handleDateRangeChange}
-              label="Period"
-            >
-              <MenuItem value="today">Today</MenuItem>
-              <MenuItem value="this_week">This Week</MenuItem>
-              <MenuItem value="this_month">This Month</MenuItem>
-              <MenuItem value="this_quarter">This Quarter</MenuItem>
-              <MenuItem value="this_year">This Year</MenuItem>
-              <MenuItem value="last_month">Last Month</MenuItem>
-              <MenuItem value="last_quarter">Last Quarter</MenuItem>
-            </Select>
-          </FormControl>
-          
-          <Button 
-            variant="outlined" 
-            onClick={refreshData}
-            disabled={refreshing}
-          >
-            {refreshing ? <CircularProgress size={20} /> : 'Refresh'}
-          </Button>
-        </Box>
+    <Box sx={{ display: 'flex', width: '100vw', minHeight: '100vh', margin: 0 }}>
+      {/* Sidebar - hidden on mobile */}
+      <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+        <Sidebar title="Analytics" />
       </Box>
+
+      {/* Main Content */}
+      <Box sx={{ 
+        marginLeft: { xs: 0, md: '350px' }, 
+        width: { xs: '100%', md: 'calc(100vw - 350px - 24px)' }, 
+        p: { xs: 2, md: 4 }, 
+        paddingRight: { xs: 0, md: '24px' },
+        overflow: 'auto',
+        mt: 0
+      }}>
+        {/* Header */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'stretch', md: 'center' }, mb: 4, flexDirection: { xs: 'column', md: 'row' }, gap: { xs: 2, md: 3 } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <AnalyticsIcon sx={{ fontSize: { xs: 28, md: 40 }, color: 'primary.main' }} />
+            <Typography variant="h4" component="h1" fontWeight="bold" sx={{ fontSize: { xs: '1.5rem', md: '2.125rem' } }}>
+              Business Analytics
+            </Typography>
+          </Box>
+          
+          <Box sx={{ display: 'flex', gap: { xs: 1, md: 2 }, alignItems: 'center', flexDirection: { xs: 'column', sm: 'row' } }}>
+            <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 150 } }}>
+              <InputLabel>Period</InputLabel>
+              <Select
+                value={dateRange}
+                onChange={handleDateRangeChange}
+                label="Period"
+              >
+                <MenuItem value="today">Today</MenuItem>
+                <MenuItem value="this_week">This Week</MenuItem>
+                <MenuItem value="this_month">This Month</MenuItem>
+                <MenuItem value="this_quarter">This Quarter</MenuItem>
+                <MenuItem value="this_year">This Year</MenuItem>
+                <MenuItem value="last_month">Last Month</MenuItem>
+                <MenuItem value="last_quarter">Last Quarter</MenuItem>
+              </Select>
+            </FormControl>
+            
+            <Button 
+              variant="outlined" 
+              onClick={refreshData}
+              disabled={refreshing}
+              sx={{ width: { xs: '100%', sm: 'auto' } }}
+            >
+              {refreshing ? <CircularProgress size={20} /> : 'Refresh'}
+            </Button>
+          </Box>
+        </Box>
 
       {error && (
         <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
@@ -383,7 +399,8 @@ const AnalyticsScreen: React.FC = () => {
           <PendingActions dateRange={dateRange} />
         </TabPanel>
       </Paper>
-    </Container>
+      </Box>
+    </Box>
   );
 };
 

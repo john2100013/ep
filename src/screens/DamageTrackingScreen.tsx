@@ -333,23 +333,25 @@ const DamageTrackingScreen: React.FC = () => {
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Box sx={{ display: 'flex', width: '100vw', minHeight: '100vh', margin: 0 }}>
-        {/* Sidebar */}
-        <Sidebar 
-          title="Damage Tracking"
-          currentStats={currentStats}
-        />
+        {/* Sidebar - hidden on mobile */}
+        <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+          <Sidebar 
+            title="Damage Tracking"
+            currentStats={currentStats}
+          />
+        </Box>
 
         {/* Main Content */}
         <Box sx={{ 
-          marginLeft: '350px', 
-          width: 'calc(100vw - 350px - 24px)', 
-          p: 3, 
-          paddingRight: '24px',
-          overflow: 'hidden'
+          marginLeft: { xs: 0, md: '350px' }, 
+          width: { xs: '100%', md: 'calc(100vw - 350px - 24px)' }, 
+          p: { xs: 2, md: 3 }, 
+          paddingRight: { xs: 0, md: '24px' },
+          overflow: 'auto'
         }}>
-          <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h4" component="h1">
-              <DamageIcon sx={{ mr: 2, verticalAlign: 'middle', color: 'error.main' }} />
+          <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 1, sm: 2 } }}>
+            <Typography variant="h4" component="h1" sx={{ fontSize: { xs: '1.5rem', md: '2.125rem' }, display: 'flex', alignItems: 'center' }}>
+              <DamageIcon sx={{ mr: 2, fontSize: { xs: 20, md: 28 }, color: 'error.main' }} />
               Damage Tracking
             </Typography>
             <Button
@@ -357,29 +359,30 @@ const DamageTrackingScreen: React.FC = () => {
               startIcon={<AddIcon />}
               onClick={handleOpenDialog}
               color="error"
+              sx={{ width: { xs: '100%', sm: 'auto' } }}
             >
               Record Damage
             </Button>
           </Box>
 
-        {error && (
+          {error && (
           <Alert severity="error" sx={{ mb: 3 }}>
             {error}
           </Alert>
-        )}
+          )}
 
-        {success && (
-          <Alert severity="success" sx={{ mb: 3 }}>
-            {success}
-          </Alert>
-        )}
+          {success && (
+            <Alert severity="success" sx={{ mb: 3 }}>
+              {success}
+            </Alert>
+          )}
 
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Damage #</TableCell>
-                <TableCell>Date</TableCell>
+          <TableContainer component={Paper} sx={{ overflowX: { xs: 'auto', md: 'visible' }, fontSize: { xs: '0.75rem', md: '0.875rem' } }}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Damage #</TableCell>
+                  <TableCell>Date</TableCell>
                 <TableCell>Type</TableCell>
                 <TableCell>Reason</TableCell>
                 <TableCell align="right">Total Cost</TableCell>
@@ -434,17 +437,17 @@ const DamageTrackingScreen: React.FC = () => {
                   </TableRow>
                 ))
               )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableBody>
+            </Table>
+          </TableContainer>
 
-        {/* Create Damage Record Dialog */}
-        <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="lg" fullWidth>
-          <DialogTitle>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <ReportIcon sx={{ mr: 1, color: 'error.main' }} />
-              Record Damage/Loss
-            </Box>
+          {/* Create Damage Record Dialog */}
+          <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="lg" fullWidth>
+            <DialogTitle>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <ReportIcon sx={{ mr: 1, color: 'error.main' }} />
+                Record Damage/Loss
+              </Box>
           </DialogTitle>
           <DialogContent>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
@@ -607,7 +610,7 @@ const DamageTrackingScreen: React.FC = () => {
               Record Damage
             </Button>
           </DialogActions>
-        </Dialog>
+          </Dialog>
         </Box>
       </Box>
     </LocalizationProvider>

@@ -210,34 +210,36 @@ const BusinessSettingsScreen: React.FC = () => {
 
   return (
     <Box sx={{ display: 'flex', width: '100vw', minHeight: '100vh', margin: 0 }}>
-      {/* Sidebar */}
-      <Sidebar title="Business Settings" />
+      {/* Sidebar - hidden on mobile */}
+      <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+        <Sidebar title="Business Settings" />
+      </Box>
 
       {/* Main Content */}
       <Box sx={{ 
-        marginLeft: '350px', 
-        width: 'calc(100vw - 350px - 24px)', 
-        p: 3, 
-        paddingRight: '24px',
-        overflow: 'hidden',
+        marginLeft: { xs: 0, md: '350px' }, 
+        width: { xs: '100%', md: 'calc(100vw - 350px - 24px)' }, 
+        p: { xs: 2, md: 3 }, 
+        paddingRight: { xs: 0, md: '24px' },
+        overflow: 'auto',
         display: 'flex',
         justifyContent: 'center'
       }}>
         <Box sx={{ maxWidth: 'lg', width: '100%' }}>
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
-          {error}
-        </Alert>
-      )}
-      
-      {success && (
-        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>
-          {success}
-        </Alert>
-      )}
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
+              {error}
+            </Alert>
+          )}
+          
+          {success && (
+            <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>
+              {success}
+            </Alert>
+          )}
 
-      {/* Header */}
-      <Card sx={{ mb: 3, elevation: 4 }}>
+          {/* Header */}
+          <Card sx={{ mb: 3, elevation: 4 }}>
         <CardContent>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <BusinessIcon color="primary" sx={{ fontSize: 32 }} />
