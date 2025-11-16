@@ -180,16 +180,21 @@ const CreateInvoiceScreen: React.FC = () => {
         
         // Convert quotation lines to invoice lines
         if (quotation.lines) {
-          setLines(quotation.lines.map((line: any) => ({
-            item_id: line.item_id,
-            quantity: line.quantity,
-            unit_price: line.unit_price,
-            total: line.total,
-            description: line.description,
-            code: line.code,
-            uom: line.uom,
-            item_name: line.item_name
-          })));
+          setLines(quotation.lines.map((line: any) => {
+            const quantity = parseFloat(line.quantity) || 0;
+            const unit_price = parseFloat(line.unit_price) || 0;
+            const total = quantity * unit_price; // Recalculate total to ensure it's correct
+            return {
+              item_id: line.item_id,
+              quantity,
+              unit_price,
+              total,
+              description: line.description,
+              code: line.code,
+              uom: line.uom,
+              item_name: line.item_name
+            };
+          }));
         }
       }
     } catch (err) {
@@ -213,16 +218,21 @@ const CreateInvoiceScreen: React.FC = () => {
         
         // Convert invoice lines to editable format
         if (invoice.lines) {
-          setLines(invoice.lines.map((line: any) => ({
-            item_id: line.item_id,
-            quantity: line.quantity,
-            unit_price: line.unit_price,
-            total: line.total,
-            description: line.description,
-            code: line.code,
-            uom: line.uom,
-            item_name: line.item_name
-          })));
+          setLines(invoice.lines.map((line: any) => {
+            const quantity = parseFloat(line.quantity) || 0;
+            const unit_price = parseFloat(line.unit_price) || 0;
+            const total = quantity * unit_price; // Recalculate total to ensure it's correct
+            return {
+              item_id: line.item_id,
+              quantity,
+              unit_price,
+              total,
+              description: line.description,
+              code: line.code,
+              uom: line.uom,
+              item_name: line.item_name
+            };
+          }));
         }
       }
     } catch (err) {
@@ -280,11 +290,15 @@ const CreateInvoiceScreen: React.FC = () => {
   };
 
   const calculateTotals = () => {
-    const subtotal = lines.reduce((sum, line) => sum + line.total, 0);
+    const subtotal = lines.reduce((sum, line) => {
+      // Ensure we handle NaN values and use calculated total if not available
+      const lineTotal = isNaN(line.total) ? (line.quantity * line.unit_price) : line.total;
+      return sum + (isNaN(lineTotal) ? 0 : lineTotal);
+    }, 0);
     const vatAmount = subtotal * 0.16;
     const totalAmount = subtotal + vatAmount;
     
-    return { subtotal, vatAmount, totalAmount };
+    return { subtotal: isNaN(subtotal) ? 0 : subtotal, vatAmount: isNaN(vatAmount) ? 0 : vatAmount, totalAmount: isNaN(totalAmount) ? 0 : totalAmount };
   };
 
   const handleQuotationSelect = async (quotation: Quotation) => {
@@ -307,6 +321,13 @@ const CreateInvoiceScreen: React.FC = () => {
       return;
     }
 
+    // Validate payment method is selected if amount is paid
+    const calculatedAmountPaid = parseFloat(amountPaid.toString()) || 0;
+    if (calculatedAmountPaid > 0 && !paymentMethod) {
+      setError('Payment method is required when amount is paid');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -319,6 +340,8 @@ const CreateInvoiceScreen: React.FC = () => {
         payment_terms: paymentTerms,
         notes,
         quotation_id: selectedQuotationId,
+        amountPaid: calculatedAmountPaid,
+        paymentMethod: paymentMethod || null,
         lines: lines.map(line => ({
           item_id: line.item_id ? parseInt(line.item_id.toString()) : undefined,
           quantity: parseFloat(line.quantity.toString()),
@@ -653,19 +676,18 @@ const CreateInvoiceScreen: React.FC = () => {
                       onChange={(e) => setAmountPaid(parseFloat(e.target.value) || 0)}
                       inputProps={{ 
                         step: 0.01,
-                        min: 0,
-                        max: totalAmount
+                        min: 0
                       }}
-                      helperText={`Max: ${formatCurrency(totalAmount)}`}
+                      helperText={`Total: ${formatCurrency(totalAmount)}`}
                     />
                   </Box>
                   <Box sx={{ flex: 1, minWidth: '300px' }}>
-                    <FormControl fullWidth>
-                      <InputLabel>Payment Method</InputLabel>
+                    <FormControl fullWidth error={amountPaid > 0 && !paymentMethod}>
+                      <InputLabel>Payment Method / Account *</InputLabel>
                       <Select
                         value={paymentMethod}
                         onChange={(e) => setPaymentMethod(e.target.value)}
-                        label="Payment Method"
+                        label="Payment Method / Account *"
                       >
                         <MenuItem value="">
                           <em>Select payment method</em>
@@ -676,6 +698,11 @@ const CreateInvoiceScreen: React.FC = () => {
                           </MenuItem>
                         ))}
                       </Select>
+                      {amountPaid > 0 && !paymentMethod && (
+                        <Typography sx={{ color: 'error.main', fontSize: '0.75rem', mt: 0.5 }}>
+                          Payment method is required when amount is paid
+                        </Typography>
+                      )}
                     </FormControl>
                   </Box>
                 </Box>
@@ -684,7 +711,38 @@ const CreateInvoiceScreen: React.FC = () => {
           </Card>
 
           {/* Submit Button */}
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+            <Button
+              variant="outlined"
+              color="primary"
+              size="large"
+              onClick={() => {
+                if (!customerName || !dueDate || lines.length === 0) {
+                  setError('Please fill in all required fields before previewing');
+                  return;
+                }
+                const invalidLines = lines.some(line => !line.item_id || line.quantity <= 0);
+                if (invalidLines) {
+                  setError('Please ensure all lines have valid items and quantities');
+                  return;
+                }
+                navigate('/invoice-preview', {
+                  state: {
+                    lines,
+                    customerName,
+                    customerAddress,
+                    customerPin,
+                    documentType: 'invoice',
+                    dueDate: dueDate?.toISOString(),
+                    paymentTerms,
+                    notes
+                  }
+                });
+              }}
+              disabled={loading}
+            >
+              Preview
+            </Button>
             <Button
               type="submit"
               variant="contained"

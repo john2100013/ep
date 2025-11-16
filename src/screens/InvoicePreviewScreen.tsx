@@ -54,6 +54,11 @@ interface LocationState {
   customerName: string;
   customerAddress?: string;
   customerPin?: string;
+  documentType?: 'invoice' | 'quotation';
+  dueDate?: string;
+  validUntil?: string;
+  paymentTerms?: string;
+  notes?: string;
 }
 
 const InvoicePreviewScreen: React.FC = () => {
@@ -77,6 +82,9 @@ const InvoicePreviewScreen: React.FC = () => {
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   const state = location.state as LocationState;
+  const documentType = state?.documentType || 'invoice';
+  const isQuotation = documentType === 'quotation';
+  const isInvoice = documentType === 'invoice';
   
   if (!state) {
     navigate('/create-invoice');
@@ -144,10 +152,10 @@ const InvoicePreviewScreen: React.FC = () => {
     
     try {
       if (!invoiceRef.current) {
-        throw new Error('Invoice content not found');
+        throw new Error('Document content not found');
       }
 
-      // Generate canvas from the invoice content
+      // Generate canvas from the document content
       const canvas = await html2canvas(invoiceRef.current, {
         scale: 2, // Higher quality
         useCORS: true,
@@ -179,9 +187,13 @@ const InvoicePreviewScreen: React.FC = () => {
         heightLeft -= pageHeight;
       }
 
-      // Save the PDF
-      const fileName = `Quotation_${quotationNo}_${customerName.replace(/\s+/g, '_')}.pdf`;
-      pdf.save(fileName);
+      // Generate filename based on document type
+      const docType = isQuotation ? 'Quotation' : 'Invoice';
+      const docNumber = isQuotation ? quotationNo : (state?.validUntil ? 'Draft' : 'Draft');
+      const fileName = `${docType}_${docNumber}_${state?.customerName?.replace(/\s+/g, '_') || 'Document'}.pdf`;
+      
+      // Save the PDF to device
+      saveAs(pdf.output('blob'), fileName);
       
     } catch (error: any) {
       console.error('PDF generation error:', error);
@@ -237,17 +249,22 @@ const InvoicePreviewScreen: React.FC = () => {
     setError('');
     
     try {
-      // Create a text message with invoice details
-      const message = `*QUOTATION*
-Quotation No: ${quotationNo}
+      const docType = isQuotation ? 'QUOTATION' : 'INVOICE';
+      const docNumber = isQuotation ? quotationNo : 'INV-0001';
+      
+      // Create a text message with document details
+      const message = `*${docType}*
+Document No: ${docNumber}
 Date: ${currentDate}
-Customer: ${customerName}
+Customer: ${state?.customerName}
 
 *Items:*
 ${validItems.map((item, index) => 
   `${index + 1}. ${item.description} - Qty: ${item.quantity} - KSH ${(item.quantity * item.unit_price).toFixed(2)}`
 ).join('\n')}
 
+Subtotal: KSH ${subtotal.toFixed(2)}
+VAT (16%): KSH ${vat.toFixed(2)}
 *Total: KSH ${total.toFixed(2)}*
 
 Thank you for your business!`;
@@ -269,12 +286,14 @@ Thank you for your business!`;
     setError('');
     
     try {
-      const subject = `Quotation ${quotationNo} - ${customerName}`;
-      const body = `Dear ${customerName},
+      const docType = isQuotation ? 'Quotation' : 'Invoice';
+      const docNumber = isQuotation ? quotationNo : 'INV-0001';
+      const subject = `${docType} ${docNumber} - ${state?.customerName}`;
+      const body = `Dear ${state?.customerName},
 
-Please find below your quotation details:
+Please find below your ${docType.toLowerCase()} details:
 
-Quotation No: ${quotationNo}
+${docType} No: ${docNumber}
 Date: ${currentDate}
 
 Items:
@@ -349,11 +368,11 @@ Your Business Name`;
             </Box>
             <Box sx={{ textAlign: { xs: 'left', md: 'right' }, minWidth: 200 }}>
               <Typography variant="h2" sx={{ fontWeight: 'bold', color: '#1976d2', mb: 1 }}>
-                QUOTATION
+                {isQuotation ? 'QUOTATION' : 'INVOICE'}
               </Typography>
               <Box sx={{ textAlign: { xs: 'left', md: 'right' } }}>
                 <Typography variant="body1" sx={{ mb: 0.5 }}>
-                  <strong>No:</strong> {quotationNo}
+                  <strong>No:</strong> {isQuotation ? quotationNo : 'INV-0001'}
                 </Typography>
                 <Typography variant="body1">
                   <strong>Date:</strong> {currentDate}

@@ -124,15 +124,20 @@ const CreateQuotationScreen: React.FC = () => {
             
             // Map quotation lines
             if (quotation.lines && quotation.lines.length > 0) {
-              setLines(quotation.lines.map((line: any) => ({
-                item_id: line.item_id,
-                quantity: line.quantity,
-                unit_price: line.unit_price,
-                total: line.total,
-                description: line.description,
-                code: line.code,
-                uom: line.uom
-              })));
+              setLines(quotation.lines.map((line: any) => {
+                const quantity = parseFloat(line.quantity) || 0;
+                const unit_price = parseFloat(line.unit_price) || 0;
+                const total = quantity * unit_price; // Recalculate total to ensure it's correct
+                return {
+                  item_id: line.item_id,
+                  quantity,
+                  unit_price,
+                  total,
+                  description: line.description,
+                  code: line.code,
+                  uom: line.uom
+                };
+              }));
             }
           }
         } catch (err: any) {
@@ -195,11 +200,15 @@ const CreateQuotationScreen: React.FC = () => {
   };
 
   const calculateTotals = () => {
-    const subtotal = lines.reduce((sum, line) => sum + line.total, 0);
+    const subtotal = lines.reduce((sum, line) => {
+      // Ensure we handle NaN values and use calculated total if not available
+      const lineTotal = isNaN(line.total) ? (line.quantity * line.unit_price) : line.total;
+      return sum + (isNaN(lineTotal) ? 0 : lineTotal);
+    }, 0);
     const vatAmount = subtotal * 0.16;
     const totalAmount = subtotal + vatAmount;
     
-    return { subtotal, vatAmount, totalAmount };
+    return { subtotal: isNaN(subtotal) ? 0 : subtotal, vatAmount: isNaN(vatAmount) ? 0 : vatAmount, totalAmount: isNaN(totalAmount) ? 0 : totalAmount };
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -505,7 +514,37 @@ const CreateQuotationScreen: React.FC = () => {
           </Card>
 
           {/* Submit Button */}
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+            <Button
+              variant="outlined"
+              color="primary"
+              size="large"
+              onClick={() => {
+                if (!customerName || lines.length === 0 || !validUntil) {
+                  setError('Please fill in all required fields before previewing');
+                  return;
+                }
+                const invalidLines = lines.some(line => !line.item_id || line.quantity <= 0);
+                if (invalidLines) {
+                  setError('Please ensure all lines have valid items and quantities');
+                  return;
+                }
+                navigate('/invoice-preview', {
+                  state: {
+                    lines,
+                    customerName,
+                    customerAddress,
+                    customerPin,
+                    documentType: 'quotation',
+                    validUntil: validUntil?.toISOString(),
+                    notes
+                  }
+                });
+              }}
+              disabled={loading || loadingQuotation}
+            >
+              Preview
+            </Button>
             <Button
               type="submit"
               variant="contained"

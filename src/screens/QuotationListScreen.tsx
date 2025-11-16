@@ -395,7 +395,14 @@ const QuotationListScreen: React.FC = () => {
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {quotations.map((quotation) => (
-            <Card key={quotation.id}>
+            <Card 
+              key={quotation.id}
+              sx={{
+                opacity: quotation.status === 'converted' ? 0.6 : 1,
+                backgroundColor: quotation.status === 'converted' ? '#f5f5f5' : 'inherit',
+                transition: 'all 0.3s ease'
+              }}
+            >
               <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <Box sx={{ flex: 1 }}>
