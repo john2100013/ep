@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Container,
   Card,
@@ -65,10 +65,18 @@ interface LocationState {
 const InvoicePreviewScreen: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [shareMenuAnchor, setShareMenuAnchor] = useState<null | HTMLElement>(null);
   const [invoiceNumber, setInvoiceNumber] = useState<string>('');
+  const [lines, setLines] = useState<InvoiceLine[]>([]);
+  const [customerName, setCustomerName] = useState('');
+  const [customerAddress, setCustomerAddress] = useState('');
+  const [customerPin, setCustomerPin] = useState('');
+  const [dueDate, setDueDate] = useState('');
+  const [paymentTerms, setPaymentTerms] = useState('Net 30 Days');
   const [businessSettings, setBusinessSettings] = useState<BusinessSettings>({
     businessName: 'Your Business Name',
     street: 'Business Address Line 1',
@@ -88,24 +96,70 @@ const InvoicePreviewScreen: React.FC = () => {
   const isQuotation = documentType === 'quotation';
   const isInvoice = documentType === 'invoice';
   
-  if (!state) {
+  // If viewing from invoice list (URL param), load invoice from database
+  useEffect(() => {
+    if (id && !state) {
+      loadInvoiceFromDatabase(parseInt(id));
+    }
+  }, [id, state]);
+
+  const loadInvoiceFromDatabase = async (invoiceId: number) => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`https://erp-backend-beryl.vercel.app/api/invoices/${invoiceId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to load invoice');
+      }
+
+      const data = await response.json();
+      if (data.success && data.data) {
+        const invoice = data.data;
+        setCustomerName(invoice.customer_name || '');
+        setCustomerAddress(invoice.customer_address || '');
+        setCustomerPin(invoice.customer_pin || '');
+        setInvoiceNumber(invoice.invoice_number || '');
+        setDueDate(invoice.due_date || '');
+        setPaymentTerms(invoice.payment_terms || 'Net 30 Days');
+        setLines(invoice.lines || []);
+      }
+    } catch (err) {
+      console.error('Error loading invoice:', err);
+      setError('Failed to load invoice details. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // If no state and no id, redirect
+  if (!state && !id) {
     navigate('/create-invoice');
     return null;
   }
 
-  const { lines = [], customerName = '', customerAddress = '', customerPin = '' } = state;
+  // Use state data if available, otherwise use loaded data
+  const displayLines = state?.lines || lines;
+  const displayCustomerName = state?.customerName || customerName;
+  const displayCustomerAddress = state?.customerAddress || customerAddress;
+  const displayCustomerPin = state?.customerPin || customerPin;
 
   useEffect(() => {
     loadBusinessSettings();
-    // Set invoice number from state
+    // Set invoice number from state if provided
     if (state?.invoiceNumber) {
       setInvoiceNumber(state.invoiceNumber);
     }
-  }, [state?.invoiceNumber]);
+  }, [state?.invoiceNumber, state, id]);
 
   const loadBusinessSettings = async () => {
     try {
-      const response = await fetch('/api/business-settings', {
+      const response = await fetch('https://erp-backend-beryl.vercel.app/api/business-settings', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -132,7 +186,7 @@ const InvoicePreviewScreen: React.FC = () => {
   };
 
   // Filter out any empty or invalid items
-  const validItems = lines.filter(line => 
+  const validItems = displayLines.filter(line => 
     line && 
     line.description && 
     line.description.trim() !== '' && 
@@ -196,7 +250,7 @@ const InvoicePreviewScreen: React.FC = () => {
       // Generate filename based on document type
       const docType = isQuotation ? 'Quotation' : 'Invoice';
       const docNumber = isQuotation ? quotationNo : (invoiceNumber || 'Draft');
-      const fileName = `${docType}_${docNumber}_${state?.customerName?.replace(/\s+/g, '_') || 'Document'}.pdf`;
+      const fileName = `${docType}_${docNumber}_${displayCustomerName?.replace(/\s+/g, '_') || 'Document'}.pdf`;
       
       // Save the PDF to device
       saveAs(pdf.output('blob'), fileName);
@@ -294,8 +348,8 @@ Thank you for your business!`;
     try {
       const docType = isQuotation ? 'Quotation' : 'Invoice';
       const docNumber = isQuotation ? quotationNo : (invoiceNumber || 'PENDING');
-      const subject = `${docType} ${docNumber} - ${state?.customerName}`;
-      const body = `Dear ${state?.customerName},
+      const subject = `${docType} ${docNumber} - ${displayCustomerName}`;
+      const body = `Dear ${displayCustomerName},
 
 Please find below your ${docType.toLowerCase()} details:
 
@@ -356,6 +410,14 @@ Your Business Name`;
           </Alert>
         )}
 
+        {loading && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+            <CircularProgress />
+          </Box>
+        )}
+
+        {!loading && (
+        <>
         {/* Invoice Content - This will be captured for PDF */}
         <div ref={invoiceRef} style={{ 
           backgroundColor: 'white', 
@@ -413,16 +475,16 @@ Your Business Name`;
               </Typography>
               <Box sx={{ backgroundColor: '#f5f5f5', p: 2, borderRadius: 1 }}>
                 <Typography variant="body1" sx={{ fontWeight: 'bold', mb: 1 }}>
-                  {customerName}
+                  {displayCustomerName}
                 </Typography>
-                {customerAddress && (
+                {displayCustomerAddress && (
                   <Typography variant="body2" sx={{ mb: 1, color: '#666' }}>
-                    {customerAddress}
+                    {displayCustomerAddress}
                   </Typography>
                 )}
-                {customerPin && (
+                {displayCustomerPin && (
                   <Typography variant="body2" sx={{ color: '#666' }}>
-                    PIN: {customerPin}
+                    PIN: {displayCustomerPin}
                   </Typography>
                 )}
               </Box>
@@ -712,6 +774,8 @@ Your Business Name`;
           <ListItemText>Email</ListItemText>
         </MenuItem>
       </Menu>
+      </>
+      )}
       </Box>
     </Box>
   );

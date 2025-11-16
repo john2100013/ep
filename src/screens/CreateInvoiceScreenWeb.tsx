@@ -218,6 +218,11 @@ const CreateInvoiceScreen: React.FC = () => {
         setDueDate(invoice.due_date ? new Date(invoice.due_date) : null);
         setSelectedQuotationId(invoice.quotation_id || null);
         
+        // Set the invoice number from database
+        if (invoice.invoice_number) {
+          setGeneratedInvoiceNumber(invoice.invoice_number);
+        }
+        
         // Convert invoice lines to editable format
         if (invoice.lines) {
           setLines(invoice.lines.map((line: any) => {
@@ -271,20 +276,28 @@ const CreateInvoiceScreen: React.FC = () => {
 
   const fetchInvoiceNumber = async () => {
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch('/api/invoices/next-invoice-number', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
       
+      console.log('Fetch invoice number response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('Fetched invoice number:', data);
         if (data.success && data.data?.invoiceNumber) {
           setGeneratedInvoiceNumber(data.data.invoiceNumber);
           return data.data.invoiceNumber;
         }
+      } else {
+        console.error('Response not OK. Status:', response.status);
+        const text = await response.text();
+        console.error('Response body:', text);
       }
     } catch (error) {
       console.error('Error fetching invoice number:', error);
