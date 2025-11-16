@@ -106,7 +106,7 @@ const InvoiceListScreen: React.FC = () => {
       if (searchTerm) params.append('search', searchTerm);
       if (statusFilter) params.append('status', statusFilter);
 
-      const response = await fetch(`/api/invoices?${params}`, {
+      const response = await fetch(`https://erp-backend-beryl.vercel.app/api/invoices?${params}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -184,7 +184,7 @@ const InvoiceListScreen: React.FC = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/invoices/${selectedInvoice.id}`, {
+      const response = await fetch(`https://erp-backend-beryl.vercel.app/api/invoices/${selectedInvoice.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
