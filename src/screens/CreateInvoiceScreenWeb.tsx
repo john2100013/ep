@@ -93,6 +93,7 @@ const CreateInvoiceScreen: React.FC = () => {
   const [items, setItems] = useState<Item[]>([]);
   const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [quotationDialogOpen, setQuotationDialogOpen] = useState(false);
+  const [itemSearchQuery, setItemSearchQuery] = useState('');
   
   // Invoice form data
   const [customerName, setCustomerName] = useState('');
@@ -382,6 +383,11 @@ const CreateInvoiceScreen: React.FC = () => {
 
   const { subtotal, vatAmount, totalAmount } = calculateTotals();
 
+  const filteredItems = items.filter(item =>
+    item.item_name.toLowerCase().includes(itemSearchQuery.toLowerCase()) ||
+    item.code.toLowerCase().includes(itemSearchQuery.toLowerCase())
+  );
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-KE', {
       style: 'currency',
@@ -540,13 +546,22 @@ const CreateInvoiceScreen: React.FC = () => {
           {/* Items */}
           <Card sx={{ mb: 3 }}>
             <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h6">
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1, alignItems: { xs: 'flex-start', sm: 'center' }, mb: 2, flexWrap: 'wrap' }}>
+                <Typography variant="h6" sx={{ flex: 1, minWidth: { xs: '100%', sm: 'auto' } }}>
                   Items
                 </Typography>
-                <Button startIcon={<AddIcon />} onClick={addLine}>
-                  Add Item
-                </Button>
+                <Box sx={{ display: 'flex', gap: 1, flexDirection: { xs: 'column', sm: 'row' }, width: { xs: '100%', sm: 'auto' } }}>
+                  <TextField
+                    placeholder="Search by code or name..."
+                    value={itemSearchQuery}
+                    onChange={(e) => setItemSearchQuery(e.target.value)}
+                    size="small"
+                    sx={{ width: { xs: '100%', sm: 200 }, flexShrink: 0 }}
+                  />
+                  <Button startIcon={<AddIcon />} onClick={addLine} sx={{ width: { xs: '100%', sm: 'auto' } }}>
+                    Add Item
+                  </Button>
+                </Box>
               </Box>
 
               <TableContainer component={Paper} variant="outlined" sx={{ overflowX: { xs: 'auto', md: 'unset' } }}>
@@ -565,7 +580,7 @@ const CreateInvoiceScreen: React.FC = () => {
                       <TableRow key={index}>
                         <TableCell sx={{ minWidth: { xs: 200, md: 300 }, padding: { xs: '8px 4px', md: '16px' } }}>
                           <Autocomplete
-                            options={items}
+                            options={filteredItems}
                             getOptionLabel={(option) => `${option.item_name} (${option.code})`}
                             value={items.find(item => item.id === line.item_id) || null}
                             onChange={(_, newValue) => handleItemSelect(index, newValue)}

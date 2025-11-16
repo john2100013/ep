@@ -332,7 +332,7 @@ Your Business Name`;
 
 
   return (
-    <Container maxWidth="lg" sx={{ mt: { xs: 2, md: 4 }, mb: { xs: 2, md: 4 }, px: { xs: 1, sm: 2, md: 3 } }}>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: 3 }}>
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
           {error}
@@ -343,21 +343,21 @@ Your Business Name`;
       <div ref={invoiceRef} style={{ backgroundColor: 'white', padding: '20px', minHeight: '800px' }}>
         {/* Company Header */}
         <Box sx={{ mb: 4, borderBottom: '3px solid #1976d2', pb: 3 }}>
-          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { xs: 'flex-start', md: 'center' }, gap: { xs: 1, md: 2 } }}>
+          <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, md: 3 }, mb: 2, flexWrap: 'wrap' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 2, flexWrap: 'wrap' }}>
                 {businessSettings.logo && (
                   <Avatar
                     src={businessSettings.logo}
                     variant="rounded"
-                    sx={{ width: { xs: 60, md: 100 }, height: { xs: 30, md: 50 }, border: '1px solid #ddd' }}
+                    sx={{ width: 100, height: 50, border: '1px solid #ddd' }}
                   />
                 )}
-                <Typography variant="h3" sx={{ fontWeight: 'bold', color: '#1976d2', fontSize: { xs: '1.5rem', md: '2rem' } }}>
+                <Typography variant="h3" sx={{ fontWeight: 'bold', color: '#1976d2', fontSize: '2rem' }}>
                   {businessSettings.businessName}
                 </Typography>
               </Box>
-              <Typography variant="body1" sx={{ color: '#666', lineHeight: 1.6, fontSize: { xs: '0.8rem', md: '0.9rem' } }}>
+              <Typography variant="body1" sx={{ color: '#666', lineHeight: 1.6, fontSize: '0.9rem' }}>
                 {businessSettings.street && `${businessSettings.street}, `}
                 {businessSettings.city && `${businessSettings.city}`}
                 <br />
@@ -366,11 +366,11 @@ Your Business Name`;
                 Email: {businessSettings.email}
               </Typography>
             </Box>
-            <Box sx={{ textAlign: { xs: 'left', md: 'right' }, minWidth: 200 }}>
+            <Box sx={{ textAlign: 'right', minWidth: 200 }}>
               <Typography variant="h2" sx={{ fontWeight: 'bold', color: '#1976d2', mb: 1 }}>
                 {isQuotation ? 'QUOTATION' : 'INVOICE'}
               </Typography>
-              <Box sx={{ textAlign: { xs: 'left', md: 'right' } }}>
+              <Box sx={{ textAlign: 'right' }}>
                 <Typography variant="body1" sx={{ mb: 0.5 }}>
                   <strong>No:</strong> {isQuotation ? quotationNo : 'INV-0001'}
                 </Typography>
@@ -384,7 +384,7 @@ Your Business Name`;
 
         {/* Customer Information */}
         <Box sx={{ mb: 4 }}>
-          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 4 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'row', gap: 4 }}>
             <Box sx={{ flex: 1 }}>
               <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1976d2', mb: 2 }}>
                 BILL TO:
@@ -483,7 +483,7 @@ Your Business Name`;
         </Box>
 
         {/* Totals Section */}
-        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 4, mb: 4 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 4, mb: 4 }}>
           <Box sx={{ flex: 1 }}>
             {/* Terms and Conditions */}
             <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1976d2', mb: 2 }}>
@@ -544,7 +544,7 @@ Your Business Name`;
             AUTHORIZATION:
           </Typography>
           
-          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 6 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'row', gap: 6 }}>
             <Box sx={{ flex: 1, textAlign: 'center' }}>
               <Typography variant="body2" sx={{ mb: 2, fontWeight: 'bold' }}>
                 CREATED BY:

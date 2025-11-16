@@ -68,6 +68,7 @@ const CreateQuotationScreen: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [loadingQuotation, setLoadingQuotation] = useState(false);
+  const [itemSearchQuery, setItemSearchQuery] = useState('');
   
   // Quotation form data
   const [customerName, setCustomerName] = useState('');
@@ -300,6 +301,12 @@ const CreateQuotationScreen: React.FC = () => {
     }).format(amount);
   };
 
+  // Filter items based on search query
+  const filteredItems = items.filter(item =>
+    item.item_name.toLowerCase().includes(itemSearchQuery.toLowerCase()) ||
+    item.code.toLowerCase().includes(itemSearchQuery.toLowerCase())
+  );
+
   if (loadingQuotation) {
     return (
       <Box sx={{ p: 3, textAlign: 'center' }}>
@@ -416,9 +423,18 @@ const CreateQuotationScreen: React.FC = () => {
                 <Typography variant="h6" sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
                   Items
                 </Typography>
-                <Button startIcon={<AddIcon />} onClick={addLine} sx={{ width: { xs: '100%', sm: 'auto' } }}>
-                  Add Item
-                </Button>
+                <Box sx={{ display: 'flex', gap: 1, flexDirection: { xs: 'column', sm: 'row' }, width: { xs: '100%', sm: 'auto' } }}>
+                  <TextField
+                    placeholder="Search by code or name..."
+                    value={itemSearchQuery}
+                    onChange={(e) => setItemSearchQuery(e.target.value)}
+                    size="small"
+                    sx={{ width: { xs: '100%', sm: 200 }, flexShrink: 0 }}
+                  />
+                  <Button startIcon={<AddIcon />} onClick={addLine} sx={{ width: { xs: '100%', sm: 'auto' } }}>
+                    Add Item
+                  </Button>
+                </Box>
               </Box>
 
               <TableContainer component={Paper} variant="outlined" sx={{ fontSize: { xs: '0.75rem', md: '0.875rem' } }}>
@@ -437,7 +453,7 @@ const CreateQuotationScreen: React.FC = () => {
                       <TableRow key={index}>
                         <TableCell sx={{ minWidth: 300 }}>
                           <Autocomplete
-                            options={items}
+                            options={filteredItems}
                             getOptionLabel={(option) => `${option.item_name} (${option.code})`}
                             value={items.find(item => item.id === line.item_id) || null}
                             onChange={(_, newValue) => handleItemSelect(index, newValue)}
