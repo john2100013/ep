@@ -139,6 +139,12 @@ const LoginScreen: React.FC = () => {
                 {loading ? 'Signing In...' : 'Sign In'}
               </Button>
 
+              <Box sx={{ textAlign: 'center', mt: 2 }}>
+                <Link component={RouterLink} to="/reset-password" variant="body2" sx={{ color: '#6b7280', '&:hover': { color: '#8B5CF6' }, display: 'block', mb: 1 }}>
+                  Forgot your password?
+                </Link>
+              </Box>
+
               <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mt: 2 }}>
                 <Typography variant="body2" color="text.secondary">
                   Don't have an account?

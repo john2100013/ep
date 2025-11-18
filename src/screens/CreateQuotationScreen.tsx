@@ -34,6 +34,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { ApiService } from '../services/api';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import Sidebar from '../components/Sidebar';
 
 interface Item {
   id: number;
@@ -317,7 +318,20 @@ const CreateQuotationScreen: React.FC = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ display: 'flex', width: '100vw', minHeight: '100vh', margin: 0 }}>
+        {/* Sidebar - hidden on mobile */}
+        <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+          <Sidebar title="Quotation Management" />
+        </Box>
+
+        {/* Main Content */}
+        <Box sx={{ 
+          marginLeft: { xs: 0, md: '350px' }, 
+          width: { xs: '100%', md: 'calc(100vw - 350px - 24px)' }, 
+          p: { xs: 2, md: 3 }, 
+          paddingRight: { xs: 0, md: '24px' },
+          overflow: 'auto'
+        }}>
         {/* Header */}
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
           <IconButton onClick={() => navigate('/quotations')} sx={{ mr: 2 }}>
@@ -596,6 +610,7 @@ const CreateQuotationScreen: React.FC = () => {
             </Button>
           </Box>
         </form>
+        </Box>
       </Box>
     </LocalizationProvider>
   );

@@ -37,7 +37,7 @@ import RevenueTrends from '../components/analytics/RevenueTrends';
 import ProfitabilityAnalysis from '../components/analytics/ProfitabilityAnalysis';
 import StockMovement from '../components/analytics/StockMovement';
 import PendingActions from '../components/analytics/PendingActions';
-import Sidebar from '../components/Sidebar';
+
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -150,18 +150,11 @@ const AnalyticsScreen: React.FC = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', width: '100vw', minHeight: '100vh', margin: 0 }}>
-      {/* Sidebar - hidden on mobile */}
-      <Box sx={{ display: { xs: 'none', md: 'block' } }}>
-        <Sidebar title="Analytics" />
-      </Box>
-
+    <Box sx={{ width: '100%', minHeight: '100vh', margin: 0 }}>
       {/* Main Content */}
       <Box sx={{ 
-        marginLeft: { xs: 0, md: '350px' }, 
-        width: { xs: '100%', md: 'calc(100vw - 350px - 24px)' }, 
+        width: '100%', 
         p: { xs: 2, md: 4 }, 
-        paddingRight: { xs: 0, md: '24px' },
         overflow: 'auto',
         mt: 0
       }}>
