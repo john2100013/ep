@@ -141,6 +141,17 @@ function App() {
           } 
         />
         <Route 
+          path="/quotations/:id" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <InvoicePreviewScreen />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+        <Route 
           path="/create-quotation" 
           element={
             <Box>

@@ -99,15 +99,20 @@ const InvoicePreviewScreen: React.FC = () => {
   // If viewing from invoice list (URL param), load invoice from database
   useEffect(() => {
     if (id && !state) {
-      loadInvoiceFromDatabase(parseInt(id));
+      loadDocumentFromDatabase(parseInt(id));
     }
   }, [id, state]);
 
-  const loadInvoiceFromDatabase = async (invoiceId: number) => {
+  const loadDocumentFromDatabase = async (docId: number) => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch(`https://erp-backend-beryl.vercel.app/api/invoices/${invoiceId}`, {
+      
+      // Determine if we're loading a quotation or invoice based on current route
+      const isQuotationRoute = window.location.pathname.includes('/quotations/');
+      const endpoint = isQuotationRoute ? '/quotations' : '/invoices';
+      
+      const response = await fetch(`https://erp-backend-beryl.vercel.app/api${endpoint}/${docId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -115,21 +120,28 @@ const InvoicePreviewScreen: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to load invoice');
+        throw new Error(`Failed to load ${isQuotationRoute ? 'quotation' : 'invoice'}`);
       }
 
       const data = await response.json();
       if (data.success && data.data) {
-        const invoice = data.data;
-        setCustomerName(invoice.customer_name || '');
-        setCustomerAddress(invoice.customer_address || '');
-        setCustomerPin(invoice.customer_pin || '');
-        setInvoiceNumber(invoice.invoice_number || '');
-        setDueDate(invoice.due_date || '');
-        setPaymentTerms(invoice.payment_terms || 'Net 30 Days');
+        const doc = data.data;
+        setCustomerName(doc.customer_name || '');
+        setCustomerAddress(doc.customer_address || '');
+        setCustomerPin(doc.customer_pin || '');
+        
+        if (isQuotationRoute) {
+          setInvoiceNumber(doc.quotation_number || '');
+          setDueDate(doc.valid_until || '');
+        } else {
+          setInvoiceNumber(doc.invoice_number || '');
+          setDueDate(doc.due_date || '');
+        }
+        
+        setPaymentTerms(doc.payment_terms || 'Net 30 Days');
         
         // Convert line items and ensure numeric fields are numbers
-        const convertedLines = (invoice.lines || []).map((line: any) => ({
+        const convertedLines = (doc.lines || []).map((line: any) => ({
           ...line,
           quantity: parseFloat(line.quantity) || 0,
           unit_price: parseFloat(line.unit_price) || 0,
@@ -138,8 +150,8 @@ const InvoicePreviewScreen: React.FC = () => {
         setLines(convertedLines);
       }
     } catch (err) {
-      console.error('Error loading invoice:', err);
-      setError('Failed to load invoice details. Please try again.');
+      console.error('Error loading document:', err);
+      setError('Failed to load document details. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -499,14 +511,21 @@ Your Business Name`;
             </Box>
             <Box sx={{ flex: 1 }}>
               <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#1976d2', mb: 2 }}>
-                QUOTATION DETAILS:
+                {isQuotation ? 'QUOTATION DETAILS:' : 'INVOICE DETAILS:'}
               </Typography>
               <Box sx={{ backgroundColor: '#f5f5f5', p: 2, borderRadius: 1 }}>
+                {isQuotation && (
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    <strong>Valid Until:</strong> {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB')}
+                  </Typography>
+                )}
+                {isInvoice && dueDate && (
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    <strong>Due Date:</strong> {new Date(dueDate).toLocaleDateString('en-GB')}
+                  </Typography>
+                )}
                 <Typography variant="body2" sx={{ mb: 1 }}>
-                  <strong>Valid Until:</strong> {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB')}
-                </Typography>
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  <strong>Payment Terms:</strong> Net 30 Days
+                  <strong>Payment Terms:</strong> {paymentTerms}
                 </Typography>
                 <Typography variant="body2">
                   <strong>Currency:</strong> KSH (Kenyan Shilling)
@@ -583,7 +602,7 @@ Your Business Name`;
             </Typography>
             <Box sx={{ backgroundColor: '#f5f5f5', p: 2, borderRadius: 1 }}>
               <Typography variant="body2" sx={{ mb: 1, lineHeight: 1.6 }}>
-                • Payment is due within 30 days of invoice date
+                • Goods remain the property of the supplier until paid in full.
               </Typography>
               <Typography variant="body2" sx={{ mb: 1, lineHeight: 1.6 }}>
                 • Late payments may incur additional charges
