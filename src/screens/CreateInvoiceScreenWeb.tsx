@@ -276,28 +276,16 @@ const CreateInvoiceScreen: React.FC = () => {
 
   const fetchInvoiceNumber = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/invoices/next-invoice-number', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await ApiService.getNextInvoiceNumber();
+      console.log('Fetched invoice number response:', response);
       
-      console.log('Fetch invoice number response status:', response.status);
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Fetched invoice number:', data);
-        if (data.success && data.data?.invoiceNumber) {
-          setGeneratedInvoiceNumber(data.data.invoiceNumber);
-          return data.data.invoiceNumber;
-        }
+      if (response.success && response.data?.invoiceNumber) {
+        const invoiceNum = response.data.invoiceNumber;
+        console.log('Invoice number generated:', invoiceNum);
+        setGeneratedInvoiceNumber(invoiceNum);
+        return invoiceNum;
       } else {
-        console.error('Response not OK. Status:', response.status);
-        const text = await response.text();
-        console.error('Response body:', text);
+        console.error('Failed to fetch invoice number:', response.message || 'No message');
       }
     } catch (error) {
       console.error('Error fetching invoice number:', error);
