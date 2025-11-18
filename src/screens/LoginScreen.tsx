@@ -39,26 +39,27 @@ const LoginScreen: React.FC = () => {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#f9fafb' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: '#f9fafb' }}>
       {/* Header with logo and back link */}
       <Box sx={{ p: 2, bgcolor: 'white', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)' }}>
         <Container maxWidth="sm">
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Receipt sx={{ fontSize: 32, color: '#8B5CF6' }} />
-            <Typography variant="h6" fontWeight="bold" sx={{ color: '#8B5CF6' }}>
+            <Receipt sx={{ fontSize: 32, color: '#1976d2' }} />
+            <Typography variant="h6" fontWeight="bold" sx={{ color: '#1976d2' }}>
               InvoiceHub
             </Typography>
           </Box>
         </Container>
       </Box>
 
-      <Container component="main" maxWidth="sm">
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1, px: 2 }}>
         <Box
           sx={{
-            marginTop: 8,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
+            width: '100%',
+            maxWidth: '450px',
           }}
         >
           <Paper
@@ -98,7 +99,7 @@ const LoginScreen: React.FC = () => {
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     '&:hover fieldset': {
-                      borderColor: '#8B5CF6',
+                      borderColor: '#1976d2',
                     },
                   },
                 }}
@@ -117,7 +118,7 @@ const LoginScreen: React.FC = () => {
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     '&:hover fieldset': {
-                      borderColor: '#8B5CF6',
+                      borderColor: '#1976d2',
                     },
                   },
                 }}
@@ -130,9 +131,9 @@ const LoginScreen: React.FC = () => {
                   mt: 3,
                   mb: 2,
                   py: 1.5,
-                  backgroundColor: '#8B5CF6',
+                  backgroundColor: '#1976d2',
                   fontWeight: 'bold',
-                  '&:hover': { backgroundColor: '#7c3aed' },
+                  '&:hover': { backgroundColor: '#1565c0' },
                 }}
                 disabled={loading}
               >
@@ -140,7 +141,7 @@ const LoginScreen: React.FC = () => {
               </Button>
 
               <Box sx={{ textAlign: 'center', mt: 2 }}>
-                <Link component={RouterLink} to="/reset-password" variant="body2" sx={{ color: '#6b7280', '&:hover': { color: '#8B5CF6' }, display: 'block', mb: 1 }}>
+                <Link component={RouterLink} to="/reset-password" variant="body2" sx={{ color: '#6b7280', '&:hover': { color: '#1976d2' }, display: 'block', mb: 1 }}>
                   Forgot your password?
                 </Link>
               </Box>
@@ -149,20 +150,20 @@ const LoginScreen: React.FC = () => {
                 <Typography variant="body2" color="text.secondary">
                   Don't have an account?
                 </Typography>
-                <Link component={RouterLink} to="/register" variant="body2" sx={{ fontWeight: 'bold', color: '#8B5CF6' }}>
+                <Link component={RouterLink} to="/register" variant="body2" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
                   Sign Up
                 </Link>
               </Box>
 
               <Box sx={{ textAlign: 'center', mt: 3 }}>
-                <Link component={RouterLink} to="/landing" variant="body2" sx={{ color: '#6b7280', '&:hover': { color: '#8B5CF6' } }}>
+                <Link component={RouterLink} to="/landing" variant="body2" sx={{ color: '#6b7280', '&:hover': { color: '#1976d2' } }}>
                   Back to Home
                 </Link>
               </Box>
             </Box>
           </Paper>
         </Box>
-      </Container>
+      </Box>
     </Box>
   );
 };

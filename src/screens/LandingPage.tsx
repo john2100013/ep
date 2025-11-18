@@ -395,7 +395,7 @@ const LandingPage: React.FC = () => {
               'radial-gradient(circle at 20% 50%, #fff 0%, transparent 50%), radial-gradient(circle at 80% 80%, #fff 0%, transparent 50%)',
           }}
         />
-        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'center' }}>
+        <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'center', px: { xs: 2, md: 4 } }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 6, alignItems: 'center', width: '100%', maxWidth: '1200px' }}>
             <Box>
               <Typography
@@ -483,12 +483,12 @@ const LandingPage: React.FC = () => {
               </Box>
             </Box>
           </Box>
-        </Container>
+        </Box>
       </Box>
 
       {/* Features Section */}
       <Box id="features" sx={{ py: { xs: 6, md: 10 }, backgroundColor: '#f9fafb' }}>
-        <Container maxWidth="lg">
+        <Box sx={{ px: { xs: 2, md: 4 } }}>
           <Typography
             variant="h4"
             component="h2"
@@ -547,12 +547,12 @@ const LandingPage: React.FC = () => {
               );
             })}
           </Box>
-        </Container>
+        </Box>
       </Box>
 
       {/* Pricing Section */}
       <Box id="pricing" sx={{ py: { xs: 6, md: 10 }, backgroundColor: 'white' }}>
-        <Container maxWidth="lg">
+        <Box sx={{ px: { xs: 2, md: 4 } }}>
           <Typography
             variant="h4"
             component="h2"
@@ -588,12 +588,12 @@ const LandingPage: React.FC = () => {
               All plans include 14-day free trial. No credit card required.
             </Typography>
           </Box>
-        </Container>
+        </Box>
       </Box>
 
       {/* About Section */}
       <Box id="about" sx={{ py: { xs: 6, md: 10 }, backgroundColor: '#f9fafb' }}>
-        <Container maxWidth="lg">
+        <Box sx={{ px: { xs: 2, md: 4 } }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 6, alignItems: 'center' }}>
             <Box
               sx={{
@@ -651,7 +651,7 @@ const LandingPage: React.FC = () => {
               </Stack>
             </Box>
           </Box>
-        </Container>
+        </Box>
       </Box>
 
       {/* CTA Section */}
@@ -661,9 +661,10 @@ const LandingPage: React.FC = () => {
           color: 'white',
           py: { xs: 6, md: 8 },
           textAlign: 'center',
+          px: { xs: 2, md: 4 },
         }}
       >
-        <Container maxWidth="sm">
+        <Box sx={{ maxWidth: 'sm', mx: 'auto' }}>
           <Typography variant="h4" component="h2" fontWeight="bold" sx={{ mb: 2 }}>
             Ready to Transform Your Invoicing?
           </Typography>
@@ -702,7 +703,7 @@ const LandingPage: React.FC = () => {
               Sign In
             </Button>
           </Stack>
-        </Container>
+        </Box>
       </Box>
 
       {/* Footer */}
@@ -711,9 +712,10 @@ const LandingPage: React.FC = () => {
           backgroundColor: '#1f2937',
           color: '#9ca3af',
           py: 6,
+          px: { xs: 2, md: 4 },
         }}
       >
-        <Container maxWidth="lg">
+        <Box sx={{ maxWidth: 'lg', mx: 'auto' }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: 4, mb: 4 }}>
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -771,7 +773,7 @@ const LandingPage: React.FC = () => {
               © 2024 InvoiceHub. All rights reserved.
             </Typography>
           </Box>
-        </Container>
+        </Box>
       </Box>
     </Box>
   );
