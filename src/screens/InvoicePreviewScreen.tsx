@@ -127,7 +127,15 @@ const InvoicePreviewScreen: React.FC = () => {
         setInvoiceNumber(invoice.invoice_number || '');
         setDueDate(invoice.due_date || '');
         setPaymentTerms(invoice.payment_terms || 'Net 30 Days');
-        setLines(invoice.lines || []);
+        
+        // Convert line items and ensure numeric fields are numbers
+        const convertedLines = (invoice.lines || []).map((line: any) => ({
+          ...line,
+          quantity: parseFloat(line.quantity) || 0,
+          unit_price: parseFloat(line.unit_price) || 0,
+          total: parseFloat(line.total) || 0,
+        }));
+        setLines(convertedLines);
       }
     } catch (err) {
       console.error('Error loading invoice:', err);
