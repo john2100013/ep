@@ -96,14 +96,23 @@ const CreateInvoiceScreen: React.FC = () => {
   const [itemSearchQuery, setItemSearchQuery] = useState('');
   const [generatedInvoiceNumber, setGeneratedInvoiceNumber] = useState<string | null>(null);
   
+  // Customer data
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
+  const [customerSearchQuery, setCustomerSearchQuery] = useState('');
+  
   // Invoice form data
+  const [customerId, setCustomerId] = useState<number | null>(null);
   const [customerName, setCustomerName] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerPin, setCustomerPin] = useState('');
+  const [customerLocation, setCustomerLocation] = useState('');
   const [dueDate, setDueDate] = useState<Date | null>(
     new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
   );
-  const [paymentTerms, setPaymentTerms] = useState('Net 30 Days');
+  const [paymentTerms, setPaymentTerms] = useState('Cash');
+  const [paymentMethod, setPaymentMethod] = useState('Cash');
+  const [mpesaCode, setMpesaCode] = useState('');
   const [notes, setNotes] = useState('');
   const [lines, setLines] = useState<InvoiceLine[]>([
     {
@@ -121,7 +130,6 @@ const CreateInvoiceScreen: React.FC = () => {
   
   // Payment fields
   const [amountPaid, setAmountPaid] = useState<number>(0);
-  const [paymentMethod, setPaymentMethod] = useState<string>('');
   const [financialAccounts, setFinancialAccounts] = useState<any[]>([]);
 
   // Fetch items and quotations
@@ -144,6 +152,12 @@ const CreateInvoiceScreen: React.FC = () => {
           );
           setQuotations(eligibleQuotations);
           console.log('Loaded quotations:', eligibleQuotations); // Debug log
+        }
+
+        // Fetch customers
+        const customersResponse = await ApiService.getCustomers();
+        if (customersResponse.success) {
+          setCustomers(customersResponse.data.customers || []);
         }
 
         // Fetch financial accounts for payment methods
@@ -214,7 +228,7 @@ const CreateInvoiceScreen: React.FC = () => {
         setCustomerAddress(invoice.customer_address || '');
         setCustomerPin(invoice.customer_pin || '');
         setNotes(invoice.notes || '');
-        setPaymentTerms(invoice.payment_terms || 'Net 30 Days');
+        setPaymentTerms(invoice.payment_terms || 'Cash');
         setDueDate(invoice.due_date ? new Date(invoice.due_date) : null);
         setSelectedQuotationId(invoice.quotation_id || null);
         
@@ -245,6 +259,23 @@ const CreateInvoiceScreen: React.FC = () => {
     } catch (err) {
       console.error('Error loading invoice:', err);
       setError('Failed to load invoice data');
+    }
+  };
+
+  const handleCustomerSelect = (customer: any | null) => {
+    setSelectedCustomer(customer);
+    if (customer) {
+      setCustomerId(customer.id);
+      setCustomerName(customer.name);
+      setCustomerPin(customer.pin || '');
+      setCustomerAddress(customer.address || '');
+      setCustomerLocation(customer.location || '');
+    } else {
+      setCustomerId(null);
+      setCustomerName('');
+      setCustomerPin('');
+      setCustomerAddress('');
+      setCustomerLocation('');
     }
   };
 
@@ -359,11 +390,14 @@ const CreateInvoiceScreen: React.FC = () => {
 
     try {
       const invoiceData = {
+        customer_id: customerId,
         customer_name: customerName,
         customer_address: customerAddress,
         customer_pin: customerPin,
         due_date: dueDate?.toISOString() || '',
         payment_terms: paymentTerms,
+        payment_method: paymentMethod,
+        mpesa_code: paymentMethod === 'M-Pesa' ? mpesaCode : '',
         notes,
         quotation_id: selectedQuotationId,
         amountPaid: calculatedAmountPaid,
@@ -488,13 +522,38 @@ const CreateInvoiceScreen: React.FC = () => {
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
                   <Box sx={{ flex: 1 }}>
-                    <TextField
-                      fullWidth
-                      label="Customer Name *"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      required
-                      size="small"
+                    <Autocomplete
+                      options={customers}
+                      getOptionLabel={(option) => option.name}
+                      value={selectedCustomer}
+                      onChange={(_, newValue) => handleCustomerSelect(newValue)}
+                      freeSolo
+                      onInputChange={(_, newInputValue) => {
+                        if (!selectedCustomer) {
+                          setCustomerName(newInputValue);
+                        }
+                      }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Customer Name *"
+                          required
+                          size="small"
+                          placeholder="Search or enter new customer..."
+                        />
+                      )}
+                      renderOption={(props, option) => (
+                        <Box component="li" {...props}>
+                          <Box>
+                            <Typography variant="body2">{option.name}</Typography>
+                            {option.phone && (
+                              <Typography variant="caption" color="text.secondary">
+                                {option.phone}
+                              </Typography>
+                            )}
+                          </Box>
+                        </Box>
+                      )}
                     />
                   </Box>
                   <Box sx={{ flex: 1 }}>
@@ -549,10 +608,9 @@ const CreateInvoiceScreen: React.FC = () => {
                         onChange={(e) => setPaymentTerms(e.target.value)}
                         label="Payment Terms"
                       >
-                        <MenuItem value="Net 30 Days">Net 30 Days</MenuItem>
-                        <MenuItem value="Net 15 Days">Net 15 Days</MenuItem>
-                        <MenuItem value="Due on Receipt">Due on Receipt</MenuItem>
-                        <MenuItem value="Cash on Delivery">Cash on Delivery</MenuItem>
+                        <MenuItem value="Cash">Cash</MenuItem>
+                        <MenuItem value="Cheque">Cheque</MenuItem>
+                        <MenuItem value="M-Pesa">M-Pesa</MenuItem>
                       </Select>
                     </FormControl>
                   </Box>
@@ -746,6 +804,18 @@ const CreateInvoiceScreen: React.FC = () => {
                 Payment Details
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {paymentTerms === 'M-Pesa' && (
+                  <Box>
+                    <TextField
+                      fullWidth
+                      label="M-Pesa Transaction Code *"
+                      value={mpesaCode}
+                      onChange={(e) => setMpesaCode(e.target.value)}
+                      placeholder="e.g., SH12345678"
+                      required
+                    />
+                  </Box>
+                )}
                 <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
                   <Box sx={{ flex: 1, minWidth: '300px' }}>
                     <TextField

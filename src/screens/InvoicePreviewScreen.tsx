@@ -179,7 +179,7 @@ const InvoicePreviewScreen: React.FC = () => {
 
   const loadBusinessSettings = async () => {
     try {
-      const response = await fetch('https://erp-backend-beryl.vercel.app/api/business-settings', {
+      const response = await fetch(`https://erp-backend-beryl.vercel.app/api/business-settings`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

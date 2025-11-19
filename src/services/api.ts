@@ -291,6 +291,37 @@ export class ApiService {
     return response.data;
   }
 
+  // Customer endpoints
+  static async getCustomers(search?: string) {
+    const response = await api.get('/customers', { params: { search } });
+    return response.data;
+  }
+
+  static async getCustomer(id: number) {
+    const response = await api.get(`/customers/${id}`);
+    return response.data;
+  }
+
+  static async createCustomer(customerData: any) {
+    const response = await api.post('/customers', customerData);
+    return response.data;
+  }
+
+  static async updateCustomer(id: number, customerData: any) {
+    const response = await api.put(`/customers/${id}`, customerData);
+    return response.data;
+  }
+
+  static async deleteCustomer(id: number) {
+    const response = await api.delete(`/customers/${id}`);
+    return response.data;
+  }
+
+  static async getCustomerInvoices(id: number) {
+    const response = await api.get(`/customers/${id}/invoices`);
+    return response.data;
+  }
+
   // Generic API method for custom requests
   static async get(endpoint: string, params?: any) {
     const response = await api.get(endpoint, { params });
@@ -328,4 +359,5 @@ export class ApiService {
   }
 }
 
-export default api;
+export default ApiService;
+export { api };

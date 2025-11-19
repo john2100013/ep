@@ -68,13 +68,18 @@ const CreateQuotationScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [items, setItems] = useState<Item[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
   const [loadingQuotation, setLoadingQuotation] = useState(false);
   const [itemSearchQuery, setItemSearchQuery] = useState('');
   
   // Quotation form data
+  const [customerId, setCustomerId] = useState<number | null>(null);
   const [customerName, setCustomerName] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerPin, setCustomerPin] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('Cash');
+  const [mpesaCode, setMpesaCode] = useState('');
   const [validUntil, setValidUntil] = useState<Date | null>(
     new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
   );
@@ -100,6 +105,11 @@ const CreateQuotationScreen: React.FC = () => {
         if (response.success) {
           setItems(response.data.items || response.data || []);
         }
+        
+        const customersResponse = await ApiService.getCustomers();
+        if (customersResponse.success) {
+          setCustomers(customersResponse.data.customers || []);
+        }
       } catch (err) {
         console.error('Error fetching items:', err);
       }
@@ -107,6 +117,21 @@ const CreateQuotationScreen: React.FC = () => {
 
     fetchItems();
   }, []);
+
+  const handleCustomerSelect = (customer: any | null) => {
+    setSelectedCustomer(customer);
+    if (customer) {
+      setCustomerId(customer.id);
+      setCustomerName(customer.name);
+      setCustomerPin(customer.pin || '');
+      setCustomerAddress(customer.address || '');
+    } else {
+      setCustomerId(null);
+      setCustomerName('');
+      setCustomerPin('');
+      setCustomerAddress('');
+    }
+  };
 
   // Load quotation data for editing
   useEffect(() => {
@@ -233,9 +258,12 @@ const CreateQuotationScreen: React.FC = () => {
 
     try {
       const quotationData = {
+        customer_id: customerId,
         customer_name: customerName,
         customer_address: customerAddress,
         customer_pin: customerPin,
+        payment_method: paymentMethod,
+        mpesa_code: paymentMethod === 'M-Pesa' ? mpesaCode : '',
         valid_until: validUntil?.toISOString() || '',
         notes,
         lines: lines.map(line => ({
@@ -366,12 +394,37 @@ const CreateQuotationScreen: React.FC = () => {
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: { xs: 2, md: 3 } }}>
                 <Box sx={{ flex: 1, minWidth: { xs: '100%', md: '280px' } }}>
-                  <TextField
-                    fullWidth
-                    label="Customer Name *"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    required
+                  <Autocomplete
+                    options={customers}
+                    getOptionLabel={(option) => option.name}
+                    value={selectedCustomer}
+                    onChange={(_, newValue) => handleCustomerSelect(newValue)}
+                    freeSolo
+                    onInputChange={(_, newInputValue) => {
+                      if (!selectedCustomer) {
+                        setCustomerName(newInputValue);
+                      }
+                    }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Customer Name *"
+                        required
+                        placeholder="Search or enter new customer..."
+                      />
+                    )}
+                    renderOption={(props, option) => (
+                      <Box component="li" {...props}>
+                        <Box>
+                          <Typography variant="body2">{option.name}</Typography>
+                          {option.phone && (
+                            <Typography variant="caption" color="text.secondary">
+                              {option.phone}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Box>
+                    )}
                   />
                 </Box>
                 <Box sx={{ flex: 1, minWidth: { xs: '100%', md: '280px' } }}>
@@ -402,19 +455,46 @@ const CreateQuotationScreen: React.FC = () => {
               <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
                 Quotation Details
               </Typography>
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: { xs: 2, md: 3 } }}>
-                <Box sx={{ maxWidth: { xs: '100%', md: '400px' } }}>
-                  <DatePicker
-                    label="Valid Until *"
-                    value={validUntil}
-                    onChange={(newValue) => setValidUntil(newValue)}
-                    slotProps={{
-                      textField: {
-                        fullWidth: true,
-                        required: true
-                      }
-                    }}
-                  />
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 3 } }}>
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: { xs: 2, md: 3 } }}>
+                  <Box sx={{ maxWidth: { xs: '100%', md: '400px' } }}>
+                    <DatePicker
+                      label="Valid Until *"
+                      value={validUntil}
+                      onChange={(newValue) => setValidUntil(newValue)}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          required: true
+                        }
+                      }}
+                    />
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <FormControl fullWidth>
+                      <InputLabel>Payment Method</InputLabel>
+                      <Select
+                        value={paymentMethod}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        label="Payment Method"
+                      >
+                        <MenuItem value="Cash">Cash</MenuItem>
+                        <MenuItem value="M-Pesa">M-Pesa</MenuItem>
+                        <MenuItem value="Cheque">Cheque</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Box>
+                  {paymentMethod === 'M-Pesa' && (
+                    <Box sx={{ flex: 1 }}>
+                      <TextField
+                        fullWidth
+                        label="M-Pesa Code/Message"
+                        value={mpesaCode}
+                        onChange={(e) => setMpesaCode(e.target.value)}
+                        placeholder="e.g., SH12345678"
+                      />
+                    </Box>
+                  )}
                 </Box>
                 <Box sx={{ flex: 1 }}>
                   <TextField

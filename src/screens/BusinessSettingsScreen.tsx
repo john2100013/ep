@@ -59,7 +59,7 @@ const BusinessSettingsScreen: React.FC = () => {
 
   const loadSettings = async () => {
     try {
-      const response = await fetch('https://erp-backend-beryl.vercel.app/api/business-settings', {
+      const response = await fetch(`https://erp-backend-beryl.vercel.app/api/business-settings`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -178,7 +178,7 @@ const BusinessSettingsScreen: React.FC = () => {
       }
 
       // Save to database
-      const response = await fetch('https://erp-backend-beryl.vercel.app/api/business-settings', {
+      const response = await fetch(`https://erp-backend-beryl.vercel.app/api/business-settings`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

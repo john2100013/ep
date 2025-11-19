@@ -26,6 +26,9 @@ import GoodsReturnScreen from './screens/GoodsReturnScreen';
 import DamageTrackingScreen from './screens/DamageTrackingScreen';
 import AnalyticsScreen from './screens/AnalyticsScreen';
 import POSScreen from './screens/POSScreen';
+import ServiceBillingScreen from './screens/ServiceBilling/ServiceBillingScreen';
+import CustomersScreen from './screens/CustomersScreen';
+import CustomerInvoicesScreen from './screens/CustomerInvoicesScreen';
 
 function App() {
   const { isAuthenticated, loading } = useAuth();
@@ -269,6 +272,39 @@ function App() {
               <Header />
               <ProtectedRoute>
                 <POSScreen />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/service-billing" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <ServiceBillingScreen />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/customers" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <CustomersScreen />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/customers/:customerId/invoices" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <CustomerInvoicesScreen />
               </ProtectedRoute>
             </Box>
           } 

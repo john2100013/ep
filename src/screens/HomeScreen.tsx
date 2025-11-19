@@ -87,6 +87,20 @@ const HomeScreen: React.FC = () => {
               POS System
             </Button>
 
+            <Button
+              fullWidth
+              variant="contained"
+              startIcon={<StoreIcon />}
+              onClick={() => navigate('/service-billing')}
+              sx={{
+                py: 2,
+                bgcolor: '#673ab7',
+                '&:hover': { bgcolor: '#5e35b1' }
+              }}
+            >
+              💆 Service Billing
+            </Button>
+
             {/* Invoice Management */}
             <Button
               fullWidth
@@ -134,6 +148,16 @@ const HomeScreen: React.FC = () => {
               sx={{ py: 2, borderColor: '#2e7d32', color: '#2e7d32' }}
             >
               Create Quotation
+            </Button>
+            
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<ItemIcon />}
+              onClick={() => navigate('/customers')}
+              sx={{ py: 2, borderColor: '#9c27b0', color: '#9c27b0' }}
+            >
+              👥 Customers
             </Button>
             
             {/* Item Management */}
