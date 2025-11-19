@@ -18,6 +18,7 @@ import {
   KeyboardReturn as ReturnIcon,
   ReportProblem as DamageIcon,
   Analytics as AnalyticsIcon,
+  Store as StoreIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -72,6 +73,20 @@ const HomeScreen: React.FC = () => {
             gap: 2,
             mt: 1
           }}>
+            <Button
+              fullWidth
+              variant="contained"
+              startIcon={<StoreIcon />}
+              onClick={() => navigate('/pos')}
+              sx={{
+                py: 2,
+                bgcolor: '#1976d2',
+                '&:hover': { bgcolor: '#1565c0' }
+              }}
+            >
+              POS System
+            </Button>
+
             {/* Invoice Management */}
             <Button
               fullWidth

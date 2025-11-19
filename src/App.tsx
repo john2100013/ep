@@ -25,6 +25,7 @@ import FinancialAccountsScreen from './screens/FinancialAccountsScreen';
 import GoodsReturnScreen from './screens/GoodsReturnScreen';
 import DamageTrackingScreen from './screens/DamageTrackingScreen';
 import AnalyticsScreen from './screens/AnalyticsScreen';
+import POSScreen from './screens/POSScreen';
 
 function App() {
   const { isAuthenticated, loading } = useAuth();
@@ -257,6 +258,17 @@ function App() {
               <Header />
               <ProtectedRoute>
                 <AnalyticsScreen />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/pos" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <POSScreen />
               </ProtectedRoute>
             </Box>
           } 
