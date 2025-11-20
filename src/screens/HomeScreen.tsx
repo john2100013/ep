@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Card,
@@ -26,6 +26,41 @@ import { useAuth } from '../contexts/AuthContext';
 const HomeScreen: React.FC = () => {
   const navigate = useNavigate();
   const { business, user } = useAuth();
+  const [businessName, setBusinessName] = useState<string>('');
+
+  // Fetch business settings to get business name
+  useEffect(() => {
+    const fetchBusinessSettings = async () => {
+      try {
+        const response = await fetch('https://erp-backend-beryl.vercel.app/api/business-settings', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data && data.data.businessName) {
+            setBusinessName(data.data.businessName);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching business settings:', error);
+        // Fallback to localStorage
+        const savedSettings = localStorage.getItem('businessSettings');
+        if (savedSettings) {
+          const settings = JSON.parse(savedSettings);
+          if (settings.businessName) {
+            setBusinessName(settings.businessName);
+          }
+        }
+      }
+    };
+
+    fetchBusinessSettings();
+  }, []);
 
   return (
     <Box sx={{ 
@@ -54,7 +89,7 @@ const HomeScreen: React.FC = () => {
           </Typography>
           {business && (
             <Typography variant="body1" align="center" sx={{ mt: 2 }}>
-              Business: <strong>{business.name}</strong> | User: <strong>{user?.first_name} {user?.last_name}</strong>
+              Business: <strong>{businessName || business.name}</strong> | User: <strong>{user?.first_name} {user?.last_name}</strong>
             </Typography>
           )}
         </CardContent>

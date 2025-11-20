@@ -90,6 +90,9 @@ export class ApiService {
     rate: number;
     unit?: string;
     description?: string;
+    category_id?: number;
+    manufacturing_date?: string;
+    expiry_date?: string;
   }) {
     const response = await api.post('/items', itemData);
     return response.data;

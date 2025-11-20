@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   AppBar,
   Toolbar,
@@ -45,10 +45,47 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ title = 'Invoice App' }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [businessEmail, setBusinessEmail] = useState<string>('');
   const { user, business, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+  // Fetch business settings to get business email
+  useEffect(() => {
+    const fetchBusinessSettings = async () => {
+      try {
+        const response = await fetch('https://erp-backend-beryl.vercel.app/api/business-settings', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data && data.data.email) {
+            setBusinessEmail(data.data.email);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching business settings:', error);
+        // Fallback to localStorage
+        const savedSettings = localStorage.getItem('businessSettings');
+        if (savedSettings) {
+          const settings = JSON.parse(savedSettings);
+          if (settings.email) {
+            setBusinessEmail(settings.email);
+          }
+        }
+      }
+    };
+
+    if (isAuthenticated) {
+      fetchBusinessSettings();
+    }
+  }, [isAuthenticated]);
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -238,7 +275,7 @@ const Header: React.FC<HeaderProps> = ({ title = 'Invoice App' }) => {
                       maxWidth: 200,
                     }}
                   >
-                    {user?.email}
+                    {businessEmail || user?.email}
                   </Typography>
                 </Box>
 

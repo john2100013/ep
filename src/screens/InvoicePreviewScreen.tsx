@@ -454,7 +454,7 @@ Your Business Name`;
                   <Avatar
                     src={businessSettings.logo}
                     variant="rounded"
-                    sx={{ width: 100, height: 50, border: '1px solid #ddd' }}
+                    sx={{ width: 120, height: 120, border: '2px solid #e0e0e0', borderRadius: '8px' }}
                   />
                 )}
                 <Typography variant="h3" sx={{ fontWeight: 'bold', color: '#1976d2', fontSize: '2rem' }}>
@@ -465,7 +465,7 @@ Your Business Name`;
                 {businessSettings.street && `${businessSettings.street}, `}
                 {businessSettings.city && `${businessSettings.city}`}
                 <br />
-                Tel: {businessSettings.telephone}
+                Phone No.: {businessSettings.telephone}
                 <br />
                 Email: {businessSettings.email}
               </Typography>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Card,
@@ -8,8 +8,15 @@ import {
   Button,
   Box,
   Alert,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import { Save as SaveIcon, Cancel as CancelIcon } from '@mui/icons-material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useNavigate } from 'react-router-dom';
 import { ApiService } from '../services/api';
 import Sidebar from '../components/Sidebar';
@@ -23,12 +30,31 @@ const AddItemScreen: React.FC = () => {
     selling_price: '',
     rate: '',
     unit: '',
+    category_id: '',
   });
+  const [manufacturingDate, setManufacturingDate] = useState<Date | null>(null);
+  const [expiryDate, setExpiryDate] = useState<Date | null>(null);
+  const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await ApiService.getItemCategories();
+      if (response.success) {
+        setCategories(response.data.categories || []);
+      }
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -44,6 +70,11 @@ const AddItemScreen: React.FC = () => {
     // Validation
     if (!formData.item_name.trim()) {
       setError('Item name is required');
+      return;
+    }
+
+    if (!formData.category_id) {
+      setError('Category is required');
       return;
     }
 
@@ -73,6 +104,9 @@ const AddItemScreen: React.FC = () => {
         selling_price: parseFloat(formData.selling_price),
         rate: parseFloat(formData.selling_price), // Use selling price as rate for compatibility
         unit: formData.unit.trim() || undefined,
+        category_id: parseInt(formData.category_id),
+        manufacturing_date: manufacturingDate?.toISOString().split('T')[0] || undefined,
+        expiry_date: expiryDate?.toISOString().split('T')[0] || undefined,
       });
 
       setSuccess('Item added successfully!');
@@ -86,7 +120,10 @@ const AddItemScreen: React.FC = () => {
         selling_price: '',
         rate: '',
         unit: '',
+        category_id: '',
       });
+      setManufacturingDate(null);
+      setExpiryDate(null);
       
       // Navigate back after short delay
       setTimeout(() => {
@@ -156,6 +193,25 @@ const AddItemScreen: React.FC = () => {
                       placeholder="e.g., Product Name"
                     />
                     
+                    <FormControl fullWidth margin="normal" required>
+                      <InputLabel>Category *</InputLabel>
+                      <Select
+                        name="category_id"
+                        value={formData.category_id}
+                        onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+                        label="Category *"
+                      >
+                        <MenuItem value="">
+                          <em>Select a category</em>
+                        </MenuItem>
+                        {categories.map((category) => (
+                          <MenuItem key={category.id} value={category.id}>
+                            {category.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    
                     <TextField
                       fullWidth
                       label="Unit (UOM)"
@@ -178,6 +234,34 @@ const AddItemScreen: React.FC = () => {
                     rows={3}
                     placeholder="Detailed description of the item"
                   />
+
+                  <LocalizationProvider dateAdapter={AdapterDateFns}>
+                    <Box sx={{ display: 'flex', gap: { xs: 1, md: 2 }, flexWrap: 'wrap', '& > *': { flex: '1 1 100%', md: { flex: '1 1 300px' }, minWidth: '250px' } }}>
+                      <DatePicker
+                        label="Manufacturing Date"
+                        value={manufacturingDate}
+                        onChange={(newValue) => setManufacturingDate(newValue)}
+                        slotProps={{
+                          textField: {
+                            fullWidth: true,
+                            margin: 'normal'
+                          }
+                        }}
+                      />
+                      
+                      <DatePicker
+                        label="Expiry Date"
+                        value={expiryDate}
+                        onChange={(newValue) => setExpiryDate(newValue)}
+                        slotProps={{
+                          textField: {
+                            fullWidth: true,
+                            margin: 'normal'
+                          }
+                        }}
+                      />
+                    </Box>
+                  </LocalizationProvider>
 
                   <Box sx={{ display: 'flex', gap: { xs: 1, md: 2 }, flexWrap: 'wrap', '& > *': { flex: '1 1 100%', md: { flex: '1 1 200px' }, minWidth: '200px' } }}>
                     <TextField

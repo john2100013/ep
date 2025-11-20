@@ -233,7 +233,8 @@ const CreateQuotationScreen: React.FC = () => {
       return sum + (isNaN(lineTotal) ? 0 : lineTotal);
     }, 0);
     const vatAmount = subtotal * 0.16;
-    const totalAmount = subtotal + vatAmount;
+    const totalBeforeRounding = subtotal + vatAmount;
+    const totalAmount = Math.round(totalBeforeRounding); // Round to nearest whole number
     
     return { subtotal: isNaN(subtotal) ? 0 : subtotal, vatAmount: isNaN(vatAmount) ? 0 : vatAmount, totalAmount: isNaN(totalAmount) ? 0 : totalAmount };
   };
