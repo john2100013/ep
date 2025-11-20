@@ -81,8 +81,11 @@ interface DraftInvoice {
   id: string;
   invoice_number: string;
   created_at: string;
-  items: POSItem[];
-  total: number;
+  items?: POSItem[];
+  total?: number;
+  total_amount?: number;
+  line_count?: number;
+  status?: string;
 }
 
 const POSScreen: React.FC = () => {
@@ -100,6 +103,7 @@ const POSScreen: React.FC = () => {
   const [accountsOpen, setAccountsOpen] = useState(false);
   const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<string>('');
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
   const [paymentDetails, setPaymentDetails] = useState({
     netAmount: 0,
     tendered: 0,
@@ -140,8 +144,8 @@ const POSScreen: React.FC = () => {
   // Fetch draft invoices
   const fetchDrafts = async () => {
     try {
-      const response = await ApiService.getInvoices({ status: 'draft' });
-      setDrafts(response.data?.invoices || response.invoices || []);
+      const response = await api.get('/invoices/drafts/list');
+      setDrafts(response.data.data?.invoices || response.data.invoices || []);
     } catch (err) {
       setError('Failed to fetch drafts');
       console.error('Fetch drafts error:', err);
@@ -256,17 +260,22 @@ const POSScreen: React.FC = () => {
     try {
       setLoading(true);
       const { total } = calculateTotals();
-      await ApiService.post('/invoices/draft', {
+      const response = await api.post('/invoices/draft', {
         items: posItems,
         total,
         account_id: selectedAccount,
       });
-      setPosItems([]);
-      setError('');
-      alert('Invoice saved as draft');
-    } catch (err) {
-      setError('Failed to save draft');
+      if (response.data.success) {
+        setPosItems([]);
+        setSelectedAccount('');
+        setCurrentDraftId(null);
+        setError('');
+        alert('Invoice saved as draft successfully!');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to save draft');
       console.error('Save draft error:', err);
+      alert('Failed to save draft: ' + (err.response?.data?.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -317,55 +326,91 @@ const POSScreen: React.FC = () => {
       setLoading(true);
       setError('');
       
-      const invoiceNumber = await generateInvoiceNumber();
-      const { total, subTotal, vatTotal } = calculateTotals();
-      const currentDate = new Date().toISOString().split('T')[0];
-      
-      const invoiceData = {
-        customer_name: 'POS Customer',
-        customer_address: '',
-        lines: posItems.map(item => ({
-          item_id: parseInt(item.id),
-          quantity: item.quantity,
-          unit_price: Number(item.rate),
-          description: item.name,
-          code: item.code,
-          uom: item.unit,
-        })),
-        notes: `POS Sale - Account: ${accounts.find(a => a.id === selectedAccount)?.account_name || selectedAccount}`,
-        due_date: currentDate,
-        payment_terms: 'Paid',
-      };
-      
-      // Create invoice using the API
-      const result = await ApiService.createInvoice(invoiceData);
-      const createdInvoice = result.data?.invoice || result.invoice;
-      
-      // Update invoice number to POS format
-      if (createdInvoice?.id) {
-        await api.patch(`/invoices/${createdInvoice.id}`, { 
-          invoice_number: invoiceNumber,
-          status: 'paid'
-        });
+      // Check if this is a draft being converted
+      if (currentDraftId) {
+        // Convert draft to real invoice
+        const convertResponse = await api.post(`/invoices/draft/${currentDraftId}/convert`);
+        
+        if (convertResponse.data.success) {
+          const invoice = convertResponse.data.data;
+          
+          // Update invoice status to paid
+          await api.patch(`/invoices/${currentDraftId}`, { 
+            status: 'paid',
+            amount_paid: invoice.total_amount,
+            payment_status: 'paid'
+          });
+          
+          // Update financial account balance
+          try {
+            await api.patch(`/financial-accounts/${selectedAccount}/balance`, {
+              amount: invoice.total_amount,
+              operation: 'add'
+            });
+          } catch (balanceError) {
+            console.error('⚠️ Failed to update financial account balance:', balanceError);
+          }
+          
+          alert(`Invoice ${invoice.invoice_number} saved successfully!`);
+          setPosItems([]);
+          setCurrentDraftId(null);
+          setSelectedAccount('');
+          
+          // Refresh financial accounts
+          await fetchFinancialAccounts();
+        }
+      } else {
+        // Create new invoice
+        const invoiceNumber = await generateInvoiceNumber();
+        const { total, subTotal, vatTotal } = calculateTotals();
+        const currentDate = new Date().toISOString().split('T')[0];
+        
+        const invoiceData = {
+          customer_name: 'POS Customer',
+          customer_address: '',
+          lines: posItems.map(item => ({
+            item_id: parseInt(item.id),
+            quantity: item.quantity,
+            unit_price: Number(item.rate),
+            description: item.name,
+            code: item.code,
+            uom: item.unit,
+          })),
+          notes: `POS Sale - Account: ${accounts.find(a => a.id === selectedAccount)?.account_name || selectedAccount}`,
+          due_date: currentDate,
+          payment_terms: 'Paid',
+        };
+        
+        // Create invoice using the API
+        const result = await ApiService.createInvoice(invoiceData);
+        const createdInvoice = result.data?.invoice || result.invoice;
+        
+        // Update invoice number to POS format
+        if (createdInvoice?.id) {
+          await api.patch(`/invoices/${createdInvoice.id}`, { 
+            invoice_number: invoiceNumber,
+            status: 'paid'
+          });
+        }
+        
+        // Update financial account balance (add the total amount)
+        try {
+          await api.patch(`/financial-accounts/${selectedAccount}/balance`, {
+            amount: total,
+            operation: 'add'
+          });
+          console.log('✅ Financial account updated successfully');
+        } catch (balanceError) {
+          console.error('⚠️ Failed to update financial account balance:', balanceError);
+        }
+        
+        alert(`Invoice ${invoiceNumber} saved successfully! Total: ${total.toFixed(2)}`);
+        setPosItems([]);
+        setSelectedAccount('');
+        
+        // Refresh financial accounts to show updated balance
+        await fetchFinancialAccounts();
       }
-      
-      // Update financial account balance (add the total amount)
-      try {
-        await api.patch(`/financial-accounts/${selectedAccount}/balance`, {
-          amount: total,
-          operation: 'add'
-        });
-        console.log('✅ Financial account updated successfully');
-      } catch (balanceError) {
-        console.error('⚠️ Failed to update financial account balance:', balanceError);
-        // Don't fail the whole operation if balance update fails
-      }
-      
-      alert(`Invoice ${invoiceNumber} saved successfully! Total: ${total.toFixed(2)}`);
-      setPosItems([]);
-      
-      // Refresh financial accounts to show updated balance
-      await fetchFinancialAccounts();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to save invoice');
       console.error('Save invoice error:', err);
@@ -385,9 +430,37 @@ const POSScreen: React.FC = () => {
   };
 
   // Retrieve draft
-  const retrieveDraft = (draft: DraftInvoice) => {
-    setPosItems(draft.items);
-    setRetrieveOpen(false);
+  const retrieveDraft = async (draft: DraftInvoice) => {
+    try {
+      setLoading(true);
+      // Fetch full draft details with lines
+      const response = await api.get(`/invoices/${draft.id}`);
+      
+      if (response.data.success && response.data.data) {
+        const invoiceData = response.data.data;
+        
+        // Convert invoice lines to POS items format
+        const items = (invoiceData.lines || []).map((line: any) => ({
+          id: line.item_id || line.id,
+          name: line.description || line.item_name || 'Item',
+          code: line.code || '',
+          quantity: parseFloat(line.quantity) || 0,
+          unit: line.uom || 'PCS',
+          rate: parseFloat(line.unit_price) || 0,
+          vat: 0.16,
+          amount: parseFloat(line.total) || 0,
+        }));
+        
+        setPosItems(items);
+        setCurrentDraftId(draft.id); // Store draft ID for later conversion
+        setRetrieveOpen(false);
+      }
+    } catch (error) {
+      console.error('Error retrieving draft:', error);
+      setError('Failed to retrieve draft');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Print receipt
@@ -585,9 +658,9 @@ const POSScreen: React.FC = () => {
           </Alert>
         )}
 
-        <Grid container spacing={3}>
+        <Grid container spacing={1}>
           {/* Left: Items Table */}
-          <Grid container size={{ xs: 12, md: 9 }}>
+          <Grid container size={{ xs: 12, md: 10 }}>
             <Paper sx={{ p: 2, borderRadius: 2, boxShadow: 2 }}>
               <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
                 Items
@@ -674,7 +747,7 @@ const POSScreen: React.FC = () => {
           </Grid>
 
           {/* Right: Summary & Actions */}
-          <Grid container size={{ xs: 12, md: 3 }}>
+          <Grid container size={{ xs: 12, md: 2 }}>
             <Paper sx={{ p: 2, borderRadius: 2, boxShadow: 2, backgroundColor: '#f9f9f9' }}>
               <Typography variant="h6" fontWeight="bold" sx={{ mb: 3 }}>
                 Summary
@@ -999,8 +1072,8 @@ const POSScreen: React.FC = () => {
                     <ListItem disablePadding>
                       <ListItemButton onClick={() => retrieveDraft(draft)} sx={{ pr: 1 }}>
                         <ListItemText
-                          primary={draft.invoice_number || 'Draft Invoice'}
-                          secondary={`Total: ${Number(draft.total || 0).toFixed(2)} - ${draft.created_at || 'N/A'}`}
+                          primary={`Draft - ${new Date(draft.created_at).toLocaleString()}`}
+                          secondary={`Total: KES ${Number(draft.total_amount || draft.total || 0).toFixed(2)} - Items: ${draft.line_count || 0}`}
                         />
                       </ListItemButton>
                     </ListItem>
