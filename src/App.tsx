@@ -29,6 +29,8 @@ import POSScreen from './screens/POSScreen';
 import ServiceBillingScreen from './screens/ServiceBilling/ServiceBillingScreen';
 import CustomersScreen from './screens/CustomersScreen';
 import CustomerInvoicesScreen from './screens/CustomerInvoicesScreen';
+import ItemCategoriesScreen from './screens/ItemCategoriesScreen';
+import CustomerInvoicesListScreen from './screens/CustomerInvoicesListScreen';
 
 function App() {
   const { isAuthenticated, loading } = useAuth();
@@ -305,6 +307,28 @@ function App() {
               <Header />
               <ProtectedRoute>
                 <CustomerInvoicesScreen />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/item-categories" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <ItemCategoriesScreen />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/customer-invoices-list" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <CustomerInvoicesListScreen />
               </ProtectedRoute>
             </Box>
           } 

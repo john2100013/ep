@@ -160,6 +160,16 @@ const HomeScreen: React.FC = () => {
               👥 Customers
             </Button>
             
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<ItemIcon />}
+              onClick={() => navigate('/customer-invoices-list')}
+              sx={{ py: 2, borderColor: '#1976d2', color: '#1976d2' }}
+            >
+              📊 Customer Invoices
+            </Button>
+            
             {/* Item Management */}
             <Button
               fullWidth
@@ -169,6 +179,16 @@ const HomeScreen: React.FC = () => {
               sx={{ py: 2 }}
             >
               Items
+            </Button>
+            
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<AddIcon />}
+              onClick={() => navigate('/item-categories')}
+              sx={{ py: 2, borderColor: '#ff9800', color: '#ff9800' }}
+            >
+              📂 Item Categories
             </Button>
             
             <Button

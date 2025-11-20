@@ -322,6 +322,32 @@ export class ApiService {
     return response.data;
   }
 
+  // Item Categories
+  static async getItemCategories() {
+    const response = await api.get('/item-categories');
+    return response.data;
+  }
+
+  static async getItemCategory(id: number) {
+    const response = await api.get(`/item-categories/${id}`);
+    return response.data;
+  }
+
+  static async createItemCategory(categoryData: { name: string; description?: string }) {
+    const response = await api.post('/item-categories', categoryData);
+    return response.data;
+  }
+
+  static async updateItemCategory(id: number, categoryData: { name: string; description?: string }) {
+    const response = await api.put(`/item-categories/${id}`, categoryData);
+    return response.data;
+  }
+
+  static async deleteItemCategory(id: number) {
+    const response = await api.delete(`/item-categories/${id}`);
+    return response.data;
+  }
+
   // Generic API method for custom requests
   static async get(endpoint: string, params?: any) {
     const response = await api.get(endpoint, { params });
