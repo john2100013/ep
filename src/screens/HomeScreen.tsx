@@ -287,6 +287,23 @@ const HomeScreen: React.FC = () => {
             >
               Settings
             </Button>
+
+            {/* Salon/Barber Module */}
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={() => navigate('/salon')}
+              sx={{
+                py: 2,
+                mt: 2,
+                bgcolor: '#ff6b35',
+                '&:hover': { bgcolor: '#e05a2d' },
+                fontSize: '1.1rem',
+                fontWeight: 'bold'
+              }}
+            >
+              ✂️ Salon/Barber Shop
+            </Button>
           </Box>
           </CardContent>
         </Card>

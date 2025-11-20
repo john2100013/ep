@@ -32,6 +32,18 @@ import CustomerInvoicesScreen from './screens/CustomerInvoicesScreen';
 import ItemCategoriesScreen from './screens/ItemCategoriesScreen';
 import CustomerInvoicesListScreen from './screens/CustomerInvoicesListScreen';
 
+// Salon Module
+import { 
+  SalonDashboard, 
+  SalonPOS, 
+  SalonEmployees, 
+  SalonServices, 
+  SalonProducts, 
+  SalonShifts, 
+  SalonPerformance, 
+  SalonReports 
+} from './screens/Salon';
+
 function App() {
   const { isAuthenticated, loading } = useAuth();
 
@@ -329,6 +341,96 @@ function App() {
               <Header />
               <ProtectedRoute>
                 <CustomerInvoicesListScreen />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+
+        {/* Salon Module Routes */}
+        <Route 
+          path="/salon" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <SalonDashboard />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/salon/pos" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <SalonPOS />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/salon/employees" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <SalonEmployees />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/salon/services" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <SalonServices />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/salon/products" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <SalonProducts />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/salon/shifts" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <SalonShifts />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/salon/performance" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <SalonPerformance />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/salon/reports" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <SalonReports />
               </ProtectedRoute>
             </Box>
           } 
