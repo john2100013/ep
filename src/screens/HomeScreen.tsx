@@ -126,14 +126,14 @@ const HomeScreen: React.FC = () => {
               fullWidth
               variant="contained"
               startIcon={<StoreIcon />}
-              onClick={() => navigate('/service-billing')}
+              onClick={() => navigate('/salon')}
               sx={{
                 py: 2,
                 bgcolor: '#673ab7',
                 '&:hover': { bgcolor: '#5e35b1' }
               }}
             >
-              💆 Service Billing
+              💈 Salon/Barber
             </Button>
 
             {/* Invoice Management */}

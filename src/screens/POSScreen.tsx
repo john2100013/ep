@@ -658,7 +658,7 @@ const POSScreen: React.FC = () => {
           </Alert>
         )}
 
-        <Grid container spacing={1}>
+        <Grid container spacing={'40px'}>
           {/* Left: Items Table */}
           <Grid container size={{ xs: 12, md: 10 }}>
             <Paper sx={{ p: 2, borderRadius: 2, boxShadow: 2 }}>

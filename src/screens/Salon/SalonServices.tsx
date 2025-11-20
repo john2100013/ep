@@ -22,7 +22,7 @@ import {
 } from '@mui/material';
 import { Add, Edit } from '@mui/icons-material';
 import * as salonApi from '../../services/salonApi';
-import { SalonService } from '../../types';
+import type { SalonService } from '../../types';
 
 const SalonServices: React.FC = () => {
   const [services, setServices] = useState<SalonService[]>([]);
