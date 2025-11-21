@@ -49,6 +49,7 @@ const TopSellingItems: React.FC<TopSellingItemsProps> = ({ dateRange }) => {
   const [sortBy, setSortBy] = useState<'quantity' | 'revenue'>('quantity');
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const [topItems, setTopItems] = useState<TopSellingItem[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-KE', {
@@ -78,99 +79,26 @@ const TopSellingItems: React.FC<TopSellingItemsProps> = ({ dateRange }) => {
   };
 
   useEffect(() => {
+    const loadTopSellingItems = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // Fetch from backend
+        const params = { dateRange, sortBy };
+        const response = await import('../../services/api').then(m => m.api.get('/analytics/top-selling-items', { params }));
+        const items: TopSellingItem[] = response.data?.items || response.items || [];
+        setTopItems(items);
+      } catch (err: any) {
+        setError('Failed to load top selling items');
+        setTopItems([]);
+      } finally {
+        setLoading(false);
+      }
+    };
     loadTopSellingItems();
   }, [dateRange, sortBy]);
 
-  const loadTopSellingItems = async () => {
-    setLoading(true);
-    try {
-      // Mock data - replace with actual API call
-      const mockData: TopSellingItem[] = [
-        {
-          id: 1,
-          itemName: 'Premium Coffee Beans',
-          code: 'COF001',
-          quantitySold: 150,
-          revenue: 45000,
-          unitPrice: 300,
-          category: 'Beverages',
-          trend: 'up',
-          trendPercentage: 15.2,
-          stockLevel: 85,
-          velocity: 'fast'
-        },
-        {
-          id: 2,
-          itemName: 'Wireless Headphones',
-          code: 'ELC002',
-          quantitySold: 85,
-          revenue: 127500,
-          unitPrice: 1500,
-          category: 'Electronics',
-          trend: 'up',
-          trendPercentage: 8.7,
-          stockLevel: 42,
-          velocity: 'fast'
-        },
-        {
-          id: 3,
-          itemName: 'Office Chair',
-          code: 'FUR003',
-          quantitySold: 45,
-          revenue: 135000,
-          unitPrice: 3000,
-          category: 'Furniture',
-          trend: 'stable',
-          trendPercentage: 0,
-          stockLevel: 25,
-          velocity: 'medium'
-        },
-        {
-          id: 4,
-          itemName: 'Notebook Set',
-          code: 'STA004',
-          quantitySold: 200,
-          revenue: 20000,
-          unitPrice: 100,
-          category: 'Stationery',
-          trend: 'down',
-          trendPercentage: -5.3,
-          stockLevel: 150,
-          velocity: 'medium'
-        },
-        {
-          id: 5,
-          itemName: 'USB Cable',
-          code: 'ELC005',
-          quantitySold: 75,
-          revenue: 11250,
-          unitPrice: 150,
-          category: 'Electronics',
-          trend: 'up',
-          trendPercentage: 12.1,
-          stockLevel: 180,
-          velocity: 'slow'
-        }
-      ];
-
-      // Sort based on selection
-      const sorted = [...mockData].sort((a, b) => {
-        if (sortBy === 'quantity') {
-          return b.quantitySold - a.quantitySold;
-        } else {
-          return b.revenue - a.revenue;
-        }
-      });
-
-      setTopItems(sorted);
-    } catch (error) {
-      console.error('Error loading top selling items:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const maxQuantity = Math.max(...topItems.map(item => item.quantitySold));
+  const maxQuantity = topItems.length > 0 ? Math.max(...topItems.map(item => item.quantitySold)) : 0;
 
   return (
     <Box>
@@ -178,6 +106,9 @@ const TopSellingItems: React.FC<TopSellingItemsProps> = ({ dateRange }) => {
         <Typography variant="h5" fontWeight="bold">
           Top Selling Items
         </Typography>
+      </Box>
+      {loading && <LinearProgress sx={{ mb: 2 }} />}
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         
         <Box sx={{ display: 'flex', gap: 2 }}>
           <FormControl size="small" sx={{ minWidth: 120 }}>

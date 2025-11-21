@@ -54,6 +54,8 @@ const SalesPerformance: React.FC<SalesPerformanceProps> = ({ dateRange }) => {
     salesGrowth: 0,
     dailySales: []
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-KE', {
@@ -75,49 +77,51 @@ const SalesPerformance: React.FC<SalesPerformanceProps> = ({ dateRange }) => {
   };
 
   useEffect(() => {
+    const loadSalesPerformance = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const params = { dateRange };
+        const response = await import('../../services/api').then(m => m.api.get('/analytics/sales-performance', { params }));
+        const metrics: SalesMetrics = response.data?.metrics || response.metrics || {};
+        setSalesMetrics({
+          totalSales: metrics.totalSales || 0,
+          totalInvoices: metrics.totalInvoices || 0,
+          averageOrderValue: metrics.averageOrderValue || 0,
+          targetSales: metrics.targetSales || 0,
+          grossProfit: metrics.grossProfit || 0,
+          profitMargin: metrics.profitMargin || 0,
+          salesGrowth: metrics.salesGrowth || 0,
+          dailySales: metrics.dailySales || []
+        });
+      } catch (err: any) {
+        setError('Failed to load sales performance');
+        setSalesMetrics({
+          totalSales: 0,
+          totalInvoices: 0,
+          averageOrderValue: 0,
+          targetSales: 0,
+          grossProfit: 0,
+          profitMargin: 0,
+          salesGrowth: 0,
+          dailySales: []
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
     loadSalesPerformance();
   }, [dateRange]);
 
-  const loadSalesPerformance = async () => {
-    try {
-      // Mock data - replace with actual API call
-      const mockData: SalesMetrics = {
-        totalSales: 256780,
-        totalInvoices: 89,
-        averageOrderValue: 2885,
-        targetSales: 300000,
-        grossProfit: 89370,
-        profitMargin: 34.8,
-        salesGrowth: 12.5,
-        dailySales: [
-          { date: '2024-11-01', sales: 12500, invoices: 4, profit: 4200 },
-          { date: '2024-11-02', sales: 18200, invoices: 6, profit: 6100 },
-          { date: '2024-11-03', sales: 9800, invoices: 3, profit: 3300 },
-          { date: '2024-11-04', sales: 22100, invoices: 8, profit: 7400 },
-          { date: '2024-11-05', sales: 15600, invoices: 5, profit: 5200 },
-          { date: '2024-11-06', sales: 28300, invoices: 10, profit: 9500 },
-          { date: '2024-11-07', sales: 19400, invoices: 7, profit: 6500 }
-        ]
-      };
-
-      setSalesMetrics(mockData);
-    } catch (error) {
-      console.error('Error loading sales performance:', error);
-    }
-  };
-
-  const targetProgress = (salesMetrics.totalSales / salesMetrics.targetSales) * 100;
+  const targetProgress = salesMetrics.targetSales > 0 ? (salesMetrics.totalSales / salesMetrics.targetSales) * 100 : 0;
 
   return (
     <Box>
       <Typography variant="h5" fontWeight="bold" gutterBottom>
         Sales Performance Overview
       </Typography>
-
-      {/* Key Performance Indicators */}
-      <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', mb: 4 }}>
-        <Box sx={{ flex: 1, minWidth: '280px' }}>
-          <Card sx={{ height: '100%' }}>
+      {loading && <LinearProgress sx={{ mb: 2 }} />}
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                 <MoneyIcon color="primary" sx={{ fontSize: 32 }} />

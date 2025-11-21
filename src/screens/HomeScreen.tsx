@@ -126,11 +126,25 @@ const HomeScreen: React.FC = () => {
               fullWidth
               variant="contained"
               startIcon={<StoreIcon />}
-              onClick={() => navigate('/salon')}
+              onClick={() => navigate('/service-billing')}
               sx={{
                 py: 2,
                 bgcolor: '#673ab7',
                 '&:hover': { bgcolor: '#5e35b1' }
+              }}
+            >
+              💆 Service Billing
+            </Button>
+
+            <Button
+              fullWidth
+              variant="contained"
+              startIcon={<StoreIcon />}
+              onClick={() => navigate('/salon')}
+              sx={{
+                py: 2,
+                bgcolor: '#ff6b35',
+                '&:hover': { bgcolor: '#e55a2b' }
               }}
             >
               💈 Salon/Barber
@@ -286,6 +300,23 @@ const HomeScreen: React.FC = () => {
               sx={{ py: 2 }}
             >
               Settings
+            </Button>
+
+            {/* Salon/Barber Module */}
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={() => navigate('/salon')}
+              sx={{
+                py: 2,
+                mt: 2,
+                bgcolor: '#ff6b35',
+                '&:hover': { bgcolor: '#e05a2d' },
+                fontSize: '1.1rem',
+                fontWeight: 'bold'
+              }}
+            >
+              ✂️ Salon/Barber Shop
             </Button>
           </Box>
           </CardContent>

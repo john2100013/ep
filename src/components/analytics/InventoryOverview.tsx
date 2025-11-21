@@ -111,106 +111,47 @@ const InventoryOverview: React.FC<InventoryOverviewProps> = ({ dateRange }) => {
   };
 
   useEffect(() => {
+    const loadInventoryOverview = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const params = { dateRange };
+        const response = await import('../../services/api').then(m => m.api.get('/analytics/inventory-overview', { params }));
+        const metrics: InventoryMetrics = response.data?.metrics || response.metrics || {};
+        setInventoryMetrics({
+          totalItems: metrics.totalItems || 0,
+          totalValue: metrics.totalValue || 0,
+          lowStockItems: metrics.lowStockItems || 0,
+          outOfStockItems: metrics.outOfStockItems || 0,
+          overstockItems: metrics.overstockItems || 0,
+          averageTurnover: metrics.averageTurnover || 0,
+          items: metrics.items || []
+        });
+      } catch (err: any) {
+        setError('Failed to load inventory overview');
+        setInventoryMetrics({
+          totalItems: 0,
+          totalValue: 0,
+          lowStockItems: 0,
+          outOfStockItems: 0,
+          overstockItems: 0,
+          averageTurnover: 0,
+          items: []
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
     loadInventoryOverview();
   }, [dateRange]);
-
-  const loadInventoryOverview = async () => {
-    try {
-      // Mock data - replace with actual API call
-      const mockItems: InventoryItem[] = [
-        {
-          id: 1,
-          itemName: 'Premium Coffee Beans',
-          code: 'COF001',
-          category: 'Beverages',
-          currentStock: 15,
-          minStockLevel: 20,
-          maxStockLevel: 200,
-          unitCost: 250,
-          totalValue: 3750,
-          status: 'low_stock',
-          lastRestocked: '2024-11-10',
-          turnoverRate: 8.5
-        },
-        {
-          id: 2,
-          itemName: 'Wireless Headphones',
-          code: 'ELC002',
-          category: 'Electronics',
-          currentStock: 0,
-          minStockLevel: 10,
-          maxStockLevel: 100,
-          unitCost: 1200,
-          totalValue: 0,
-          status: 'out_of_stock',
-          lastRestocked: '2024-11-05',
-          turnoverRate: 6.2
-        },
-        {
-          id: 3,
-          itemName: 'Office Chair',
-          code: 'FUR003',
-          category: 'Furniture',
-          currentStock: 45,
-          minStockLevel: 10,
-          maxStockLevel: 30,
-          unitCost: 2500,
-          totalValue: 112500,
-          status: 'overstock',
-          lastRestocked: '2024-11-08',
-          turnoverRate: 2.1
-        },
-        {
-          id: 4,
-          itemName: 'Notebook Set',
-          code: 'STA004',
-          category: 'Stationery',
-          currentStock: 150,
-          minStockLevel: 100,
-          maxStockLevel: 500,
-          unitCost: 80,
-          totalValue: 12000,
-          status: 'in_stock',
-          lastRestocked: '2024-11-12',
-          turnoverRate: 12.3
-        },
-        {
-          id: 5,
-          itemName: 'USB Cable',
-          code: 'ELC005',
-          category: 'Electronics',
-          currentStock: 25,
-          minStockLevel: 50,
-          maxStockLevel: 200,
-          unitCost: 120,
-          totalValue: 3000,
-          status: 'low_stock',
-          lastRestocked: '2024-11-09',
-          turnoverRate: 5.7
-        }
-      ];
-
-      const metrics: InventoryMetrics = {
-        totalItems: mockItems.length,
-        totalValue: mockItems.reduce((sum, item) => sum + item.totalValue, 0),
-        lowStockItems: mockItems.filter(item => getStockLevel(item) === 'low_stock').length,
-        outOfStockItems: mockItems.filter(item => getStockLevel(item) === 'out_of_stock').length,
-        overstockItems: mockItems.filter(item => getStockLevel(item) === 'overstock').length,
-        averageTurnover: mockItems.reduce((sum, item) => sum + item.turnoverRate, 0) / mockItems.length,
-        items: mockItems
-      };
-
-      setInventoryMetrics(metrics);
-    } catch (error) {
-      console.error('Error loading inventory overview:', error);
-    }
-  };
 
   return (
     <Box>
       <Typography variant="h5" fontWeight="bold" gutterBottom>
         Inventory Overview
       </Typography>
+      {loading && <LinearProgress sx={{ mb: 2 }} />}
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       {/* Key Inventory Metrics */}
       <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', mb: 4 }}>
