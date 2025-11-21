@@ -1,27 +1,72 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Card,
-  CardContent,
-  Typography,
-  Box,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
-  LinearProgress,
-  Alert,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  ButtonGroup,
-  Button,
-} from '@mui/material';
-import {
+  return (
+    <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h5" fontWeight="bold">
+          Top Selling Items
+        </Typography>
+      </Box>
+      {loading && <LinearProgress sx={{ mb: 2 }} />}
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {/* Summary Cards */}
+      <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', mb: 4 }}>
+        {/* ...existing summary cards... */}
+        <Box sx={{ flex: 1, minWidth: '280px' }}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" color="primary" gutterBottom>
+                Fast Moving Items
+              </Typography>
+              <Typography variant="h4" fontWeight="bold">
+                {topItems.filter(item => item.velocity === 'fast').length}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                High velocity products
+              </Typography>
+            </CardContent>
+          </Card>
+        </Box>
+        <Box sx={{ flex: 1, minWidth: '280px' }}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" color="warning.main" gutterBottom>
+                Slow Moving Items
+              </Typography>
+              <Typography variant="h4" fontWeight="bold">
+                {topItems.filter(item => item.velocity === 'slow').length}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Need attention
+              </Typography>
+            </CardContent>
+          </Card>
+        </Box>
+        <Box sx={{ flex: 1, minWidth: '280px' }}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" color="success.main" gutterBottom>
+                Medium Velocity Items
+              </Typography>
+              <Typography variant="h4" fontWeight="bold">
+                {topItems.filter(item => item.velocity === 'medium').length}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Moderate sales
+              </Typography>
+            </CardContent>
+          </Card>
+        </Box>
+      </Box>
+      {/* Table or Cards view */}
+      {/* ...existing table/cards view code... */}
+      {topItems.length === 0 && !loading && (
+        <Alert severity="info">
+          No sales data available for the selected period.
+        </Alert>
+      )}
+    </Box>
+  );
   TrendingUp as TrendingUpIcon,
   TrendingDown as TrendingDownIcon,
 } from '@mui/icons-material';
