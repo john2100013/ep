@@ -475,8 +475,22 @@ export class ApiService {
   }
 
   static async getPrescriptionItems(prescription_id: number) {
-    const response = await api.get(`/hospital/prescriptions/${prescription_id}/items`);
-    return response.data;
+    try {
+      const response = await api.get(`/hospital/prescriptions/${prescription_id}/items`);
+      return response.data;
+    } catch (err: any) {
+      console.error('getPrescriptionItems primary request failed:', err?.response?.status, err?.response?.data);
+      // If backend expects a different pattern (query param or different route), try a fallback for diagnosis
+      try {
+        const fallback = await api.get('/hospital/prescriptions/items', { params: { prescription_id } });
+        console.warn('getPrescriptionItems fallback (query param) succeeded');
+        return fallback.data;
+      } catch (err2: any) {
+        console.error('getPrescriptionItems fallback failed:', err2?.response?.status, err2?.response?.data);
+        // Re-throw original error to be handled by caller
+        throw err;
+      }
+    }
   }
 
   static async fulfillPrescription(prescription_id: number, data: {

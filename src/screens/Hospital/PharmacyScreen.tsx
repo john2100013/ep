@@ -106,14 +106,32 @@ const PharmacyScreen: React.FC = () => {
   const handleSelectPrescription = async (prescription: Prescription) => {
     setSelectedPrescription(prescription);
     try {
+      if (!prescription?.id) {
+        setError('Invalid prescription selected');
+        console.error('Invalid prescription object:', prescription);
+        return;
+      }
+
+      console.log('Requesting prescription items for id=', prescription.id);
       const response = await ApiService.getPrescriptionItems(prescription.id);
-      if (response.success) {
+      if (response && response.success) {
         setPrescriptionItems(response.data.items || []);
         setItemsDialogOpen(true);
+      } else {
+        // If API returned a non-success payload
+        console.error('getPrescriptionItems returned non-success:', response);
+        setError('Failed to load prescription items (server responded with unexpected payload)');
       }
     } catch (err: any) {
-      setError('Failed to load prescription items');
-      console.error('Error:', err);
+      // Log full error details to help diagnose 400 responses
+      console.error('Error loading prescription items:', err);
+      console.error('Error response status:', err.response?.status);
+      console.error('Error response data:', err.response?.data);
+      setError(
+        (err.response && (err.response.data?.message || JSON.stringify(err.response.data))) ||
+          err.message ||
+          'Failed to load prescription items'
+      );
     }
   };
 
