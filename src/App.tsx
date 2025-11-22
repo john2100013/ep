@@ -44,6 +44,14 @@ import {
   SalonReports 
 } from './screens/Salon';
 
+// Hospital Module
+import {
+  ReceptionistScreen,
+  DoctorScreen,
+  LabScreen,
+  PharmacyScreen
+} from './screens/Hospital';
+
 function App() {
   const { isAuthenticated, loading } = useAuth();
 
@@ -431,6 +439,52 @@ function App() {
               <Header />
               <ProtectedRoute>
                 <SalonReports />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+
+        {/* Hospital Module Routes */}
+        <Route 
+          path="/hospital/receptionist" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <ReceptionistScreen />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/hospital/doctor" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <DoctorScreen />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/hospital/lab" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <LabScreen />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/hospital/pharmacy" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <PharmacyScreen />
               </ProtectedRoute>
             </Box>
           } 

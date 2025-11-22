@@ -1,161 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import { Alert, Card, CardContent, LinearProgress, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import { Box } from '@mui/system';
+import { useEffect, useState } from 'react';
 import {
-  return (
-    <Box>
-      <Typography variant="h5" fontWeight="bold" gutterBottom>
-        Sales Performance Overview
-      </Typography>
-      {loading && <LinearProgress sx={{ mb: 2 }} />}
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-      {/* Key Performance Indicators */}
-      <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', mb: 4 }}>
-        {/* ...existing code... */}
-        <Box sx={{ flex: 1, minWidth: '280px' }}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <MoneyIcon color="primary" sx={{ fontSize: 32 }} />
-                <Typography variant="h4" fontWeight="bold" color="primary">
-                  {formatCurrency(salesMetrics.totalSales)}
-                </Typography>
-              </Box>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                Total Sales
-              </Typography>
-              <Typography variant="body2" color="primary">
-                Growth: {formatPercentage(salesMetrics.salesGrowth)}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Box>
-        {/* ...other KPI cards... */}
-        <Box sx={{ flex: 1, minWidth: '280px' }}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <ReceiptIcon color="secondary" sx={{ fontSize: 32 }} />
-                <Typography variant="h4" fontWeight="bold" color="secondary">
-                  {salesMetrics.totalInvoices}
-                </Typography>
-              </Box>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                Total Invoices
-              </Typography>
-              <Typography variant="body2" color="text.primary">
-                Avg: {formatCurrency(salesMetrics.averageOrderValue)} per invoice
-              </Typography>
-            </CardContent>
-          </Card>
-        </Box>
-        <Box sx={{ flex: 1, minWidth: '280px' }}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <AssessmentIcon color="success" sx={{ fontSize: 32 }} />
-                <Typography variant="h4" fontWeight="bold" color="success.main">
-                  {formatCurrency(salesMetrics.grossProfit)}
-                </Typography>
-              </Box>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                Gross Profit
-              </Typography>
-              <Typography variant="body2" color="success.main">
-                {salesMetrics.profitMargin}% margin
-              </Typography>
-            </CardContent>
-          </Card>
-        </Box>
-        <Box sx={{ flex: 1, minWidth: '280px' }}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <TargetIcon color="warning" sx={{ fontSize: 32 }} />
-                <Typography variant="h4" fontWeight="bold" color="warning.main">
-                  {targetProgress.toFixed(0)}%
-                </Typography>
-              </Box>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                Target Achievement
-              </Typography>
-              <LinearProgress
-                variant="determinate"
-                value={Math.min(targetProgress, 100)}
-                color={getProgressColor(targetProgress)}
-                sx={{ height: 6, borderRadius: 3 }}
-              />
-            </CardContent>
-          </Card>
-        </Box>
-      </Box>
-      {/* Target vs Actual */}
-      <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', mb: 4 }}>
-        <Box sx={{ flex: 1, minWidth: '400px' }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" fontWeight="bold" gutterBottom>
-                Sales vs Target
-              </Typography>
-              <Box sx={{ mb: 2 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2">Actual Sales</Typography>
-                  <Typography variant="body2" fontWeight="bold">
-                    {formatCurrency(salesMetrics.totalSales)}
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2">Target Sales</Typography>
-                  <Typography variant="body2" fontWeight="bold">
-                    {formatCurrency(salesMetrics.targetSales)}
-                  </Typography>
-                </Box>
-              </Box>
-              <LinearProgress
-                variant="determinate"
-                value={Math.min(targetProgress, 100)}
-                color={getProgressColor(targetProgress)}
-                sx={{ height: 8, borderRadius: 4, mb: 2 }}
-              />
-              <Typography variant="body2" color="text.secondary">
-                {targetProgress.toFixed(1)}% of target achieved
-              </Typography>
-            </CardContent>
-          </Card>
-        </Box>
-      </Box>
-      {/* Daily Sales Table */}
-      <Box sx={{ mt: 4 }}>
-        <Card>
-          <CardContent>
-            <Typography variant="h6" fontWeight="bold" gutterBottom>
-              Daily Sales
-            </Typography>
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Date</TableCell>
-                    <TableCell>Sales</TableCell>
-                    <TableCell>Invoices</TableCell>
-                    <TableCell>Profit</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {salesMetrics.dailySales.map((row, idx) => (
-                    <TableRow key={idx}>
-                      <TableCell>{row.date}</TableCell>
-                      <TableCell>{formatCurrency(row.sales)}</TableCell>
-                      <TableCell>{row.invoices}</TableCell>
-                      <TableCell>{formatCurrency(row.profit)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </CardContent>
-        </Card>
-      </Box>
-    </Box>
-  );
+  AttachMoney as MoneyIcon,
+  TrendingUp as TrendingUpIcon,
+  Receipt as ReceiptIcon,
+  Assessment as AssessmentIcon,
+  TrackChanges as TargetIcon,
+} from '@mui/icons-material';
+
 interface SalesPerformanceProps {
   dateRange: string;
 }
@@ -218,7 +71,7 @@ const SalesPerformance: React.FC<SalesPerformanceProps> = ({ dateRange }) => {
       try {
         const params = { dateRange };
         const response = await import('../../services/api').then(m => m.api.get('/analytics/sales-performance', { params }));
-        const metrics: SalesMetrics = response.data?.metrics || response.metrics || {};
+        const metrics: SalesMetrics = response.data?.metrics || response.data || {};
         setSalesMetrics({
           totalSales: metrics.totalSales || 0,
           totalInvoices: metrics.totalInvoices || 0,
@@ -257,6 +110,11 @@ const SalesPerformance: React.FC<SalesPerformanceProps> = ({ dateRange }) => {
       </Typography>
       {loading && <LinearProgress sx={{ mb: 2 }} />}
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      
+      {/* Key Metrics Cards */}
+      <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', mb: 4 }}>
+        <Box sx={{ flex: 1, minWidth: '280px' }}>
+          <Card sx={{ height: '100%' }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                 <MoneyIcon color="primary" sx={{ fontSize: 32 }} />
@@ -331,8 +189,7 @@ const SalesPerformance: React.FC<SalesPerformanceProps> = ({ dateRange }) => {
                 variant="determinate"
                 value={Math.min(targetProgress, 100)}
                 color={getProgressColor(targetProgress)}
-                sx={{ height: 6, borderRadius: 3 }}
-              />
+                sx={{ height: 6, borderRadius: 3 }} />
             </CardContent>
           </Card>
         </Box>
@@ -361,8 +218,8 @@ const SalesPerformance: React.FC<SalesPerformanceProps> = ({ dateRange }) => {
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                   <Typography variant="body2">Remaining</Typography>
-                  <Typography 
-                    variant="body2" 
+                  <Typography
+                    variant="body2"
                     fontWeight="bold"
                     color={targetProgress >= 100 ? 'success.main' : 'warning.main'}
                   >
@@ -373,8 +230,7 @@ const SalesPerformance: React.FC<SalesPerformanceProps> = ({ dateRange }) => {
                   variant="determinate"
                   value={Math.min(targetProgress, 100)}
                   color={getProgressColor(targetProgress)}
-                  sx={{ height: 8, borderRadius: 4 }}
-                />
+                  sx={{ height: 8, borderRadius: 4 }} />
               </Box>
               {targetProgress >= 100 ? (
                 <Alert severity="success" sx={{ mt: 2 }}>
@@ -418,8 +274,7 @@ const SalesPerformance: React.FC<SalesPerformanceProps> = ({ dateRange }) => {
                   variant="determinate"
                   value={salesMetrics.profitMargin}
                   color="success"
-                  sx={{ height: 8, borderRadius: 4 }}
-                />
+                  sx={{ height: 8, borderRadius: 4 }} />
                 <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
                   Profit Margin: {salesMetrics.profitMargin}%
                 </Typography>
@@ -449,8 +304,8 @@ const SalesPerformance: React.FC<SalesPerformanceProps> = ({ dateRange }) => {
               </TableHead>
               <TableBody>
                 {salesMetrics.dailySales.map((day) => {
-                  const avgOrderValue = day.sales / day.invoices;
-                  const profitMargin = (day.profit / day.sales) * 100;
+                  const avgOrderValue = day.invoices > 0 ? day.sales / day.invoices : 0;
+                  const profitMargin = day.sales > 0 ? (day.profit / day.sales) * 100 : 0;
                   const performance = day.sales > 20000 ? 'Excellent' : day.sales > 15000 ? 'Good' : day.sales > 10000 ? 'Average' : 'Below Average';
                   const performanceColor = day.sales > 20000 ? 'success' : day.sales > 15000 ? 'info' : day.sales > 10000 ? 'warning' : 'error';
                   

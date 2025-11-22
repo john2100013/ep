@@ -19,6 +19,7 @@ import {
   ReportProblem as DamageIcon,
   Analytics as AnalyticsIcon,
   Store as StoreIcon,
+  LocalHospital as HospitalIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -317,6 +318,24 @@ const HomeScreen: React.FC = () => {
               }}
             >
               ✂️ Salon/Barber Shop
+            </Button>
+
+            {/* Hospital Module */}
+            <Button
+              fullWidth
+              variant="contained"
+              startIcon={<HospitalIcon />}
+              onClick={() => navigate('/hospital/receptionist')}
+              sx={{
+                py: 2,
+                mt: 1,
+                bgcolor: '#d32f2f',
+                '&:hover': { bgcolor: '#c62828' },
+                fontSize: '1.05rem',
+                fontWeight: 'bold'
+              }}
+            >
+              🏥 Hospital Management
             </Button>
           </Box>
           </CardContent>

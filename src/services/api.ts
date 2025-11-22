@@ -386,6 +386,106 @@ export class ApiService {
     const response = await api.get('/health');
     return response.data;
   }
+
+  // ============ HOSPITAL MANAGEMENT ENDPOINTS ============
+  
+  // Receptionist endpoints
+  static async createOrGetPatient(patientData: {
+    patient_name: string;
+    national_id?: string;
+    location?: string;
+    age?: number;
+    phone_number?: string;
+    email?: string;
+    is_first_visit?: boolean;
+  }) {
+    const response = await api.post('/hospital/patients', patientData);
+    return response.data;
+  }
+
+  static async createConsultation(consultationData: {
+    patient_id: number;
+    consultation_fee?: number;
+  }) {
+    const response = await api.post('/hospital/consultations', consultationData);
+    return response.data;
+  }
+
+  static async getPendingConsultations(status?: string) {
+    const response = await api.get('/hospital/consultations/pending', { params: { status } });
+    return response.data;
+  }
+
+  // Doctor endpoints
+  static async getDoctorVisitByConsultation(consultation_id: number) {
+    const response = await api.get('/hospital/doctor-visits', { params: { consultation_id } });
+    return response.data;
+  }
+
+  static async createOrUpdateDoctorVisit(visitData: {
+    consultation_id: number;
+    symptoms?: string;
+    blood_pressure?: string;
+    temperature?: number;
+    heart_rate?: number;
+    other_analysis?: string;
+    disease_diagnosis?: string;
+    notes?: string;
+  }) {
+    const response = await api.post('/hospital/doctor-visits', visitData);
+    return response.data;
+  }
+
+  static async requestLabTests(data: {
+    doctor_visit_id: number;
+    tests: Array<{ test_name: string; test_type?: string }>;
+  }) {
+    const response = await api.post('/hospital/lab-tests/request', data);
+    return response.data;
+  }
+
+  static async createPrescription(prescriptionData: {
+    doctor_visit_id: number;
+    items: Array<{ item_id: number; quantity_prescribed: number; unit_price?: number }>;
+  }) {
+    const response = await api.post('/hospital/prescriptions', prescriptionData);
+    return response.data;
+  }
+
+  static async getLabTestResults(doctor_visit_id?: number) {
+    const response = await api.get('/hospital/lab-tests/results', { params: { doctor_visit_id } });
+    return response.data;
+  }
+
+  // Lab endpoints
+  static async getPendingLabTests() {
+    const response = await api.get('/hospital/lab-tests/pending');
+    return response.data;
+  }
+
+  static async updateLabTestResult(lab_test_id: number, test_result: string) {
+    const response = await api.put(`/hospital/lab-tests/${lab_test_id}/result`, { lab_test_id, test_result });
+    return response.data;
+  }
+
+  // Pharmacy endpoints
+  static async getPendingPrescriptions() {
+    const response = await api.get('/hospital/prescriptions/pending');
+    return response.data;
+  }
+
+  static async getPrescriptionItems(prescription_id: number) {
+    const response = await api.get(`/hospital/prescriptions/${prescription_id}/items`);
+    return response.data;
+  }
+
+  static async fulfillPrescription(prescription_id: number, data: {
+    items: Array<{ prescription_item_id: number; quantity_fulfilled: number; is_available: boolean }>;
+    financial_account_id?: number;
+  }) {
+    const response = await api.post(`/hospital/prescriptions/${prescription_id}/fulfill`, data);
+    return response.data;
+  }
 }
 
 export default ApiService;
