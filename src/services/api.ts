@@ -487,8 +487,16 @@ export class ApiService {
         return fallback.data;
       } catch (err2: any) {
         console.error('getPrescriptionItems fallback failed:', err2?.response?.status, err2?.response?.data);
-        // Re-throw original error to be handled by caller
-        throw err;
+        // Try POST fallback (some APIs expect an ID in the request body)
+        try {
+          const postFallback = await api.post('/hospital/prescriptions/items', { prescription_id });
+          console.warn('getPrescriptionItems POST fallback succeeded');
+          return postFallback.data;
+        } catch (err3: any) {
+          console.error('getPrescriptionItems POST fallback failed:', err3?.response?.status, err3?.response?.data);
+          // Re-throw original error to be handled by caller
+          throw err;
+        }
       }
     }
   }
