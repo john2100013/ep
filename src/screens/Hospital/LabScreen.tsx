@@ -6,7 +6,6 @@ import {
   Typography,
   TextField,
   Button,
-  Grid,
   Alert,
   Table,
   TableBody,
@@ -194,32 +193,32 @@ const LabScreen: React.FC = () => {
         <DialogContent>
           {selectedTest && (
             <Box sx={{ mt: 2 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
+              <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' } }}>
+                <Box>
                   <Typography variant="body2" color="text.secondary">
                     Patient: {selectedTest.patient_name}
                   </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
+                </Box>
+                <Box>
                   <Typography variant="body2" color="text.secondary">
                     ID: {selectedTest.national_id || 'N/A'}
                   </Typography>
-                </Grid>
+                </Box>
                 {selectedTest.symptoms && (
-                  <Grid item xs={12}>
+                  <Box sx={{ gridColumn: '1 / -1' }}>
                     <Typography variant="body2" color="text.secondary">
                       Symptoms: {selectedTest.symptoms}
                     </Typography>
-                  </Grid>
+                  </Box>
                 )}
                 {selectedTest.disease_diagnosis && (
-                  <Grid item xs={12}>
+                  <Box sx={{ gridColumn: '1 / -1' }}>
                     <Typography variant="body2" color="text.secondary">
                       Diagnosis: {selectedTest.disease_diagnosis}
                     </Typography>
-                  </Grid>
+                  </Box>
                 )}
-                <Grid item xs={12}>
+                <Box sx={{ gridColumn: '1 / -1' }}>
                   <TextField
                     fullWidth
                     label="Test Result"
@@ -230,8 +229,8 @@ const LabScreen: React.FC = () => {
                     placeholder="Enter detailed test results here..."
                     required
                   />
-                </Grid>
-              </Grid>
+                </Box>
+              </Box>
             </Box>
           )}
         </DialogContent>

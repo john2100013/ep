@@ -64,6 +64,8 @@ const InventoryOverview: React.FC<InventoryOverviewProps> = ({ dateRange }) => {
     averageTurnover: 0,
     items: []
   });
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-KE', {
@@ -117,7 +119,9 @@ const InventoryOverview: React.FC<InventoryOverviewProps> = ({ dateRange }) => {
       try {
         const params = { dateRange };
         const response = await import('../../services/api').then(m => m.api.get('/analytics/inventory-overview', { params }));
-        const metrics: InventoryMetrics = response.data?.metrics || response.metrics || {};
+        // response is an AxiosResponse; metrics may be at response.data.metrics or response.data directly
+        const metricsData = (response.data && (response.data.metrics ?? response.data)) || {};
+        const metrics: InventoryMetrics = metricsData as InventoryMetrics;
         setInventoryMetrics({
           totalItems: metrics.totalItems || 0,
           totalValue: metrics.totalValue || 0,
@@ -445,3 +449,5 @@ const InventoryOverview: React.FC<InventoryOverviewProps> = ({ dateRange }) => {
 };
 
 export default InventoryOverview;
+ 
+

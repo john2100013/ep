@@ -6,7 +6,6 @@ import {
   Typography,
   TextField,
   Button,
-  Grid,
   Alert,
   Table,
   TableBody,
@@ -274,16 +273,16 @@ const ReceptionistScreen: React.FC = () => {
         </Alert>
       )}
 
-      <Grid container spacing={3}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
         {/* Patient Registration Form */}
-        <Grid item xs={12} md={6}>
+        <Box>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
               Register New Patient
             </Typography>
             <form onSubmit={handlePatientSubmit}>
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
+              <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' } }}>
+                <Box sx={{ gridColumn: '1 / -1' }}>
                   <TextField
                     fullWidth
                     label="Patient Name *"
@@ -291,16 +290,18 @@ const ReceptionistScreen: React.FC = () => {
                     onChange={(e) => setPatientForm({ ...patientForm, patient_name: e.target.value })}
                     required
                   />
-                </Grid>
-                <Grid item xs={12} sm={6}>
+                </Box>
+
+                <Box>
                   <TextField
                     fullWidth
                     label="National ID Number"
                     value={patientForm.national_id}
                     onChange={(e) => setPatientForm({ ...patientForm, national_id: e.target.value })}
                   />
-                </Grid>
-                <Grid item xs={12} sm={6}>
+                </Box>
+
+                <Box>
                   <TextField
                     fullWidth
                     label="Age"
@@ -308,24 +309,27 @@ const ReceptionistScreen: React.FC = () => {
                     value={patientForm.age}
                     onChange={(e) => setPatientForm({ ...patientForm, age: e.target.value })}
                   />
-                </Grid>
-                <Grid item xs={12}>
+                </Box>
+
+                <Box sx={{ gridColumn: '1 / -1' }}>
                   <TextField
                     fullWidth
                     label="Location"
                     value={patientForm.location}
                     onChange={(e) => setPatientForm({ ...patientForm, location: e.target.value })}
                   />
-                </Grid>
-                <Grid item xs={12} sm={6}>
+                </Box>
+
+                <Box>
                   <TextField
                     fullWidth
                     label="Phone Number"
                     value={patientForm.phone_number}
                     onChange={(e) => setPatientForm({ ...patientForm, phone_number: e.target.value })}
                   />
-                </Grid>
-                <Grid item xs={12} sm={6}>
+                </Box>
+
+                <Box>
                   <TextField
                     fullWidth
                     label="Email"
@@ -333,8 +337,9 @@ const ReceptionistScreen: React.FC = () => {
                     value={patientForm.email}
                     onChange={(e) => setPatientForm({ ...patientForm, email: e.target.value })}
                   />
-                </Grid>
-                <Grid item xs={12}>
+                </Box>
+
+                <Box sx={{ gridColumn: '1 / -1' }}>
                   <FormControlLabel
                     control={
                       <Checkbox
@@ -344,8 +349,9 @@ const ReceptionistScreen: React.FC = () => {
                     }
                     label="First Time Visit"
                   />
-                </Grid>
-                <Grid item xs={12}>
+                </Box>
+
+                <Box sx={{ gridColumn: '1 / -1' }}>
                   <TextField
                     fullWidth
                     label="Consultation Fee"
@@ -356,8 +362,9 @@ const ReceptionistScreen: React.FC = () => {
                       startAdornment: <span style={{ marginRight: 8 }}>KES</span>,
                     }}
                   />
-                </Grid>
-                <Grid item xs={12}>
+                </Box>
+
+                <Box sx={{ gridColumn: '1 / -1' }}>
                   <Button
                     type="submit"
                     variant="contained"
@@ -367,14 +374,14 @@ const ReceptionistScreen: React.FC = () => {
                   >
                     {loading ? 'Processing...' : 'Register Patient & Generate Receipt'}
                   </Button>
-                </Grid>
-              </Grid>
+                </Box>
+              </Box>
             </form>
           </Paper>
-        </Grid>
+        </Box>
 
         {/* Pending Consultations */}
-        <Grid item xs={12} md={6}>
+        <Box>
           <Paper sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="h6">
@@ -425,8 +432,8 @@ const ReceptionistScreen: React.FC = () => {
               </Table>
             </TableContainer>
           </Paper>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
 
       {/* Receipt Print Dialog */}
       <Dialog open={receiptDialogOpen} onClose={() => setReceiptDialogOpen(false)}>

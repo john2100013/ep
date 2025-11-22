@@ -6,7 +6,6 @@ import {
   Typography,
   TextField,
   Button,
-  Grid,
   Alert,
   Table,
   TableBody,
@@ -345,9 +344,9 @@ const DoctorScreen: React.FC = () => {
         </Alert>
       )}
 
-      <Grid container spacing={3}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 2fr' }, gap: 3 }}>
         {/* Pending Consultations List */}
-        <Grid item xs={12} md={4}>
+        <Box>
           <Paper sx={{ p: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="h6">Pending Patients</Typography>
@@ -390,10 +389,10 @@ const DoctorScreen: React.FC = () => {
               </Table>
             </TableContainer>
           </Paper>
-        </Grid>
+        </Box>
 
         {/* Patient Details and Consultation */}
-        <Grid item xs={12} md={8}>
+        <Box>
           {selectedConsultation ? (
             <Paper sx={{ p: 3 }}>
               <Typography variant="h6" gutterBottom>
@@ -416,8 +415,8 @@ const DoctorScreen: React.FC = () => {
               {/* Symptoms & Analysis Tab */}
               {tabValue === 0 && (
                 <Box sx={{ mt: 3 }}>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12}>
+                  <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' } }}>
+                    <Box sx={{ gridColumn: '1 / -1' }}>
                       <TextField
                         fullWidth
                         label="Symptoms"
@@ -427,8 +426,9 @@ const DoctorScreen: React.FC = () => {
                         onChange={(e) => setSymptoms(e.target.value)}
                         placeholder="Enter patient symptoms..."
                       />
-                    </Grid>
-                    <Grid item xs={12} sm={4}>
+                    </Box>
+
+                    <Box>
                       <TextField
                         fullWidth
                         label="Blood Pressure"
@@ -436,8 +436,9 @@ const DoctorScreen: React.FC = () => {
                         onChange={(e) => setBloodPressure(e.target.value)}
                         placeholder="e.g., 120/80"
                       />
-                    </Grid>
-                    <Grid item xs={12} sm={4}>
+                    </Box>
+
+                    <Box>
                       <TextField
                         fullWidth
                         label="Temperature (°C)"
@@ -445,8 +446,9 @@ const DoctorScreen: React.FC = () => {
                         value={temperature}
                         onChange={(e) => setTemperature(e.target.value)}
                       />
-                    </Grid>
-                    <Grid item xs={12} sm={4}>
+                    </Box>
+
+                    <Box>
                       <TextField
                         fullWidth
                         label="Heart Rate (bpm)"
@@ -454,8 +456,9 @@ const DoctorScreen: React.FC = () => {
                         value={heartRate}
                         onChange={(e) => setHeartRate(e.target.value)}
                       />
-                    </Grid>
-                    <Grid item xs={12}>
+                    </Box>
+
+                    <Box sx={{ gridColumn: '1 / -1' }}>
                       <TextField
                         fullWidth
                         label="Other Analysis"
@@ -464,8 +467,9 @@ const DoctorScreen: React.FC = () => {
                         value={otherAnalysis}
                         onChange={(e) => setOtherAnalysis(e.target.value)}
                       />
-                    </Grid>
-                    <Grid item xs={12}>
+                    </Box>
+
+                    <Box sx={{ gridColumn: '1 / -1' }}>
                       <TextField
                         fullWidth
                         label="Disease Diagnosis"
@@ -473,8 +477,9 @@ const DoctorScreen: React.FC = () => {
                         onChange={(e) => setDiseaseDiagnosis(e.target.value)}
                         placeholder="Enter disease name if known..."
                       />
-                    </Grid>
-                    <Grid item xs={12}>
+                    </Box>
+
+                    <Box sx={{ gridColumn: '1 / -1' }}>
                       <TextField
                         fullWidth
                         label="Notes"
@@ -483,8 +488,9 @@ const DoctorScreen: React.FC = () => {
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                       />
-                    </Grid>
-                    <Grid item xs={12}>
+                    </Box>
+
+                    <Box sx={{ gridColumn: '1 / -1' }}>
                       <Button
                         variant="contained"
                         onClick={handleSaveVisit}
@@ -493,16 +499,16 @@ const DoctorScreen: React.FC = () => {
                       >
                         {loading ? 'Saving...' : 'Save Visit Information'}
                       </Button>
-                    </Grid>
-                  </Grid>
+                    </Box>
+                  </Box>
                 </Box>
               )}
 
               {/* Lab Tests Tab */}
               {tabValue === 1 && (
                 <Box sx={{ mt: 3 }}>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
+                  <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' } }}>
+                    <Box>
                       <TextField
                         fullWidth
                         label="Test Name"
@@ -510,8 +516,8 @@ const DoctorScreen: React.FC = () => {
                         onChange={(e) => setLabTestName(e.target.value)}
                         placeholder="e.g., Blood Test, X-Ray"
                       />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
+                    </Box>
+                    <Box>
                       <TextField
                         fullWidth
                         label="Test Type"
@@ -519,8 +525,8 @@ const DoctorScreen: React.FC = () => {
                         onChange={(e) => setLabTestType(e.target.value)}
                         placeholder="e.g., CBC, Chest X-Ray"
                       />
-                    </Grid>
-                    <Grid item xs={12}>
+                    </Box>
+                    <Box sx={{ gridColumn: '1 / -1' }}>
                       <Button
                         variant="contained"
                         onClick={handleRequestLabTest}
@@ -529,9 +535,9 @@ const DoctorScreen: React.FC = () => {
                       >
                         Request Lab Test
                       </Button>
-                    </Grid>
+                    </Box>
                     {labTests.length > 0 && (
-                      <Grid item xs={12}>
+                      <Box sx={{ gridColumn: '1 / -1' }}>
                         <Typography variant="subtitle2" gutterBottom>
                           Requested Tests:
                         </Typography>
@@ -542,17 +548,17 @@ const DoctorScreen: React.FC = () => {
                             sx={{ mr: 1, mb: 1 }}
                           />
                         ))}
-                      </Grid>
+                      </Box>
                     )}
-                  </Grid>
+                  </Box>
                 </Box>
               )}
 
               {/* Prescribe Medicine Tab */}
               {tabValue === 2 && (
                 <Box sx={{ mt: 3 }}>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12}>
+                  <Box sx={{ display: 'grid', gap: 2 }}>
+                    <Box>
                       <TextField
                         fullWidth
                         label="Search Medicine"
@@ -562,8 +568,8 @@ const DoctorScreen: React.FC = () => {
                           startAdornment: <SearchIcon sx={{ mr: 1, color: 'action.active' }} />,
                         }}
                       />
-                    </Grid>
-                    <Grid item xs={12}>
+                    </Box>
+                    <Box>
                       <TableContainer>
                         <Table size="small">
                           <TableHead>
@@ -594,10 +600,10 @@ const DoctorScreen: React.FC = () => {
                           </TableBody>
                         </Table>
                       </TableContainer>
-                    </Grid>
+                    </Box>
                     {selectedItems.length > 0 && (
                       <>
-                        <Grid item xs={12}>
+                        <Box>
                           <Typography variant="subtitle2" gutterBottom>
                             Selected Medicines:
                           </Typography>
@@ -651,8 +657,8 @@ const DoctorScreen: React.FC = () => {
                               </TableBody>
                             </Table>
                           </TableContainer>
-                        </Grid>
-                        <Grid item xs={12}>
+                        </Box>
+                        <Box>
                           <Button
                             variant="contained"
                             color="primary"
@@ -662,10 +668,10 @@ const DoctorScreen: React.FC = () => {
                           >
                             {loading ? 'Creating...' : 'Create Prescription'}
                           </Button>
-                        </Grid>
+                        </Box>
                       </>
                     )}
-                  </Grid>
+                  </Box>
                 </Box>
               )}
 
@@ -717,11 +723,10 @@ const DoctorScreen: React.FC = () => {
               </Typography>
             </Paper>
           )}
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
     </Container>
   );
 };
 
 export default DoctorScreen;
-

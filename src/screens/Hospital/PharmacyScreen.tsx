@@ -153,7 +153,7 @@ const PharmacyScreen: React.FC = () => {
 
       const response = await ApiService.fulfillPrescription(selectedPrescription.id, {
         items,
-        financial_account_id: selectedAccount,
+        financial_account_id: Number(selectedAccount),
       });
 
       if (response.success) {
