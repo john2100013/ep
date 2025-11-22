@@ -6,6 +6,10 @@ import {
   Typography,
   Button,
   Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -28,6 +32,7 @@ const HomeScreen: React.FC = () => {
   const navigate = useNavigate();
   const { business, user } = useAuth();
   const [businessName, setBusinessName] = useState<string>('');
+  const [advanceOpen, setAdvanceOpen] = useState(false);
 
   // Fetch business settings to get business name
   useEffect(() => {
@@ -123,32 +128,18 @@ const HomeScreen: React.FC = () => {
               POS System
             </Button>
 
+            {/* Advance package button (contains Salon, Service Billing, Hospital links) */}
             <Button
               fullWidth
               variant="contained"
-              startIcon={<StoreIcon />}
-              onClick={() => navigate('/service-billing')}
+              onClick={() => setAdvanceOpen(true)}
               sx={{
                 py: 2,
-                bgcolor: '#673ab7',
-                '&:hover': { bgcolor: '#5e35b1' }
+                bgcolor: '#00796b',
+                '&:hover': { bgcolor: '#00695c' }
               }}
             >
-              💆 Service Billing
-            </Button>
-
-            <Button
-              fullWidth
-              variant="contained"
-              startIcon={<StoreIcon />}
-              onClick={() => navigate('/salon')}
-              sx={{
-                py: 2,
-                bgcolor: '#ff6b35',
-                '&:hover': { bgcolor: '#e55a2b' }
-              }}
-            >
-              💈 Salon/Barber
+              Advance Package
             </Button>
 
             {/* Invoice Management */}
@@ -303,43 +294,31 @@ const HomeScreen: React.FC = () => {
               Settings
             </Button>
 
-            {/* Salon/Barber Module */}
-            <Button
-              fullWidth
-              variant="contained"
-              onClick={() => navigate('/salon')}
-              sx={{
-                py: 2,
-                mt: 2,
-                bgcolor: '#ff6b35',
-                '&:hover': { bgcolor: '#e05a2d' },
-                fontSize: '1.1rem',
-                fontWeight: 'bold'
-              }}
-            >
-              ✂️ Salon/Barber Shop
-            </Button>
-
-            {/* Hospital Module */}
-            <Button
-              fullWidth
-              variant="contained"
-              startIcon={<HospitalIcon />}
-              onClick={() => navigate('/hospital/receptionist')}
-              sx={{
-                py: 2,
-                mt: 1,
-                bgcolor: '#d32f2f',
-                '&:hover': { bgcolor: '#c62828' },
-                fontSize: '1.05rem',
-                fontWeight: 'bold'
-              }}
-            >
-              🏥 Hospital Management
-            </Button>
+            {/* Previously Salon/Hospital buttons moved to Advance Package modal */}
           </Box>
           </CardContent>
         </Card>
+
+        {/* Advance Package Modal */}
+        <Dialog open={advanceOpen} onClose={() => setAdvanceOpen(false)} fullWidth maxWidth="sm">
+          <DialogTitle>Advance Package</DialogTitle>
+          <DialogContent>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+              <Button variant="outlined" onClick={() => { setAdvanceOpen(false); navigate('/salon'); }}>
+                💈 Salon / Barber
+              </Button>
+              <Button variant="outlined" onClick={() => { setAdvanceOpen(false); navigate('/service-billing'); }}>
+                💆 Service Billing
+              </Button>
+              <Button variant="outlined" onClick={() => { setAdvanceOpen(false); navigate('/hospital'); }}>
+                🏥 Hospital Management
+              </Button>
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setAdvanceOpen(false)}>Close</Button>
+          </DialogActions>
+        </Dialog>
 
         {/* Features Section */}
         <Card sx={{ elevation: 4 }}>

@@ -50,6 +50,7 @@ import {
   DoctorScreen,
   LabScreen,
   PharmacyScreen
+  , HospitalScreen
 } from './screens/Hospital';
 
 function App() {
@@ -445,6 +446,17 @@ function App() {
         />
 
         {/* Hospital Module Routes */}
+        <Route 
+          path="/hospital" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <HospitalScreen />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
         <Route 
           path="/hospital/receptionist" 
           element={
