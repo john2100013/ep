@@ -452,14 +452,37 @@ export class ApiService {
     return response.data;
   }
 
-  static async getLabTestResults(doctor_visit_id?: number) {
-    const response = await api.get('/hospital/lab-tests/results', { params: { doctor_visit_id } });
+  static async getLabTestResults(doctor_visit_id?: number, allResults?: boolean) {
+    const params: any = {};
+    if (doctor_visit_id) params.doctor_visit_id = doctor_visit_id;
+    if (allResults) params.all_results = 'true';
+    const response = await api.get('/hospital/lab-tests/results', { params });
+    return response.data;
+  }
+
+  static async markLabResultViewed(lab_test_id: number) {
+    const response = await api.post('/hospital/lab-tests/mark-viewed', { lab_test_id });
+    return response.data;
+  }
+
+  static async getDoctorPatients(search?: string) {
+    const params: any = {};
+    if (search) params.search = search;
+    const response = await api.get('/hospital/doctor/patients', { params });
     return response.data;
   }
 
   // Lab endpoints
   static async getPendingLabTests() {
     const response = await api.get('/hospital/lab-tests/pending');
+    return response.data;
+  }
+
+  static async getAllLabTests(search?: string, status?: string) {
+    const params: any = {};
+    if (search) params.search = search;
+    if (status) params.status = status;
+    const response = await api.get('/hospital/lab-tests/all', { params });
     return response.data;
   }
 

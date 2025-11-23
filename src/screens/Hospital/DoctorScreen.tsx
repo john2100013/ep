@@ -66,6 +66,12 @@ interface LabTest {
   test_type?: string;
   test_result?: string;
   test_status: string;
+  test_completed_at?: string;
+  test_requested_at?: string;
+  patient_name?: string;
+  national_id?: string;
+  consultation_number?: string;
+  doctor_viewed_at?: string;
 }
 
 interface Item {
@@ -82,9 +88,13 @@ const DoctorScreen: React.FC = () => {
   const [doctorVisit, setDoctorVisit] = useState<DoctorVisit | null>(null);
   const [labTests, setLabTests] = useState<LabTest[]>([]);
   const [labTestResults, setLabTestResults] = useState<LabTest[]>([]);
+  const [allLabResults, setAllLabResults] = useState<LabTest[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [selectedItems, setSelectedItems] = useState<Array<{ item_id: number; quantity_prescribed: number; unit_price: number }>>([]);
   const [searchItemQuery, setSearchItemQuery] = useState('');
+  const [patientSearchQuery, setPatientSearchQuery] = useState('');
+  const [allPatients, setAllPatients] = useState<any[]>([]);
+  const [showPatientHistory, setShowPatientHistory] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -103,7 +113,46 @@ const DoctorScreen: React.FC = () => {
   useEffect(() => {
     loadPendingConsultations();
     loadItems();
+    loadAllLabResults();
   }, []);
+
+  const loadAllLabResults = async () => {
+    try {
+      const response = await ApiService.getLabTestResults(undefined, true);
+      if (response.success) {
+        setAllLabResults(response.data.lab_tests || []);
+      }
+    } catch (err: any) {
+      console.error('Error loading all lab results:', err);
+    }
+  };
+
+  const loadPatientHistory = async () => {
+    try {
+      setLoading(true);
+      const response = await ApiService.getDoctorPatients(patientSearchQuery || undefined);
+      if (response.success) {
+        setAllPatients(response.data.patients || []);
+      }
+    } catch (err: any) {
+      console.error('Error loading patient history:', err);
+      setError('Failed to load patient history');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMarkResultViewed = async (labTestId: number) => {
+    try {
+      await ApiService.markLabResultViewed(labTestId);
+      await loadAllLabResults();
+      if (doctorVisit) {
+        await loadLabTestResults();
+      }
+    } catch (err: any) {
+      console.error('Error marking result as viewed:', err);
+    }
+  };
 
   const loadLabTestResults = useCallback(async () => {
     if (!selectedConsultation || !doctorVisit) return;
@@ -154,14 +203,24 @@ const DoctorScreen: React.FC = () => {
   useEffect(() => {
     if (doctorVisit) {
       loadLabTestResults();
-      // Poll for new lab results every 10 seconds when doctor visit is loaded
+      // Poll for new lab results every 5 seconds when doctor visit is loaded
       const interval = setInterval(() => {
         loadLabTestResults();
-      }, 10000); // Check every 10 seconds
+        loadAllLabResults(); // Also refresh all results
+      }, 5000); // Check every 5 seconds
       
       return () => clearInterval(interval);
     }
   }, [doctorVisit, loadLabTestResults]);
+
+  // Also poll for all lab results periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadAllLabResults();
+    }, 10000); // Check every 10 seconds
+    
+    return () => clearInterval(interval);
+  }, []);
 
   const loadPendingConsultations = async () => {
     try {
@@ -388,10 +447,104 @@ const DoctorScreen: React.FC = () => {
           <Paper sx={{ p: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="h6">Pending Patients</Typography>
-              <IconButton onClick={loadPendingConsultations} size="small">
-                <RefreshIcon />
-              </IconButton>
+              <Box>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => {
+                    setShowPatientHistory(!showPatientHistory);
+                    if (!showPatientHistory) {
+                      loadPatientHistory();
+                    }
+                  }}
+                  sx={{ mr: 1 }}
+                >
+                  {showPatientHistory ? 'Hide' : 'View'} All Patients
+                </Button>
+                <IconButton onClick={loadPendingConsultations} size="small">
+                  <RefreshIcon />
+                </IconButton>
+              </Box>
             </Box>
+
+            {/* Patient History Search */}
+            {showPatientHistory && (
+              <Box sx={{ mb: 2 }}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  placeholder="Search patients by name, ID, or phone..."
+                  value={patientSearchQuery}
+                  onChange={(e) => setPatientSearchQuery(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      loadPatientHistory();
+                    }
+                  }}
+                  InputProps={{
+                    startAdornment: <SearchIcon sx={{ mr: 1, color: 'action.active' }} />,
+                  }}
+                  sx={{ mb: 1 }}
+                />
+                <Button
+                  fullWidth
+                  variant="contained"
+                  size="small"
+                  onClick={loadPatientHistory}
+                  disabled={loading}
+                >
+                  {loading ? 'Loading...' : 'Search Patients'}
+                </Button>
+                {allPatients.length > 0 && (
+                  <TableContainer sx={{ maxHeight: 300, mt: 2 }}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Patient</TableCell>
+                          <TableCell>Visits</TableCell>
+                          <TableCell>Last Visit</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {allPatients.map((patient: any) => (
+                          <TableRow
+                            key={patient.id}
+                            onClick={() => {
+                              // Find consultation for this patient
+                              const consultation = pendingConsultations.find(
+                                (c) => c.national_id === patient.national_id
+                              );
+                              if (consultation) {
+                                handleSelectConsultation(consultation);
+                              }
+                            }}
+                            sx={{ cursor: 'pointer' }}
+                            hover
+                          >
+                            <TableCell>
+                              <Box>
+                                <Typography variant="body2" fontWeight="medium">
+                                  {patient.patient_name}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {patient.national_id || 'N/A'}
+                                </Typography>
+                              </Box>
+                            </TableCell>
+                            <TableCell>{patient.visit_count}</TableCell>
+                            <TableCell>
+                              {patient.last_visit
+                                ? new Date(patient.last_visit).toLocaleDateString()
+                                : 'N/A'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+              </Box>
+            )}
             <TableContainer sx={{ maxHeight: 600 }}>
               <Table size="small">
                 <TableHead>
@@ -447,6 +600,7 @@ const DoctorScreen: React.FC = () => {
                   <Tab label="Lab Tests" />
                   <Tab label="Prescribe Medicine" />
                   <Tab label="Lab Results" />
+                  <Tab label="Results from Lab" />
                 </Tabs>
               </Box>
 
@@ -713,14 +867,14 @@ const DoctorScreen: React.FC = () => {
                 </Box>
               )}
 
-              {/* Lab Results Tab */}
+              {/* Lab Results Tab - Current Patient */}
               {tabValue === 3 && (
                 <Box sx={{ mt: 3 }}>
                   <Typography variant="subtitle1" gutterBottom>
-                    Lab Test Results
+                    Lab Test Results - Current Patient
                   </Typography>
                   {labTestResults.length === 0 ? (
-                    <Typography color="text.secondary">No lab test results available</Typography>
+                    <Typography color="text.secondary">No lab test results available for this patient</Typography>
                   ) : (
                     <TableContainer>
                       <Table size="small">
@@ -730,6 +884,7 @@ const DoctorScreen: React.FC = () => {
                             <TableCell>Type</TableCell>
                             <TableCell>Result</TableCell>
                             <TableCell>Status</TableCell>
+                            <TableCell>Completed At</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
@@ -737,13 +892,97 @@ const DoctorScreen: React.FC = () => {
                             <TableRow key={test.id}>
                               <TableCell>{test.test_name}</TableCell>
                               <TableCell>{test.test_type || 'N/A'}</TableCell>
-                              <TableCell>{test.test_result || 'Pending'}</TableCell>
+                              <TableCell>
+                                <Box sx={{ maxWidth: 400, wordBreak: 'break-word' }}>
+                                  {test.test_result || 'Pending'}
+                                </Box>
+                              </TableCell>
                               <TableCell>
                                 <Chip
                                   label={test.test_status}
                                   color={test.test_status === 'completed' ? 'success' : 'default'}
                                   size="small"
                                 />
+                              </TableCell>
+                              <TableCell>
+                                {test.test_completed_at 
+                                  ? new Date(test.test_completed_at).toLocaleString()
+                                  : 'N/A'}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  )}
+                </Box>
+              )}
+
+              {/* Results from Lab Tab - All Completed Results */}
+              {tabValue === 4 && (
+                <Box sx={{ mt: 3 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="subtitle1">
+                      All Lab Results from Lab
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={loadAllLabResults}
+                      startIcon={<RefreshIcon />}
+                    >
+                      Refresh
+                    </Button>
+                  </Box>
+                  {allLabResults.length === 0 ? (
+                    <Typography color="text.secondary">No completed lab test results available</Typography>
+                  ) : (
+                    <TableContainer>
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Patient</TableCell>
+                            <TableCell>Test Name</TableCell>
+                            <TableCell>Type</TableCell>
+                            <TableCell>Result</TableCell>
+                            <TableCell>Completed At</TableCell>
+                            <TableCell>Action</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {allLabResults.map((test: any) => (
+                            <TableRow key={test.id} hover>
+                              <TableCell>
+                                <Box>
+                                  <Typography variant="body2" fontWeight="medium">
+                                    {test.patient_name}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {test.national_id || 'N/A'}
+                                  </Typography>
+                                </Box>
+                              </TableCell>
+                              <TableCell>{test.test_name}</TableCell>
+                              <TableCell>{test.test_type || 'N/A'}</TableCell>
+                              <TableCell>
+                                <Box sx={{ maxWidth: 300, wordBreak: 'break-word' }}>
+                                  {test.test_result || 'N/A'}
+                                </Box>
+                              </TableCell>
+                              <TableCell>
+                                {test.test_completed_at 
+                                  ? new Date(test.test_completed_at).toLocaleString()
+                                  : 'N/A'}
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  onClick={() => handleMarkResultViewed(test.id)}
+                                  disabled={test.doctor_viewed_at}
+                                >
+                                  {test.doctor_viewed_at ? 'Viewed' : 'Mark as Used'}
+                                </Button>
                               </TableCell>
                             </TableRow>
                           ))}
