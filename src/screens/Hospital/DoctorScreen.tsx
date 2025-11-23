@@ -105,6 +105,46 @@ const DoctorScreen: React.FC = () => {
     loadItems();
   }, []);
 
+  const loadLabTestResults = useCallback(async () => {
+    if (!selectedConsultation || !doctorVisit) return;
+    try {
+      // Pass doctor_visit_id to get results for this specific visit
+      const response = await ApiService.getLabTestResults(doctorVisit.id);
+      if (response.success) {
+        const results = response.data.lab_tests || [];
+        
+        // Check if there are new completed results before updating state
+        setLabTestResults((prevResults) => {
+          const completedResults = results.filter((test: LabTest) => test.test_status === 'completed' && test.test_result);
+          if (completedResults.length > 0) {
+            // Check if we have new results that weren't there before
+            const hasNewResults = completedResults.some((test: LabTest) => {
+              const existing = prevResults.find((t) => t.id === test.id);
+              return !existing || existing.test_status !== 'completed' || !existing.test_result;
+            });
+            
+            if (hasNewResults) {
+              // Use setTimeout to avoid state update during render
+              setTimeout(() => {
+                setSuccess(`Lab test results are now available! ${completedResults.length} test(s) completed.`);
+                // Auto-switch to Lab Results tab if not already there
+                setTabValue((currentTab) => {
+                  if (currentTab !== 3) {
+                    return 3;
+                  }
+                  return currentTab;
+                });
+              }, 100);
+            }
+          }
+          return results;
+        });
+      }
+    } catch (err: any) {
+      console.error('Error loading lab test results:', err);
+    }
+  }, [selectedConsultation, doctorVisit]);
+
   useEffect(() => {
     if (selectedConsultation) {
       loadDoctorVisit();
@@ -190,46 +230,6 @@ const DoctorScreen: React.FC = () => {
       setSelectedItems([]);
     }
   };
-
-  const loadLabTestResults = useCallback(async () => {
-    if (!selectedConsultation || !doctorVisit) return;
-    try {
-      // Pass doctor_visit_id to get results for this specific visit
-      const response = await ApiService.getLabTestResults(doctorVisit.id);
-      if (response.success) {
-        const results = response.data.lab_tests || [];
-        
-        // Check if there are new completed results before updating state
-        setLabTestResults((prevResults) => {
-          const completedResults = results.filter((test: LabTest) => test.test_status === 'completed' && test.test_result);
-          if (completedResults.length > 0) {
-            // Check if we have new results that weren't there before
-            const hasNewResults = completedResults.some((test: LabTest) => {
-              const existing = prevResults.find((t) => t.id === test.id);
-              return !existing || existing.test_status !== 'completed' || !existing.test_result;
-            });
-            
-            if (hasNewResults) {
-              // Use setTimeout to avoid state update during render
-              setTimeout(() => {
-                setSuccess(`Lab test results are now available! ${completedResults.length} test(s) completed.`);
-                // Auto-switch to Lab Results tab if not already there
-                setTabValue((currentTab) => {
-                  if (currentTab !== 3) {
-                    return 3;
-                  }
-                  return currentTab;
-                });
-              }, 100);
-            }
-          }
-          return results;
-        });
-      }
-    } catch (err: any) {
-      console.error('Error loading lab test results:', err);
-    }
-  }, [selectedConsultation, doctorVisit]);
 
   const handleSelectConsultation = (consultation: Consultation) => {
     setSelectedConsultation(consultation);
