@@ -442,9 +442,10 @@ const DoctorScreen: React.FC = () => {
       )}
 
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 2fr' }, gap: 3 }}>
-        {/* Pending Consultations List */}
+        {/* Left Panel - Pending Consultations and Lab Results */}
         <Box>
-          <Paper sx={{ p: 2 }}>
+          {/* Pending Consultations List */}
+          <Paper sx={{ p: 2, mb: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="h6">Pending Patients</Typography>
               <Box>
@@ -579,6 +580,143 @@ const DoctorScreen: React.FC = () => {
                 </TableBody>
               </Table>
             </TableContainer>
+          </Paper>
+
+          {/* Results from Lab Card - Always Visible */}
+          <Paper sx={{ p: 2, mt: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Box>
+                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <LabIcon fontSize="small" />
+                  Results from Lab
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {allLabResults.length} completed result{allLabResults.length !== 1 ? 's' : ''}
+                </Typography>
+              </Box>
+              <IconButton onClick={loadAllLabResults} size="small" title="Refresh results">
+                <RefreshIcon />
+              </IconButton>
+            </Box>
+            {allLabResults.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 3 }}>
+                <LabIcon sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
+                <Typography variant="body2" color="text.secondary">
+                  No completed results yet
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                  Results will appear here once submitted by lab technicians
+                </Typography>
+              </Box>
+            ) : (
+              <TableContainer sx={{ maxHeight: 400 }}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell><strong>Patient</strong></TableCell>
+                      <TableCell><strong>Test</strong></TableCell>
+                      <TableCell align="center"><strong>Status</strong></TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {allLabResults.slice(0, 10).map((test: any) => (
+                      <TableRow 
+                        key={test.id} 
+                        hover
+                        sx={{ 
+                          cursor: 'pointer',
+                          backgroundColor: test.doctor_viewed_at ? 'action.hover' : 'inherit',
+                          '&:hover': { backgroundColor: 'action.selected' }
+                        }}
+                        onClick={async () => {
+                          // Try to find and select the patient's consultation
+                          let consultation = pendingConsultations.find(
+                            (c) => c.national_id === test.national_id
+                          );
+                          
+                          // If not in pending, try to load patient history
+                          if (!consultation) {
+                            await loadPatientHistory();
+                            // Try to find consultation by matching patient
+                            consultation = pendingConsultations.find(
+                              (c) => c.national_id === test.national_id
+                            );
+                          }
+                          
+                          if (consultation) {
+                            handleSelectConsultation(consultation);
+                            setTabValue(4); // Switch to Results from Lab tab
+                            setSuccess(`Viewing results for ${test.patient_name}`);
+                            setTimeout(() => setSuccess(''), 3000);
+                          } else {
+                            setError(`Patient ${test.patient_name} consultation not found. They may need to be registered again.`);
+                            setTimeout(() => setError(''), 5000);
+                          }
+                        }}
+                      >
+                        <TableCell>
+                          <Box>
+                            <Typography variant="body2" fontWeight="medium">
+                              {test.patient_name || 'Unknown'}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {test.national_id || 'N/A'}
+                            </Typography>
+                            {test.consultation_number && (
+                              <Typography variant="caption" color="primary.main" sx={{ display: 'block', mt: 0.5 }}>
+                                #{test.consultation_number}
+                              </Typography>
+                            )}
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" fontWeight="medium">
+                            {test.test_name}
+                          </Typography>
+                          {test.test_type && (
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                              {test.test_type}
+                            </Typography>
+                          )}
+                          {test.test_result && (
+                            <Typography 
+                              variant="caption" 
+                              sx={{ 
+                                display: 'block', 
+                                mt: 0.5,
+                                color: 'success.main',
+                                fontWeight: 'medium'
+                              }}
+                            >
+                              ✓ Result available
+                            </Typography>
+                          )}
+                        </TableCell>
+                        <TableCell align="center">
+                          <Chip
+                            label={test.test_status === 'completed' ? 'Done' : test.test_status}
+                            color={test.test_status === 'completed' ? 'success' : 'warning'}
+                            size="small"
+                          />
+                          {test.doctor_viewed_at && (
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                              Viewed
+                            </Typography>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {allLabResults.length > 10 && (
+                  <Box sx={{ p: 1, textAlign: 'center', borderTop: 1, borderColor: 'divider' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Showing 10 of {allLabResults.length} results. Click to view patient details.
+                    </Typography>
+                  </Box>
+                )}
+              </TableContainer>
+            )}
           </Paper>
         </Box>
 
@@ -994,11 +1132,166 @@ const DoctorScreen: React.FC = () => {
               )}
             </Paper>
           ) : (
-            <Paper sx={{ p: 3, textAlign: 'center' }}>
-              <Typography color="text.secondary">
-                Please select a patient from the list to begin consultation
-              </Typography>
-            </Paper>
+            <Box>
+              <Paper sx={{ p: 3, textAlign: 'center', mb: 3 }}>
+                <Typography color="text.secondary">
+                  Please select a patient from the list to begin consultation
+                </Typography>
+              </Paper>
+
+              {/* Results from Lab Card - Always Visible */}
+              <Paper sx={{ p: 3 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h6" gutterBottom>
+                    Results from Lab
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={loadAllLabResults}
+                    startIcon={<RefreshIcon />}
+                  >
+                    Refresh
+                  </Button>
+                </Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  All lab test results submitted by lab technicians, linked to patients
+                </Typography>
+                {allLabResults.length === 0 ? (
+                  <Box sx={{ textAlign: 'center', py: 4 }}>
+                    <LabIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+                    <Typography color="text.secondary">
+                      No completed lab test results available
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                      Results will appear here once lab technicians submit them
+                    </Typography>
+                  </Box>
+                ) : (
+                  <TableContainer sx={{ maxHeight: 600 }}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell><strong>Patient</strong></TableCell>
+                          <TableCell><strong>Consultation #</strong></TableCell>
+                          <TableCell><strong>Test Name</strong></TableCell>
+                          <TableCell><strong>Type</strong></TableCell>
+                          <TableCell><strong>Result</strong></TableCell>
+                          <TableCell><strong>Completed At</strong></TableCell>
+                          <TableCell align="center"><strong>Status</strong></TableCell>
+                          <TableCell align="center"><strong>Action</strong></TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {allLabResults.map((test: any) => (
+                          <TableRow 
+                            key={test.id} 
+                            hover
+                            sx={{ 
+                              cursor: 'pointer',
+                              '&:hover': { backgroundColor: 'action.hover' }
+                            }}
+                            onClick={() => {
+                              // Try to find and select the patient's consultation
+                              const consultation = pendingConsultations.find(
+                                (c) => c.national_id === test.national_id
+                              );
+                              if (consultation) {
+                                handleSelectConsultation(consultation);
+                                setTabValue(4); // Switch to Results from Lab tab
+                              }
+                            }}
+                          >
+                            <TableCell>
+                              <Box>
+                                <Typography variant="body2" fontWeight="medium">
+                                  {test.patient_name || 'Unknown'}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  ID: {test.national_id || 'N/A'}
+                                </Typography>
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">
+                                {test.consultation_number || 'N/A'}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" fontWeight="medium">
+                                {test.test_name}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">
+                                {test.test_type || 'N/A'}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Box sx={{ maxWidth: 250, wordBreak: 'break-word' }}>
+                                <Typography variant="body2">
+                                  {test.test_result ? (
+                                    <Box
+                                      sx={{
+                                        p: 1,
+                                        bgcolor: 'success.light',
+                                        borderRadius: 1,
+                                        color: 'success.dark',
+                                      }}
+                                    >
+                                      {test.test_result}
+                                    </Box>
+                                  ) : (
+                                    <Typography color="text.secondary">Pending</Typography>
+                                  )}
+                                </Typography>
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">
+                                {test.test_completed_at 
+                                  ? new Date(test.test_completed_at).toLocaleString()
+                                  : 'N/A'}
+                              </Typography>
+                            </TableCell>
+                            <TableCell align="center">
+                              <Chip
+                                label={test.test_status.toUpperCase()}
+                                color={test.test_status === 'completed' ? 'success' : 'warning'}
+                                size="small"
+                              />
+                            </TableCell>
+                            <TableCell align="center">
+                              {test.doctor_viewed_at ? (
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  disabled
+                                >
+                                  Viewed
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="small"
+                                  variant="contained"
+                                  color="primary"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMarkResultViewed(test.id);
+                                  }}
+                                >
+                                  Mark as Used
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+              </Paper>
+            </Box>
           )}
         </Box>
       </Box>
