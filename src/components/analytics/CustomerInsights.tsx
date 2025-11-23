@@ -42,21 +42,16 @@ const CustomerInsights: React.FC<CustomerInsightsProps> = ({ dateRange }) => {
   const fetchCustomerInsights = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/analytics/customer-insights', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const { api } = await import('../../services/api');
+      const response = await api.get('/analytics/customer-insights');
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch customer insights');
+      if (response.data) {
+        setCustomers(Array.isArray(response.data) ? response.data : []);
       }
-      
-      const data = await response.json();
-      setCustomers(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+    } catch (err: any) {
+      console.error('Error fetching customer insights:', err);
+      setError(err?.response?.data?.error || err?.message || 'Failed to fetch customer insights');
+      setCustomers([]);
     } finally {
       setLoading(false);
     }

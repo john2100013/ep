@@ -8,6 +8,9 @@ import {
   Button,
   Chip,
   Alert,
+  Tabs,
+  Tab,
+  Paper,
 } from '@mui/material';
 import {
   AttachMoney,
@@ -16,17 +19,31 @@ import {
   Warning,
   AccessTime,
   Assignment,
+  PointOfSale,
+  Assessment,
+  History,
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import * as salonApi from '../../services/salonApi';
 import type { SalonDashboardStats } from '../../types';
 
 const SalonDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [stats, setStats] = useState<SalonDashboardStats | null>(null);
   const [currentShift, setCurrentShift] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [tabValue, setTabValue] = useState(0);
+
+  // Determine tab from route
+  useEffect(() => {
+    const path = location.pathname;
+    if (path.includes('/salon/pos')) setTabValue(1);
+    else if (path.includes('/salon/reports')) setTabValue(2);
+    else if (path.includes('/salon/shifts')) setTabValue(3);
+    else setTabValue(0);
+  }, [location.pathname]);
 
   useEffect(() => {
     loadData();
@@ -79,6 +96,14 @@ const SalonDashboard: React.FC = () => {
     );
   }
 
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
+    if (newValue === 0) navigate('/salon');
+    else if (newValue === 1) navigate('/salon/pos');
+    else if (newValue === 2) navigate('/salon/reports');
+    else if (newValue === 3) navigate('/salon/shifts');
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       {/* Header */}
@@ -97,7 +122,10 @@ const SalonDashboard: React.FC = () => {
           <Button 
             variant="contained" 
             color="primary"
-            onClick={() => navigate('/salon/shifts')}
+            onClick={() => {
+              setTabValue(3);
+              navigate('/salon/shifts');
+            }}
           >
             Start Shift
           </Button>
@@ -109,6 +137,20 @@ const SalonDashboard: React.FC = () => {
           {error}
         </Alert>
       )}
+
+      {/* Navigation Tabs */}
+      <Paper sx={{ mb: 3 }}>
+        <Tabs value={tabValue} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
+          <Tab label="Dashboard" icon={<Assignment />} iconPosition="start" />
+          <Tab label="POS" icon={<PointOfSale />} iconPosition="start" />
+          <Tab label="Reports" icon={<Assessment />} iconPosition="start" />
+          <Tab label="Shifts" icon={<History />} iconPosition="start" />
+        </Tabs>
+      </Paper>
+
+      {/* Dashboard Content */}
+      {tabValue === 0 && (
+        <>
 
       {/* Quick Actions */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
@@ -331,6 +373,8 @@ const SalonDashboard: React.FC = () => {
             </Card>
           </Grid>
         </Grid>
+      )}
+        </>
       )}
     </Box>
   );

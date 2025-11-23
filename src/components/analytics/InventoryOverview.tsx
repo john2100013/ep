@@ -117,9 +117,12 @@ const InventoryOverview: React.FC<InventoryOverviewProps> = ({ dateRange }) => {
       setLoading(true);
       setError(null);
       try {
-        const params = { dateRange };
-        const response = await import('../../services/api').then(m => m.api.get('/analytics/inventory-overview', { params }));
-        // response is an AxiosResponse; metrics may be at response.data.metrics or response.data directly
+        const { api } = await import('../../services/api');
+        const response = await api.get('/analytics/inventory-overview', {
+          params: { dateRange }
+        });
+        
+        // response.data may contain metrics directly or nested
         const metricsData = (response.data && (response.data.metrics ?? response.data)) || {};
         const metrics: InventoryMetrics = metricsData as InventoryMetrics;
         setInventoryMetrics({
@@ -132,7 +135,8 @@ const InventoryOverview: React.FC<InventoryOverviewProps> = ({ dateRange }) => {
           items: metrics.items || []
         });
       } catch (err: any) {
-        setError('Failed to load inventory overview');
+        console.error('Error loading inventory overview:', err);
+        setError(err?.response?.data?.error || 'Failed to load inventory overview');
         setInventoryMetrics({
           totalItems: 0,
           totalValue: 0,

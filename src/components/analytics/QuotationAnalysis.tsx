@@ -54,22 +54,18 @@ const QuotationAnalysis: React.FC<QuotationAnalysisProps> = ({ dateRange }) => {
   const fetchQuotationAnalysis = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/analytics/quotation-analysis', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const { api } = await import('../../services/api');
+      const response = await api.get('/analytics/quotation-analysis');
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch quotation analysis');
+      if (response.data) {
+        setStats(response.data.stats || null);
+        setQuotations(response.data.quotations || []);
       }
-      
-      const data = await response.json();
-      setStats(data.stats);
-      setQuotations(data.quotations);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+    } catch (err: any) {
+      console.error('Error fetching quotation analysis:', err);
+      setError(err?.response?.data?.error || err?.message || 'Failed to fetch quotation analysis');
+      setStats(null);
+      setQuotations([]);
     } finally {
       setLoading(false);
     }

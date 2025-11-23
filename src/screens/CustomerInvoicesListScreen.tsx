@@ -15,107 +15,95 @@ import {
   Alert,
   Chip,
   IconButton,
-  Collapse,
+  InputAdornment,
+  Pagination,
 } from '@mui/material';
 import {
-  People as PeopleIcon,
-  KeyboardArrowDown,
-  KeyboardArrowUp,
+  Receipt as ReceiptIcon,
+  Search as SearchIcon,
   Visibility as ViewIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { ApiService } from '../services/api';
 import Sidebar from '../components/Sidebar';
-
-interface Customer {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  pin: string;
-  invoices?: Invoice[];
-  totalInvoiced?: number;
-  totalPaid?: number;
-  outstanding?: number;
-}
+import { format } from 'date-fns';
 
 interface Invoice {
   id: number;
   invoice_number: string;
+  customer_name: string;
+  customer_address?: string;
+  customer_pin?: string;
   total_amount: number;
   amount_paid: number;
   status: string;
   issue_date: string;
-  payment_method: string;
-  mpesa_code: string;
+  due_date: string;
+  payment_method?: string;
+  mpesa_code?: string;
+  created_at: string;
+  line_count?: number;
 }
 
 const CustomerInvoicesListScreen: React.FC = () => {
   const navigate = useNavigate();
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedCustomer, setExpandedCustomer] = useState<number | null>(null);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 50,
+    total: 0,
+    totalPages: 0
+  });
 
   useEffect(() => {
-    fetchCustomersWithInvoices();
-  }, []);
+    fetchAllInvoices();
+  }, [pagination.page, searchQuery]);
 
-  const fetchCustomersWithInvoices = async () => {
+  const fetchAllInvoices = async () => {
     try {
       setLoading(true);
-      const customersResponse = await ApiService.getCustomers();
+      setError(null);
       
-      if (customersResponse.success) {
-        const customersList = customersResponse.data.customers || [];
-        
-        // Fetch invoices for each customer
-        const customersWithInvoices = await Promise.all(
-          customersList.map(async (customer: Customer) => {
-            try {
-              const invoicesResponse = await ApiService.getCustomerInvoices(customer.id);
-              if (invoicesResponse.success) {
-                return {
-                  ...customer,
-                  invoices: invoicesResponse.data.invoices || [],
-                  totalInvoiced: parseFloat(invoicesResponse.data.summary?.totalInvoiced || 0),
-                  totalPaid: parseFloat(invoicesResponse.data.summary?.totalPaid || 0),
-                  outstanding: parseFloat(invoicesResponse.data.summary?.totalOutstanding || 0),
-                };
-              }
-            } catch (err) {
-              console.error(`Error fetching invoices for customer ${customer.id}:`, err);
-            }
-            return {
-              ...customer,
-              invoices: [],
-              totalInvoiced: 0,
-              totalPaid: 0,
-              outstanding: 0,
-            };
-          })
-        );
-        
-        setCustomers(customersWithInvoices);
+      const params: any = {
+        page: pagination.page,
+        limit: pagination.limit,
+      };
+      
+      if (searchQuery) {
+        params.search = searchQuery;
       }
-    } catch (err) {
-      console.error('Error fetching customers:', err);
-      setError('Failed to fetch customers and invoices');
+
+      const response = await ApiService.getInvoices(params);
+      
+      if (response.success) {
+        setInvoices(response.data.invoices || []);
+        setPagination(prev => ({
+          ...prev,
+          total: response.data.pagination?.total || 0,
+          totalPages: response.data.pagination?.totalPages || 0
+        }));
+      } else {
+        throw new Error(response.message || 'Failed to fetch invoices');
+      }
+    } catch (err: any) {
+      console.error('Error fetching invoices:', err);
+      setError(err.message || 'Failed to fetch invoices');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleToggleExpand = (customerId: number) => {
-    setExpandedCustomer(expandedCustomer === customerId ? null : customerId);
+  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
+    setPagination(prev => ({ ...prev, page: value }));
   };
 
-  const filteredCustomers = customers.filter(customer =>
-    customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    customer.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    customer.phone?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(event.target.value);
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-KE', {
@@ -129,12 +117,33 @@ const CustomerInvoicesListScreen: React.FC = () => {
       case 'paid':
         return 'success';
       case 'unpaid':
+      case 'draft':
+        return 'default';
+      case 'sent':
+        return 'info';
+      case 'overdue':
         return 'error';
       case 'partially paid':
         return 'warning';
       default:
         return 'default';
     }
+  };
+
+  const handleViewInvoice = (invoiceId: number) => {
+    navigate(`/invoices/${invoiceId}`);
+  };
+
+  const getOutstandingAmount = (invoice: Invoice) => {
+    return invoice.total_amount - (invoice.amount_paid || 0);
+  };
+
+  const getPaymentMethodDisplay = (invoice: Invoice) => {
+    if (!invoice.payment_method) return '-';
+    if (invoice.payment_method === 'M-Pesa' && invoice.mpesa_code) {
+      return `M-Pesa (${invoice.mpesa_code})`;
+    }
+    return invoice.payment_method;
   };
 
   return (
@@ -153,7 +162,7 @@ const CustomerInvoicesListScreen: React.FC = () => {
         {/* Header */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <PeopleIcon sx={{ fontSize: 32 }} />
+            <ReceiptIcon sx={{ fontSize: 32 }} />
             <Typography variant="h4" component="h1">
               Customer Invoices
             </Typography>
@@ -161,18 +170,22 @@ const CustomerInvoicesListScreen: React.FC = () => {
         </Box>
 
         {/* Search */}
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <TextField
-              fullWidth
-              label="Search Customers"
-              variant="outlined"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name, email, or phone..."
-            />
-          </CardContent>
-        </Card>
+        <Paper sx={{ p: 2, mb: 3 }}>
+          <TextField
+            fullWidth
+            placeholder="Search invoices by invoice number or customer name..."
+            value={searchQuery}
+            onChange={handleSearch}
+            size="small"
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Paper>
 
         {/* Error Alert */}
         {error && (
@@ -181,188 +194,136 @@ const CustomerInvoicesListScreen: React.FC = () => {
           </Alert>
         )}
 
-        {/* Customers Table */}
+        {/* Invoices Table */}
         <Card>
           <CardContent>
-            <TableContainer component={Paper} variant="outlined">
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell width={50}></TableCell>
-                    <TableCell>Customer Name</TableCell>
-                    <TableCell>Contact</TableCell>
-                    <TableCell align="right">Total Invoiced</TableCell>
-                    <TableCell align="right">Total Paid</TableCell>
-                    <TableCell align="right">Outstanding</TableCell>
-                    <TableCell align="center">Invoices</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {loading ? (
-                    <TableRow>
-                      <TableCell colSpan={7} align="center">
-                        <Typography>Loading...</Typography>
-                      </TableCell>
-                    </TableRow>
-                  ) : filteredCustomers.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} align="center">
-                        <Typography variant="body2" color="text.secondary">
-                          No customers found
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredCustomers.map((customer) => (
-                      <React.Fragment key={customer.id}>
-                        <TableRow hover>
-                          <TableCell>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleToggleExpand(customer.id)}
-                              disabled={!customer.invoices || customer.invoices.length === 0}
-                            >
-                              {expandedCustomer === customer.id ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
-                            </IconButton>
-                          </TableCell>
-                          <TableCell>
-                            <Typography variant="body1" fontWeight="medium">
-                              {customer.name}
-                            </Typography>
-                            {customer.pin && (
+            {loading && invoices.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography>Loading invoices...</Typography>
+              </Box>
+            ) : invoices.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <ReceiptIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                  No invoices found
+                </Typography>
+                <Typography color="text.secondary">
+                  {searchQuery ? 'Try adjusting your search query' : 'No invoices have been created yet'}
+                </Typography>
+              </Box>
+            ) : (
+              <>
+                <TableContainer component={Paper} variant="outlined">
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell><strong>Invoice #</strong></TableCell>
+                        <TableCell><strong>Customer Name</strong></TableCell>
+                        <TableCell><strong>Issue Date</strong></TableCell>
+                        <TableCell align="right"><strong>Total Amount</strong></TableCell>
+                        <TableCell align="right"><strong>Amount Paid</strong></TableCell>
+                        <TableCell align="right"><strong>Outstanding</strong></TableCell>
+                        <TableCell><strong>Payment Method</strong></TableCell>
+                        <TableCell><strong>Status</strong></TableCell>
+                        <TableCell align="center"><strong>Actions</strong></TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {invoices.map((invoice) => {
+                        const outstanding = getOutstandingAmount(invoice);
+                        return (
+                          <TableRow 
+                            key={invoice.id} 
+                            hover
+                            sx={{ cursor: 'pointer' }}
+                            onClick={() => handleViewInvoice(invoice.id)}
+                          >
+                            <TableCell>
+                              <Typography variant="body1" fontWeight="medium">
+                                {invoice.invoice_number}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" fontWeight="medium">
+                                {invoice.customer_name}
+                              </Typography>
+                              {invoice.customer_pin && (
+                                <Typography variant="caption" color="text.secondary">
+                                  PIN: {invoice.customer_pin}
+                                </Typography>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">
+                                {format(new Date(invoice.issue_date), 'MMM dd, yyyy')}
+                              </Typography>
                               <Typography variant="caption" color="text.secondary">
-                                PIN: {customer.pin}
+                                Due: {format(new Date(invoice.due_date), 'MMM dd, yyyy')}
                               </Typography>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {customer.email && (
-                              <Typography variant="body2">{customer.email}</Typography>
-                            )}
-                            {customer.phone && (
-                              <Typography variant="body2" color="text.secondary">
-                                {customer.phone}
+                            </TableCell>
+                            <TableCell align="right">
+                              <Typography variant="body1" fontWeight="medium">
+                                {formatCurrency(invoice.total_amount)}
                               </Typography>
-                            )}
-                          </TableCell>
-                          <TableCell align="right">
-                            <Typography variant="body1" fontWeight="medium">
-                              {formatCurrency(customer.totalInvoiced || 0)}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="right">
-                            <Typography variant="body1" color="success.main">
-                              {formatCurrency(customer.totalPaid || 0)}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="right">
-                            <Typography 
-                              variant="body1" 
-                              fontWeight="medium"
-                              color={(customer.outstanding || 0) > 0 ? 'error.main' : 'text.secondary'}
-                            >
-                              {formatCurrency(customer.outstanding || 0)}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="center">
-                            <Chip 
-                              label={customer.invoices?.length || 0}
-                              size="small"
-                              color="primary"
-                            />
-                          </TableCell>
-                        </TableRow>
-                        
-                        {/* Expanded Invoices Row */}
-                        {customer.invoices && customer.invoices.length > 0 && (
-                          <TableRow>
-                            <TableCell colSpan={7} sx={{ py: 0, borderBottom: 0 }}>
-                              <Collapse in={expandedCustomer === customer.id} timeout="auto" unmountOnExit>
-                                <Box sx={{ m: 2 }}>
-                                  <Typography variant="h6" gutterBottom>
-                                    Invoices
-                                  </Typography>
-                                  <Table size="small">
-                                    <TableHead>
-                                      <TableRow>
-                                        <TableCell>Invoice #</TableCell>
-                                        <TableCell>Date</TableCell>
-                                        <TableCell align="right">Amount</TableCell>
-                                        <TableCell align="right">Paid</TableCell>
-                                        <TableCell align="right">Balance</TableCell>
-                                        <TableCell>Payment Method</TableCell>
-                                        <TableCell>M-Pesa Code</TableCell>
-                                        <TableCell>Status</TableCell>
-                                        <TableCell align="center">Actions</TableCell>
-                                      </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                      {customer.invoices.map((invoice) => (
-                                        <TableRow key={invoice.id}>
-                                          <TableCell>
-                                            <Typography variant="body2" fontWeight="medium">
-                                              {invoice.invoice_number}
-                                            </Typography>
-                                          </TableCell>
-                                          <TableCell>
-                                            {new Date(invoice.issue_date).toLocaleDateString()}
-                                          </TableCell>
-                                          <TableCell align="right">
-                                            {formatCurrency(invoice.total_amount)}
-                                          </TableCell>
-                                          <TableCell align="right">
-                                            <Typography color="success.main">
-                                              {formatCurrency(invoice.amount_paid || 0)}
-                                            </Typography>
-                                          </TableCell>
-                                          <TableCell align="right">
-                                            <Typography 
-                                              color={(invoice.total_amount - (invoice.amount_paid || 0)) > 0 ? 'error.main' : 'text.secondary'}
-                                            >
-                                              {formatCurrency(invoice.total_amount - (invoice.amount_paid || 0))}
-                                            </Typography>
-                                          </TableCell>
-                                          <TableCell>
-                                            <Typography variant="body2">
-                                              {invoice.payment_method || '-'}
-                                            </Typography>
-                                          </TableCell>
-                                          <TableCell>
-                                            <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-                                              {invoice.mpesa_code || '-'}
-                                            </Typography>
-                                          </TableCell>
-                                          <TableCell>
-                                            <Chip 
-                                              label={invoice.status}
-                                              size="small"
-                                              color={getStatusColor(invoice.status)}
-                                            />
-                                          </TableCell>
-                                          <TableCell align="center">
-                                            <IconButton
-                                              size="small"
-                                              color="primary"
-                                              onClick={() => navigate(`/invoices/${invoice.id}`)}
-                                            >
-                                              <ViewIcon fontSize="small" />
-                                            </IconButton>
-                                          </TableCell>
-                                        </TableRow>
-                                      ))}
-                                    </TableBody>
-                                  </Table>
-                                </Box>
-                              </Collapse>
+                            </TableCell>
+                            <TableCell align="right">
+                              <Typography variant="body1" color="success.main">
+                                {formatCurrency(invoice.amount_paid || 0)}
+                              </Typography>
+                            </TableCell>
+                            <TableCell align="right">
+                              <Typography 
+                                variant="body1" 
+                                fontWeight="medium"
+                                color={outstanding > 0 ? 'error.main' : 'success.main'}
+                              >
+                                {formatCurrency(outstanding)}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">
+                                {getPaymentMethodDisplay(invoice)}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Chip 
+                                label={invoice.status.toUpperCase()}
+                                size="small"
+                                color={getStatusColor(invoice.status) as any}
+                              />
+                            </TableCell>
+                            <TableCell align="center">
+                              <IconButton
+                                size="small"
+                                color="primary"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleViewInvoice(invoice.id);
+                                }}
+                              >
+                                <ViewIcon fontSize="small" />
+                              </IconButton>
                             </TableCell>
                           </TableRow>
-                        )}
-                      </React.Fragment>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+
+                {/* Pagination */}
+                {pagination.totalPages > 1 && (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+                    <Pagination
+                      count={pagination.totalPages}
+                      page={pagination.page}
+                      onChange={handlePageChange}
+                      color="primary"
+                    />
+                  </Box>
+                )}
+              </>
+            )}
           </CardContent>
         </Card>
       </Box>

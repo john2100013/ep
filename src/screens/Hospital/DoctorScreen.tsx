@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Container,
@@ -108,9 +108,20 @@ const DoctorScreen: React.FC = () => {
   useEffect(() => {
     if (selectedConsultation) {
       loadDoctorVisit();
-      loadLabTestResults();
     }
   }, [selectedConsultation]);
+
+  useEffect(() => {
+    if (doctorVisit) {
+      loadLabTestResults();
+      // Poll for new lab results every 10 seconds when doctor visit is loaded
+      const interval = setInterval(() => {
+        loadLabTestResults();
+      }, 10000); // Check every 10 seconds
+      
+      return () => clearInterval(interval);
+    }
+  }, [doctorVisit, loadLabTestResults]);
 
   const loadPendingConsultations = async () => {
     try {
@@ -180,18 +191,45 @@ const DoctorScreen: React.FC = () => {
     }
   };
 
-  const loadLabTestResults = async () => {
-    if (!selectedConsultation) return;
+  const loadLabTestResults = useCallback(async () => {
+    if (!selectedConsultation || !doctorVisit) return;
     try {
-      // This would need a doctor_visit_id, but for now we'll just show all completed tests
-      const response = await ApiService.getLabTestResults();
+      // Pass doctor_visit_id to get results for this specific visit
+      const response = await ApiService.getLabTestResults(doctorVisit.id);
       if (response.success) {
-        setLabTestResults(response.data.lab_tests || []);
+        const results = response.data.lab_tests || [];
+        
+        // Check if there are new completed results before updating state
+        setLabTestResults((prevResults) => {
+          const completedResults = results.filter((test: LabTest) => test.test_status === 'completed' && test.test_result);
+          if (completedResults.length > 0) {
+            // Check if we have new results that weren't there before
+            const hasNewResults = completedResults.some((test: LabTest) => {
+              const existing = prevResults.find((t) => t.id === test.id);
+              return !existing || existing.test_status !== 'completed' || !existing.test_result;
+            });
+            
+            if (hasNewResults) {
+              // Use setTimeout to avoid state update during render
+              setTimeout(() => {
+                setSuccess(`Lab test results are now available! ${completedResults.length} test(s) completed.`);
+                // Auto-switch to Lab Results tab if not already there
+                setTabValue((currentTab) => {
+                  if (currentTab !== 3) {
+                    return 3;
+                  }
+                  return currentTab;
+                });
+              }, 100);
+            }
+          }
+          return results;
+        });
       }
     } catch (err: any) {
       console.error('Error loading lab test results:', err);
     }
-  };
+  }, [selectedConsultation, doctorVisit]);
 
   const handleSelectConsultation = (consultation: Consultation) => {
     setSelectedConsultation(consultation);

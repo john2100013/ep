@@ -50,21 +50,16 @@ const PendingActions: React.FC<PendingActionsProps> = ({ dateRange }) => {
   const fetchPendingActions = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/analytics/pending-actions', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const { api } = await import('../../services/api');
+      const response = await api.get('/analytics/pending-actions');
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch pending actions');
+      if (response.data) {
+        setActions(Array.isArray(response.data) ? response.data : []);
       }
-      
-      const data = await response.json();
-      setActions(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+    } catch (err: any) {
+      console.error('Error fetching pending actions:', err);
+      setError(err?.response?.data?.error || err?.message || 'Failed to fetch pending actions');
+      setActions([]);
     } finally {
       setLoading(false);
     }

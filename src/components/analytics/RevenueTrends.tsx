@@ -53,22 +53,18 @@ const RevenueTrends: React.FC<RevenueTrendsProps> = ({ dateRange }) => {
   const fetchRevenueTrends = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/analytics/revenue-trends', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const { api } = await import('../../services/api');
+      const response = await api.get('/analytics/revenue-trends');
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch revenue trends');
+      if (response.data) {
+        setMonthlyData(response.data.monthlyData || response.data.monthly || []);
+        setSummary(response.data.summary || null);
       }
-      
-      const data = await response.json();
-      setMonthlyData(data.monthlyData);
-      setSummary(data.summary);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+    } catch (err: any) {
+      console.error('Error fetching revenue trends:', err);
+      setError(err?.response?.data?.error || err?.message || 'Failed to fetch revenue trends');
+      setMonthlyData([]);
+      setSummary(null);
     } finally {
       setLoading(false);
     }

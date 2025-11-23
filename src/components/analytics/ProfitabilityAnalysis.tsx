@@ -61,22 +61,18 @@ const ProfitabilityAnalysis: React.FC<ProfitabilityAnalysisProps> = ({ dateRange
   const fetchProfitabilityAnalysis = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/analytics/profitability-analysis', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const { api } = await import('../../services/api');
+      const response = await api.get('/analytics/profitability-analysis');
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch profitability analysis');
+      if (response.data) {
+        setProfitabilityData(response.data.items || []);
+        setSummary(response.data.summary || null);
       }
-      
-      const data = await response.json();
-      setProfitabilityData(data.items);
-      setSummary(data.summary);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+    } catch (err: any) {
+      console.error('Error fetching profitability analysis:', err);
+      setError(err?.response?.data?.error || err?.message || 'Failed to fetch profitability analysis');
+      setProfitabilityData([]);
+      setSummary(null);
     } finally {
       setLoading(false);
     }

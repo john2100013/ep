@@ -58,22 +58,18 @@ const StockMovement: React.FC<StockMovementProps> = ({ dateRange }) => {
   const fetchStockMovement = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/analytics/stock-movement', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const { api } = await import('../../services/api');
+      const response = await api.get('/analytics/stock-movement');
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch stock movement data');
+      if (response.data) {
+        setMovements(response.data.movements || []);
+        setSummary(response.data.summary || null);
       }
-      
-      const data = await response.json();
-      setMovements(data.movements);
-      setSummary(data.summary);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+    } catch (err: any) {
+      console.error('Error fetching stock movement:', err);
+      setError(err?.response?.data?.error || err?.message || 'Failed to fetch stock movement data');
+      setMovements([]);
+      setSummary(null);
     } finally {
       setLoading(false);
     }

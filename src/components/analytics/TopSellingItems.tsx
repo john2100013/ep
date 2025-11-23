@@ -19,19 +19,28 @@ const TopSellingItems = ({ dateRange }: { dateRange: string }) => {
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
-    // Fetch from backend API
-    fetch(`/analytics/top-selling-items?dateRange=${dateRange}`)
-      .then(res => res.json())
-      .then(data => {
-        setTopItems(data.items || []);
-        setLoading(false);
-      })
-      .catch(err => {
+    const fetchTopSellingItems = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const { api } = await import('../../services/api');
+        const response = await api.get('/analytics/top-selling-items', {
+          params: { dateRange }
+        });
+        
+        if (response.data) {
+          setTopItems(response.data.items || response.data || []);
+        }
+      } catch (err: any) {
+        console.error('Error fetching top selling items:', err);
         setError('Failed to fetch top selling items');
+        setTopItems([]);
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+    
+    fetchTopSellingItems();
   }, [dateRange]);
 
   return (

@@ -69,8 +69,11 @@ const SalesPerformance: React.FC<SalesPerformanceProps> = ({ dateRange }) => {
       setLoading(true);
       setError(null);
       try {
-        const params = { dateRange };
-        const response = await import('../../services/api').then(m => m.api.get('/analytics/sales-performance', { params }));
+        const { api } = await import('../../services/api');
+        const response = await api.get('/analytics/sales-performance', {
+          params: { dateRange }
+        });
+        
         const metrics: SalesMetrics = response.data?.metrics || response.data || {};
         setSalesMetrics({
           totalSales: metrics.totalSales || 0,
@@ -83,7 +86,8 @@ const SalesPerformance: React.FC<SalesPerformanceProps> = ({ dateRange }) => {
           dailySales: metrics.dailySales || []
         });
       } catch (err: any) {
-        setError('Failed to load sales performance');
+        console.error('Error loading sales performance:', err);
+        setError(err?.response?.data?.error || 'Failed to load sales performance');
         setSalesMetrics({
           totalSales: 0,
           totalInvoices: 0,

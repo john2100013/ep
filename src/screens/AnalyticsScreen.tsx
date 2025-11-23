@@ -96,40 +96,35 @@ const AnalyticsScreen: React.FC = () => {
     setRefreshing(true);
     try {
       // Fetch real analytics overview data from backend
-      const response = await fetch('/api/analytics/overview', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const { api } = await import('../services/api');
+      const response = await api.get('/analytics/overview');
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch analytics data');
+      if (response.data) {
+        const data = response.data;
+        setOverviewMetrics({
+          totalSales: data.totalSales || 0,
+          totalInvoices: data.totalInvoices || 0,
+          totalCustomers: data.totalCustomers || 0,
+          totalItems: data.totalItems || 0,
+          lowStockItems: data.lowStockItems || 0,
+          pendingQuotations: data.pendingQuotations || 0,
+          grossProfit: data.grossProfit || 0,
+          conversionRate: data.conversionRate || 0
+        });
       }
-
-      const data = await response.json();
-      setOverviewMetrics({
-        totalSales: data.totalSales || 0,
-        totalInvoices: data.totalInvoices || 0,
-        totalCustomers: data.totalCustomers || 0,
-        totalItems: data.totalItems || 0,
-        lowStockItems: data.lowStockItems || 0,
-        pendingQuotations: data.pendingQuotations || 0,
-        grossProfit: data.grossProfit || 0,
-        conversionRate: data.conversionRate || 0
-      });
     } catch (err: any) {
+      console.error('Error fetching analytics overview:', err);
       setError('Failed to load analytics data');
-      // Fallback to mock data if API fails
+      // Fallback to zero values if API fails
       setOverviewMetrics({
-        totalSales: 125000,
-        totalInvoices: 45,
-        totalCustomers: 28,
-        totalItems: 150,
-        lowStockItems: 8,
-        pendingQuotations: 12,
-        grossProfit: 35000,
-        conversionRate: 68.5
+        totalSales: 0,
+        totalInvoices: 0,
+        totalCustomers: 0,
+        totalItems: 0,
+        lowStockItems: 0,
+        pendingQuotations: 0,
+        grossProfit: 0,
+        conversionRate: 0
       });
     } finally {
       setRefreshing(false);
