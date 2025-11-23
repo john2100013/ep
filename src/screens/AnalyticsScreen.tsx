@@ -97,7 +97,9 @@ const AnalyticsScreen: React.FC = () => {
     try {
       // Fetch real analytics overview data from backend
       const { api } = await import('../services/api');
-      const response = await api.get('/analytics/overview');
+      const response = await api.get('/analytics/overview', {
+        params: { dateRange }
+      });
 
       if (response.data) {
         const data = response.data;

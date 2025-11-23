@@ -6,7 +6,6 @@ import {
   TrendingUp as TrendingUpIcon,
   Receipt as ReceiptIcon,
   Assessment as AssessmentIcon,
-  TrackChanges as TargetIcon,
 } from '@mui/icons-material';
 
 interface SalesPerformanceProps {
@@ -17,7 +16,6 @@ interface SalesMetrics {
   totalSales: number;
   totalInvoices: number;
   averageOrderValue: number;
-  targetSales: number;
   grossProfit: number;
   profitMargin: number;
   salesGrowth: number;
@@ -36,7 +34,6 @@ const SalesPerformance: React.FC<SalesPerformanceProps> = ({ dateRange }) => {
     totalSales: 0,
     totalInvoices: 0,
     averageOrderValue: 0,
-    targetSales: 0,
     grossProfit: 0,
     profitMargin: 0,
     salesGrowth: 0,
@@ -57,13 +54,6 @@ const SalesPerformance: React.FC<SalesPerformanceProps> = ({ dateRange }) => {
     return `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`;
   };
 
-  const getProgressColor = (progress: number) => {
-    if (progress >= 100) return 'success';
-    if (progress >= 75) return 'info';
-    if (progress >= 50) return 'warning';
-    return 'error';
-  };
-
   useEffect(() => {
     const loadSalesPerformance = async () => {
       setLoading(true);
@@ -79,7 +69,6 @@ const SalesPerformance: React.FC<SalesPerformanceProps> = ({ dateRange }) => {
           totalSales: metrics.totalSales || 0,
           totalInvoices: metrics.totalInvoices || 0,
           averageOrderValue: metrics.averageOrderValue || 0,
-          targetSales: metrics.targetSales || 0,
           grossProfit: metrics.grossProfit || 0,
           profitMargin: metrics.profitMargin || 0,
           salesGrowth: metrics.salesGrowth || 0,
@@ -92,7 +81,6 @@ const SalesPerformance: React.FC<SalesPerformanceProps> = ({ dateRange }) => {
           totalSales: 0,
           totalInvoices: 0,
           averageOrderValue: 0,
-          targetSales: 0,
           grossProfit: 0,
           profitMargin: 0,
           salesGrowth: 0,
@@ -104,8 +92,6 @@ const SalesPerformance: React.FC<SalesPerformanceProps> = ({ dateRange }) => {
     };
     loadSalesPerformance();
   }, [dateRange]);
-
-  const targetProgress = salesMetrics.targetSales > 0 ? (salesMetrics.totalSales / salesMetrics.targetSales) * 100 : 0;
 
   return (
     <Box>
@@ -151,9 +137,6 @@ const SalesPerformance: React.FC<SalesPerformanceProps> = ({ dateRange }) => {
               <Typography variant="body2" color="text.secondary" gutterBottom>
                 Total Invoices
               </Typography>
-              <Typography variant="body2" color="text.primary">
-                Avg: {formatCurrency(salesMetrics.averageOrderValue)} per invoice
-              </Typography>
             </CardContent>
           </Card>
         </Box>
@@ -177,78 +160,10 @@ const SalesPerformance: React.FC<SalesPerformanceProps> = ({ dateRange }) => {
           </Card>
         </Box>
 
-        <Box sx={{ flex: 1, minWidth: '280px' }}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <TargetIcon color="warning" sx={{ fontSize: 32 }} />
-                <Typography variant="h4" fontWeight="bold" color="warning.main">
-                  {targetProgress.toFixed(0)}%
-                </Typography>
-              </Box>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                Target Achievement
-              </Typography>
-              <LinearProgress
-                variant="determinate"
-                value={Math.min(targetProgress, 100)}
-                color={getProgressColor(targetProgress)}
-                sx={{ height: 6, borderRadius: 3 }} />
-            </CardContent>
-          </Card>
-        </Box>
       </Box>
 
-      {/* Target vs Actual */}
+      {/* Profitability Breakdown */}
       <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', mb: 4 }}>
-        <Box sx={{ flex: 1, minWidth: '400px' }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" fontWeight="bold" gutterBottom>
-                Sales vs Target
-              </Typography>
-              <Box sx={{ mb: 2 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2">Actual Sales</Typography>
-                  <Typography variant="body2" fontWeight="bold">
-                    {formatCurrency(salesMetrics.totalSales)}
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2">Target Sales</Typography>
-                  <Typography variant="body2" fontWeight="bold">
-                    {formatCurrency(salesMetrics.targetSales)}
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                  <Typography variant="body2">Remaining</Typography>
-                  <Typography
-                    variant="body2"
-                    fontWeight="bold"
-                    color={targetProgress >= 100 ? 'success.main' : 'warning.main'}
-                  >
-                    {formatCurrency(Math.max(0, salesMetrics.targetSales - salesMetrics.totalSales))}
-                  </Typography>
-                </Box>
-                <LinearProgress
-                  variant="determinate"
-                  value={Math.min(targetProgress, 100)}
-                  color={getProgressColor(targetProgress)}
-                  sx={{ height: 8, borderRadius: 4 }} />
-              </Box>
-              {targetProgress >= 100 ? (
-                <Alert severity="success" sx={{ mt: 2 }}>
-                  🎉 Congratulations! Target achieved with {formatPercentage(targetProgress - 100)} extra!
-                </Alert>
-              ) : (
-                <Alert severity="info" sx={{ mt: 2 }}>
-                  {formatCurrency(salesMetrics.targetSales - salesMetrics.totalSales)} more needed to reach target
-                </Alert>
-              )}
-            </CardContent>
-          </Card>
-        </Box>
-
         <Box sx={{ flex: 1, minWidth: '400px' }}>
           <Card>
             <CardContent>
@@ -365,6 +280,11 @@ const SalesPerformance: React.FC<SalesPerformanceProps> = ({ dateRange }) => {
               </TableBody>
             </Table>
           </TableContainer>
+          {salesMetrics.dailySales.length === 0 && !loading && (
+            <Alert severity="info" sx={{ mt: 2 }}>
+              No sales data available for the selected period.
+            </Alert>
+          )}
         </CardContent>
       </Card>
     </Box>

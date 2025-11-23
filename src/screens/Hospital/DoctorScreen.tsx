@@ -290,9 +290,53 @@ const DoctorScreen: React.FC = () => {
     }
   };
 
-  const handleSelectConsultation = (consultation: Consultation) => {
+  const handleSelectConsultation = async (consultation: Consultation) => {
     setSelectedConsultation(consultation);
     setTabValue(0);
+    setError('');
+    setSuccess('');
+    
+    // Load complete patient history to autopopulate all information
+    try {
+      const historyResponse = await ApiService.getPatientConsultationHistory(
+        undefined,
+        consultation.national_id
+      );
+
+      if (historyResponse.success && historyResponse.data) {
+        const { latest_doctor_visit, lab_tests, prescriptions } = historyResponse.data;
+
+        // If there's a latest doctor visit, populate the form
+        if (latest_doctor_visit) {
+          setDoctorVisit(latest_doctor_visit);
+          setSymptoms(latest_doctor_visit.symptoms || '');
+          setBloodPressure(latest_doctor_visit.blood_pressure || '');
+          setTemperature(latest_doctor_visit.temperature?.toString() || '');
+          setHeartRate(latest_doctor_visit.heart_rate?.toString() || '');
+          setOtherAnalysis(latest_doctor_visit.other_analysis || '');
+          setDiseaseDiagnosis(latest_doctor_visit.disease_diagnosis || '');
+          setNotes(latest_doctor_visit.notes || '');
+
+          // Load lab tests for this visit
+          const visitLabTests = lab_tests.filter(
+            (test: any) => test.doctor_visit_id === latest_doctor_visit.id
+          );
+          setLabTests(visitLabTests);
+
+          // Load all completed lab test results for this patient
+          const completedTests = lab_tests.filter(
+            (test: any) => test.test_status === 'completed' && test.test_result
+          );
+          setLabTestResults(completedTests);
+        }
+
+        // Note: Prescriptions are loaded but not auto-populated in the form
+        // as the doctor may want to create a new prescription
+      }
+    } catch (err: any) {
+      console.error('Error loading patient history:', err);
+      // Don't show error, just continue with normal flow
+    }
   };
 
   const handleSaveVisit = async () => {
@@ -629,27 +673,55 @@ const DoctorScreen: React.FC = () => {
                           '&:hover': { backgroundColor: 'action.selected' }
                         }}
                         onClick={async () => {
-                          // Try to find and select the patient's consultation
-                          let consultation = pendingConsultations.find(
-                            (c) => c.national_id === test.national_id
-                          );
-                          
-                          // If not in pending, try to load patient history
-                          if (!consultation) {
-                            await loadPatientHistory();
-                            // Try to find consultation by matching patient
-                            consultation = pendingConsultations.find(
+                          try {
+                            // Try to find and select the patient's consultation
+                            let consultation = pendingConsultations.find(
                               (c) => c.national_id === test.national_id
                             );
-                          }
-                          
-                          if (consultation) {
-                            handleSelectConsultation(consultation);
-                            setTabValue(4); // Switch to Results from Lab tab
-                            setSuccess(`Viewing results for ${test.patient_name}`);
-                            setTimeout(() => setSuccess(''), 3000);
-                          } else {
-                            setError(`Patient ${test.patient_name} consultation not found. They may need to be registered again.`);
+                            
+                            // If not in pending, try to load patient history and get latest consultation
+                            if (!consultation) {
+                              await loadPatientHistory();
+                              // Try to find consultation by matching patient
+                              consultation = pendingConsultations.find(
+                                (c) => c.national_id === test.national_id
+                              );
+                              
+                              // If still not found, try to get patient history and create a consultation object
+                              if (!consultation && test.national_id) {
+                                const historyResponse = await ApiService.getPatientConsultationHistory(
+                                  undefined,
+                                  test.national_id
+                                );
+                                if (historyResponse.success && historyResponse.data.latest_consultation) {
+                                  // Use the latest consultation from history
+                                  const latestConsultation = historyResponse.data.latest_consultation;
+                                  consultation = {
+                                    id: latestConsultation.id,
+                                    consultation_number: latestConsultation.consultation_number,
+                                    patient_name: test.patient_name,
+                                    national_id: test.national_id,
+                                    age: undefined,
+                                    location: undefined,
+                                    phone_number: undefined,
+                                    is_first_visit: false
+                                  };
+                                }
+                              }
+                            }
+                            
+                            if (consultation) {
+                              await handleSelectConsultation(consultation);
+                              setTabValue(4); // Switch to Results from Lab tab
+                              setSuccess(`Viewing results for ${test.patient_name}`);
+                              setTimeout(() => setSuccess(''), 3000);
+                            } else {
+                              setError(`Patient ${test.patient_name} consultation not found. Please register them first.`);
+                              setTimeout(() => setError(''), 5000);
+                            }
+                          } catch (err: any) {
+                            console.error('Error selecting patient from lab result:', err);
+                            setError('Failed to load patient information');
                             setTimeout(() => setError(''), 5000);
                           }
                         }}

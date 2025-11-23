@@ -31,6 +31,7 @@ const AddItemScreen: React.FC = () => {
     rate: '',
     unit: '',
     category_id: '',
+    reorder_level: '',
   });
   const [manufacturingDate, setManufacturingDate] = useState<Date | null>(null);
   const [expiryDate, setExpiryDate] = useState<Date | null>(null);
@@ -105,6 +106,7 @@ const AddItemScreen: React.FC = () => {
         rate: parseFloat(formData.selling_price), // Use selling price as rate for compatibility
         unit: formData.unit.trim() || undefined,
         category_id: parseInt(formData.category_id),
+        reorder_level: formData.reorder_level ? parseInt(formData.reorder_level) : undefined,
         manufacturing_date: manufacturingDate?.toISOString().split('T')[0] || undefined,
         expiry_date: expiryDate?.toISOString().split('T')[0] || undefined,
       });
@@ -121,6 +123,7 @@ const AddItemScreen: React.FC = () => {
         rate: '',
         unit: '',
         category_id: '',
+        reorder_level: '',
       });
       setManufacturingDate(null);
       setExpiryDate(null);
@@ -292,17 +295,29 @@ const AddItemScreen: React.FC = () => {
                     <TextField
                       fullWidth
                       label="Selling Price *"
-                  name="selling_price"
-                  type="number"
-                  value={formData.selling_price}
-                  onChange={handleChange}
-                  margin="normal"
-                  inputProps={{ min: 0, step: 0.01 }}
-                  InputProps={{
-                    startAdornment: <Typography sx={{ mr: 1 }}>KSH</Typography>,
-                  }}
-                  helperText="This will be used as the default unit price"
-                />
+                      name="selling_price"
+                      type="number"
+                      value={formData.selling_price}
+                      onChange={handleChange}
+                      margin="normal"
+                      inputProps={{ min: 0, step: 0.01 }}
+                      InputProps={{
+                        startAdornment: <Typography sx={{ mr: 1 }}>KSH</Typography>,
+                      }}
+                      helperText="This will be used as the default unit price"
+                    />
+                    
+                    <TextField
+                      fullWidth
+                      label="Reorder Level"
+                      name="reorder_level"
+                      type="number"
+                      value={formData.reorder_level}
+                      onChange={handleChange}
+                      margin="normal"
+                      inputProps={{ min: 0, step: 1 }}
+                      helperText="Minimum stock level before reordering (optional)"
+                    />
                   </Box>
 
                   {formData.quantity && formData.buying_price && formData.selling_price && (

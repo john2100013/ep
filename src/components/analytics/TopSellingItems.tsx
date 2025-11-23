@@ -28,12 +28,21 @@ const TopSellingItems = ({ dateRange }: { dateRange: string }) => {
           params: { dateRange }
         });
         
+        console.log('📊 Top Selling Items Response:', response.data);
+        
         if (response.data) {
-          setTopItems(response.data.items || response.data || []);
+          const items = response.data.items || response.data || [];
+          console.log('📊 Top Selling Items Parsed:', items.length, 'items');
+          console.log('📊 Sample item:', items[0] || 'No items');
+          setTopItems(items);
+        } else {
+          console.log('📊 No data in response');
+          setTopItems([]);
         }
       } catch (err: any) {
         console.error('Error fetching top selling items:', err);
-        setError('Failed to fetch top selling items');
+        console.error('Error details:', err.response?.data);
+        setError(err?.response?.data?.error || 'Failed to fetch top selling items');
         setTopItems([]);
       } finally {
         setLoading(false);

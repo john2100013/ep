@@ -472,6 +472,14 @@ export class ApiService {
     return response.data;
   }
 
+  static async getPatientConsultationHistory(patientId?: number, nationalId?: string) {
+    const params: any = {};
+    if (patientId) params.patient_id = patientId;
+    if (nationalId) params.national_id = nationalId;
+    const response = await api.get('/hospital/patient/history', { params });
+    return response.data;
+  }
+
   // Lab endpoints
   static async getPendingLabTests() {
     const response = await api.get('/hospital/lab-tests/pending');
