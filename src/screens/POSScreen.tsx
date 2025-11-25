@@ -104,6 +104,7 @@ const POSScreen: React.FC = () => {
   const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<string>('');
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [paymentDetails, setPaymentDetails] = useState({
     netAmount: 0,
     tendered: 0,
@@ -358,8 +359,56 @@ const POSScreen: React.FC = () => {
       setLoading(true);
       setError('');
       
-      // Check if this is a draft being converted
-      if (currentDraftId) {
+      // Check if this is an existing invoice being updated
+      if (selectedInvoiceId) {
+        // Update existing invoice
+        const { total, subTotal, vatTotal } = calculateTotals();
+        const currentDate = new Date().toISOString().split('T')[0];
+        
+        const invoiceData = {
+          customer_name: 'POS Customer',
+          customer_address: '',
+          lines: posItems.map(item => ({
+            item_id: parseInt(item.id),
+            quantity: item.quantity,
+            unit_price: Number(item.rate),
+            description: item.name,
+            code: item.code,
+            uom: item.unit,
+          })),
+          notes: `POS Sale - Account: ${accounts.find(a => a.id === selectedAccount)?.account_name || selectedAccount}`,
+          due_date: currentDate,
+          payment_terms: 'Paid',
+        };
+        
+        // Update invoice using the API
+        await ApiService.updateInvoice(parseInt(selectedInvoiceId), invoiceData);
+        
+        // Update invoice status to paid
+        await api.patch(`/invoices/${selectedInvoiceId}`, { 
+          status: 'paid',
+          payment_status: 'paid'
+        });
+        
+        // Update financial account balance (add the total amount)
+        try {
+          await api.patch(`/financial-accounts/${selectedAccount}/balance`, {
+            amount: total,
+            operation: 'add'
+          });
+          console.log('✅ Financial account updated successfully');
+        } catch (balanceError) {
+          console.error('⚠️ Failed to update financial account balance:', balanceError);
+        }
+        
+        alert(`Invoice updated successfully! Total: ${total.toFixed(2)}`);
+        setPosItems([]);
+        setSelectedInvoiceId(null);
+        setSelectedAccount('');
+        
+        // Refresh financial accounts to show updated balance
+        await fetchFinancialAccounts();
+      } else if (currentDraftId) {
         // Convert draft to real invoice
         const convertResponse = await api.post(`/invoices/draft/${currentDraftId}/convert`);
         
@@ -439,6 +488,7 @@ const POSScreen: React.FC = () => {
         alert(`Invoice ${invoiceNumber} saved successfully! Total: ${total.toFixed(2)}`);
         setPosItems([]);
         setSelectedAccount('');
+        setSelectedInvoiceId(null);
         
         // Refresh financial accounts to show updated balance
         await fetchFinancialAccounts();
@@ -459,6 +509,8 @@ const POSScreen: React.FC = () => {
     }
     setPosItems([]);
     setError('');
+    setSelectedInvoiceId(null);
+    setCurrentDraftId(null);
   };
 
   // Retrieve draft
@@ -472,24 +524,79 @@ const POSScreen: React.FC = () => {
         const invoiceData = response.data.data;
         
         // Convert invoice lines to POS items format
-        const items = (invoiceData.lines || []).map((line: any) => ({
-          id: line.item_id || line.id,
-          name: line.description || line.item_name || 'Item',
-          code: line.code || '',
-          quantity: parseFloat(line.quantity) || 0,
-          unit: line.uom || 'PCS',
-          rate: parseFloat(line.unit_price) || 0,
-          vat: 0.16,
-          amount: parseFloat(line.total) || 0,
-        }));
+        const items = (invoiceData.lines || []).map((line: any) => {
+          const quantity = parseFloat(line.quantity) || 0;
+          const rate = parseFloat(line.unit_price) || 0;
+          const amount = parseFloat(line.total) || (quantity * rate);
+          const vat = amount * 0.16; // 16% VAT on amount
+          
+          return {
+            id: String(line.item_id || line.id),
+            name: line.description || line.item_name || 'Item',
+            code: line.code || '',
+            quantity: quantity,
+            unit: line.uom || 'PCS',
+            rate: rate,
+            vat: vat,
+            amount: amount,
+          };
+        });
         
         setPosItems(items);
         setCurrentDraftId(draft.id); // Store draft ID for later conversion
+        setSelectedInvoiceId(null); // Clear selected invoice
         setRetrieveOpen(false);
       }
     } catch (error) {
       console.error('Error retrieving draft:', error);
       setError('Failed to retrieve draft');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle invoice selection from search
+  const handleInvoiceSelect = async (invoice: any) => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      // Fetch full invoice details with lines
+      const response = await ApiService.getInvoice(invoice.id);
+      
+      if (response.success && response.data) {
+        const invoiceData = response.data;
+        
+        // Convert invoice lines to POS items format
+        const items = (invoiceData.lines || []).map((line: any) => {
+          const quantity = parseFloat(line.quantity) || 0;
+          const rate = parseFloat(line.unit_price) || 0;
+          const amount = parseFloat(line.total) || (quantity * rate);
+          const vat = amount * 0.16; // 16% VAT on amount
+          
+          return {
+            id: String(line.item_id || line.id),
+            name: line.description || line.item_name || 'Item',
+            code: line.code || '',
+            quantity: quantity,
+            unit: line.uom || 'PCS',
+            rate: rate,
+            vat: vat,
+            amount: amount,
+          };
+        });
+        
+        setPosItems(items);
+        setSelectedInvoiceId(String(invoice.id)); // Store invoice ID for potential update
+        setCurrentDraftId(null); // Clear draft ID
+        setSearchInvoiceOpen(false); // Close the modal
+        setInvoiceSearchQuery(''); // Clear search query
+      } else {
+        setError('Failed to load invoice details');
+      }
+    } catch (error: any) {
+      console.error('Error loading invoice:', error);
+      setError(error.response?.data?.message || 'Failed to load invoice details');
     } finally {
       setLoading(false);
     }
@@ -690,6 +797,12 @@ const POSScreen: React.FC = () => {
           </Alert>
         )}
 
+        {selectedInvoiceId && (
+          <Alert severity="info" sx={{ mb: 2 }} onClose={() => setSelectedInvoiceId(null)}>
+            📋 Editing invoice. Changes will update the existing invoice when saved.
+          </Alert>
+        )}
+
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 1, alignItems: 'flex-start' }}>
           {/* Left: Items Table */}
           <Box sx={{ flex: '1 1 auto', minWidth: 0, width: { xs: '100%', md: 'auto' } }}>
@@ -867,7 +980,11 @@ const POSScreen: React.FC = () => {
                 <Button
                   variant="outlined"
                   fullWidth
-                  onClick={() => setPosItems([])}
+                  onClick={() => {
+                    setPosItems([]);
+                    setSelectedInvoiceId(null);
+                    setCurrentDraftId(null);
+                  }}
                   disabled={posItems.length === 0}
                   sx={{ color: '#d32f2f', borderColor: '#d32f2f' }}
                   startIcon={<DeleteIcon />}
@@ -1060,7 +1177,19 @@ const POSScreen: React.FC = () => {
                         inv.customer_name?.toLowerCase().includes(invoiceSearchQuery.toLowerCase())
                       )
                       .map((invoice) => (
-                        <TableRow key={invoice.id} hover>
+                        <TableRow 
+                          key={invoice.id} 
+                          hover
+                          onClick={() => handleInvoiceSelect(invoice)}
+                          sx={{ 
+                            cursor: 'pointer',
+                            '&:hover': { 
+                              backgroundColor: '#f5f5f5',
+                              transform: 'scale(1.01)',
+                              transition: 'all 0.2s ease'
+                            }
+                          }}
+                        >
                           <TableCell>{invoice.invoice_number}</TableCell>
                           <TableCell>{invoice.customer_name}</TableCell>
                           <TableCell>{new Date(invoice.created_at).toLocaleDateString()}</TableCell>
