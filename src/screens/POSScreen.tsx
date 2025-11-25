@@ -118,26 +118,51 @@ const POSScreen: React.FC = () => {
   // Fetch available items
   const fetchAvailableItems = async () => {
     try {
+      setError('');
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Please login to access items');
+        console.error('No token found in localStorage');
+        return;
+      }
       const response = await ApiService.getItems();
       setAvailableItems(response.data?.items || response.items || []);
-    } catch (err) {
-      setError('Failed to fetch items');
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch items';
+      setError(errorMessage);
       console.error('Fetch items error:', err);
+      
+      // If it's an auth error, the interceptor will handle redirect
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        setError('Session expired. Please login again.');
+      }
     }
   };
 
   // Fetch financial accounts
   const fetchFinancialAccounts = async () => {
     try {
+      setError('');
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No token found in localStorage');
+        return;
+      }
       const response = await ApiService.getFinancialAccounts();
       const data = response.data?.accounts || response.accounts || [];
       setAccounts(data);
       if (Array.isArray(data) && data.length > 0) {
-        setSelectedAccount(data[0].id);
+        setSelectedAccount(String(data[0].id));
       }
-    } catch (err) {
-      setError('Failed to fetch accounts');
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch accounts';
+      setError(errorMessage);
       console.error('Fetch accounts error:', err);
+      
+      // If it's an auth error, the interceptor will handle redirect
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        setError('Session expired. Please login again.');
+      }
     }
   };
 
@@ -168,6 +193,13 @@ const POSScreen: React.FC = () => {
   };
 
   useEffect(() => {
+    // Check if user is authenticated before fetching data
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setError('Please login to access the POS system');
+      return;
+    }
+    
     fetchAvailableItems();
     fetchFinancialAccounts();
   }, []);
@@ -658,10 +690,10 @@ const POSScreen: React.FC = () => {
           </Alert>
         )}
 
-        <Grid container spacing={'40px'}>
+        <Grid container spacing={1} sx={{ alignItems: 'flex-start' }}>
           {/* Left: Items Table */}
-          <Grid container size={{ xs: 12, md: 10 }}>
-            <Paper sx={{ p: 2, borderRadius: 2, boxShadow: 2 }}>
+          <Grid container size={{ xs: 12, md: 9.5 }}>
+            <Paper sx={{ p: 2, borderRadius: 2, boxShadow: 2, height: '100%' }}>
               <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
                 Items
               </Typography>
@@ -747,22 +779,22 @@ const POSScreen: React.FC = () => {
           </Grid>
 
           {/* Right: Summary & Actions */}
-          <Grid container size={{ xs: 12, md: 2 }}>
-            <Paper sx={{ p: 2, borderRadius: 2, boxShadow: 2, backgroundColor: '#f9f9f9' }}>
-              <Typography variant="h6" fontWeight="bold" sx={{ mb: 3 }}>
+          <Grid container size={{ xs: 12, md: 2.5 }}>
+            <Paper sx={{ p: 2, borderRadius: 2, boxShadow: 2, backgroundColor: '#f9f9f9', height: '100%' }}>
+              <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
                 Summary
               </Typography>
-              <Box sx={{ mb: 2 }}>
+              <Box sx={{ mb: 2, p: 1.5, backgroundColor: '#fff', borderRadius: 1 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography>Subtotal:</Typography>
-                  <Typography fontWeight="bold">{Number(subTotal).toFixed(2)}</Typography>
+                  <Typography variant="body2" color="text.secondary">Subtotal:</Typography>
+                  <Typography variant="body2" fontWeight="bold">{Number(subTotal).toFixed(2)}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography>VAT:</Typography>
-                  <Typography fontWeight="bold">{Number(vatTotal).toFixed(2)}</Typography>
+                  <Typography variant="body2" color="text.secondary">VAT:</Typography>
+                  <Typography variant="body2" fontWeight="bold">{Number(vatTotal).toFixed(2)}</Typography>
                 </Box>
                 <Divider sx={{ my: 1 }} />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Typography variant="h6" fontWeight="bold">
                     Total:
                   </Typography>
@@ -772,7 +804,7 @@ const POSScreen: React.FC = () => {
                 </Box>
               </Box>
 
-              <Stack spacing={2}>
+              <Stack spacing={1.5}>
                 <Button
                   variant="contained"
                   fullWidth
