@@ -692,7 +692,7 @@ const POSScreen: React.FC = () => {
 
         <Grid container spacing={1} sx={{ alignItems: 'flex-start' }}>
           {/* Left: Items Table */}
-          <Grid container size={{ xs: 12, md: 9.5 }}>
+          <Grid container size={{ xs: 12, md: 10.5 }}>
             <Paper sx={{ p: 2, borderRadius: 2, boxShadow: 2, height: '100%' }}>
               <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
                 Items
@@ -779,7 +779,7 @@ const POSScreen: React.FC = () => {
           </Grid>
 
           {/* Right: Summary & Actions */}
-          <Grid container size={{ xs: 12, md: 2.5 }}>
+          <Grid container size={{ xs: 12, md: 1.5 }}>
             <Paper sx={{ p: 2, borderRadius: 2, boxShadow: 2, backgroundColor: '#f9f9f9', height: '100%' }}>
               <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
                 Summary
