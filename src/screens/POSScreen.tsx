@@ -690,9 +690,9 @@ const POSScreen: React.FC = () => {
           </Alert>
         )}
 
-        <Grid container spacing={1} sx={{ alignItems: 'flex-start' }}>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 1, alignItems: 'flex-start' }}>
           {/* Left: Items Table */}
-          <Grid container size={{ xs: 12, md: 10.5 }}>
+          <Box sx={{ flex: '1 1 auto', minWidth: 0, width: { xs: '100%', md: 'auto' } }}>
             <Paper sx={{ p: 2, borderRadius: 2, boxShadow: 2, height: '100%' }}>
               <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
                 Items
@@ -776,10 +776,10 @@ const POSScreen: React.FC = () => {
                 </Table>
               </TableContainer>
             </Paper>
-          </Grid>
+          </Box>
 
           {/* Right: Summary & Actions */}
-          <Grid container size={{ xs: 12, md: 1.5 }}>
+          <Box sx={{ flex: { xs: '0 0 auto', md: '0 0 320px' }, width: { xs: '100%', md: '320px' }, minWidth: { xs: 'auto', md: '280px' } }}>
             <Paper sx={{ p: 2, borderRadius: 2, boxShadow: 2, backgroundColor: '#f9f9f9', height: '100%' }}>
               <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
                 Summary
@@ -876,8 +876,8 @@ const POSScreen: React.FC = () => {
                 </Button>
               </Stack>
             </Paper>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
 
         {/* Search Items Modal */}
         <Dialog open={searchOpen} onClose={() => setSearchOpen(false)} maxWidth="md" fullWidth>
