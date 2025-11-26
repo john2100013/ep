@@ -42,6 +42,7 @@ import {
   Add as AddIcon,
   Close as CloseIcon,
 } from '@mui/icons-material';
+import { Chip } from '@mui/material';
 import ApiService, { api } from '../services/api';
 
 interface POSItem {
@@ -115,6 +116,9 @@ const POSScreen: React.FC = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [amountPaid, setAmountPaid] = useState<number>(0);
+  const [mpesaCode, setMpesaCode] = useState('');
+  const [posPaymentMethod, setPosPaymentMethod] = useState<string>('Cash');
 
   // Fetch available items
   const fetchAvailableItems = async () => {
@@ -378,7 +382,11 @@ const POSScreen: React.FC = () => {
           })),
           notes: `POS Sale - Account: ${accounts.find(a => a.id === selectedAccount)?.account_name || selectedAccount}`,
           due_date: currentDate,
-          payment_terms: 'Paid',
+          payment_terms: posPaymentMethod,
+          payment_method: posPaymentMethod,
+          mpesa_code: posPaymentMethod === 'M-Pesa' ? mpesaCode : '',
+          amountPaid: parseFloat(amountPaid.toString()) || 0,
+          paymentMethod: selectedAccount || null,
         };
         
         // Update invoice using the API
@@ -404,6 +412,9 @@ const POSScreen: React.FC = () => {
         setPosItems([]);
         setSelectedInvoiceId(null);
         setSelectedAccount('');
+        setAmountPaid(0);
+        setMpesaCode('');
+        setPosPaymentMethod('Cash');
         
         // Refresh financial accounts to show updated balance
         await fetchFinancialAccounts();
@@ -433,6 +444,9 @@ const POSScreen: React.FC = () => {
           setPosItems([]);
           setCurrentDraftId(null);
           setSelectedAccount('');
+          setAmountPaid(0);
+          setMpesaCode('');
+          setPosPaymentMethod('Cash');
           
           // Refresh financial accounts
           await fetchFinancialAccounts();
@@ -456,7 +470,11 @@ const POSScreen: React.FC = () => {
           })),
           notes: `POS Sale - Account: ${accounts.find(a => a.id === selectedAccount)?.account_name || selectedAccount}`,
           due_date: currentDate,
-          payment_terms: 'Paid',
+          payment_terms: posPaymentMethod,
+          payment_method: posPaymentMethod,
+          mpesa_code: posPaymentMethod === 'M-Pesa' ? mpesaCode : '',
+          amountPaid: parseFloat(amountPaid.toString()) || 0,
+          paymentMethod: selectedAccount || null,
         };
         
         // Create invoice using the API
@@ -485,6 +503,9 @@ const POSScreen: React.FC = () => {
         setPosItems([]);
         setSelectedAccount('');
         setSelectedInvoiceId(null);
+        setAmountPaid(0);
+        setMpesaCode('');
+        setPosPaymentMethod('Cash');
         
         // Refresh financial accounts to show updated balance
         await fetchFinancialAccounts();
@@ -507,6 +528,9 @@ const POSScreen: React.FC = () => {
     setError('');
     setSelectedInvoiceId(null);
     setCurrentDraftId(null);
+    setAmountPaid(0);
+    setMpesaCode('');
+    setPosPaymentMethod('Cash');
   };
 
   // Retrieve draft
@@ -903,13 +927,99 @@ const POSScreen: React.FC = () => {
                   <Typography variant="body2" fontWeight="bold">{Number(vatTotal).toFixed(2)}</Typography>
                 </Box>
                 <Divider sx={{ my: 1 }} />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                   <Typography variant="h6" fontWeight="bold">
                     Total:
                   </Typography>
                   <Typography variant="h6" fontWeight="bold" sx={{ color: '#1976d2' }}>
                     {Number(total).toFixed(2)}
                   </Typography>
+                </Box>
+                
+                {/* Payment Information */}
+                <Divider sx={{ my: 1.5 }} />
+                <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold', mb: 1 }}>
+                  Payment Information
+                </Typography>
+                
+                <Box sx={{ mb: 1.5 }}>
+                  <TextField
+                    fullWidth
+                    label="Amount Paid"
+                    type="number"
+                    size="small"
+                    value={amountPaid}
+                    onChange={(e) => setAmountPaid(parseFloat(e.target.value) || 0)}
+                    inputProps={{ 
+                      step: 0.01,
+                      min: 0
+                    }}
+                    sx={{ mb: 1 }}
+                  />
+                  
+                  {posPaymentMethod === 'M-Pesa' && (
+                    <TextField
+                      fullWidth
+                      label="M-Pesa Transaction Code"
+                      size="small"
+                      value={mpesaCode}
+                      onChange={(e) => setMpesaCode(e.target.value)}
+                      placeholder="e.g., SH12345678"
+                      sx={{ mb: 1 }}
+                    />
+                  )}
+                  
+                  <FormControl fullWidth size="small" sx={{ mb: 1 }}>
+                    <InputLabel>Payment Method</InputLabel>
+                    <Select
+                      value={posPaymentMethod}
+                      onChange={(e) => {
+                        setPosPaymentMethod(e.target.value);
+                        if (e.target.value !== 'M-Pesa') {
+                          setMpesaCode('');
+                        }
+                      }}
+                      label="Payment Method"
+                    >
+                      <MenuItem value="Cash">Cash</MenuItem>
+                      <MenuItem value="M-Pesa">M-Pesa</MenuItem>
+                      <MenuItem value="Card">Card</MenuItem>
+                      <MenuItem value="Cheque">Cheque</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
+                
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="body2" color="text.secondary">Amount Paid:</Typography>
+                  <Typography variant="body2" fontWeight="bold" sx={{ color: 'primary.main' }}>
+                    {Number(amountPaid).toFixed(2)}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="body2" color="text.secondary">Balance Due:</Typography>
+                  <Typography 
+                    variant="body2" 
+                    fontWeight="bold"
+                    sx={{ 
+                      color: (total - amountPaid) > 0 ? 'error.main' : 'success.main'
+                    }}
+                  >
+                    {Number(Math.max(0, total - amountPaid)).toFixed(2)}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1.5 }}>
+                  <Typography variant="body2" color="text.secondary">Status:</Typography>
+                  <Chip 
+                    label={
+                      amountPaid === 0 ? 'Unpaid' :
+                      amountPaid >= total ? 'Paid' : 'Partially Paid'
+                    }
+                    color={
+                      amountPaid === 0 ? 'error' :
+                      amountPaid >= total ? 'success' : 'warning'
+                    }
+                    size="small"
+                  />
                 </Box>
               </Box>
 
@@ -980,6 +1090,9 @@ const POSScreen: React.FC = () => {
                     setPosItems([]);
                     setSelectedInvoiceId(null);
                     setCurrentDraftId(null);
+                    setAmountPaid(0);
+                    setMpesaCode('');
+                    setPosPaymentMethod('Cash');
                   }}
                   disabled={posItems.length === 0}
                   sx={{ color: '#d32f2f', borderColor: '#d32f2f' }}
