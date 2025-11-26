@@ -95,6 +95,7 @@ const QuotationListScreen: React.FC = () => {
   const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [pagination, setPagination] = useState<PaginationData>({
@@ -251,19 +252,31 @@ const QuotationListScreen: React.FC = () => {
 
     try {
       setLoading(true);
-      const response = await ApiService.deleteQuotation(selectedQuotation.id);
+      setError(null);
+      console.log('Deleting quotation with ID:', selectedQuotation.id);
       
-      if (response.success) {
+      const response = await ApiService.deleteQuotation(selectedQuotation.id);
+      console.log('Delete response:', response);
+      
+      if (response && response.success) {
+        console.log('Quotation deleted successfully');
+        setSuccess('Quotation deleted successfully');
+        setError(null);
         await fetchQuotations();
         setDeleteDialogOpen(false);
         setSelectedQuotation(null);
-        setError(null);
+        // Clear success message after 3 seconds
+        setTimeout(() => setSuccess(null), 3000);
       } else {
-        throw new Error(response.message || 'Failed to delete quotation');
+        const errorMsg = response?.message || 'Failed to delete quotation';
+        console.error('Delete failed:', errorMsg);
+        setError(errorMsg);
       }
     } catch (err: any) {
       console.error('Delete quotation error:', err);
-      setError(err.response?.data?.message || err.message || 'Failed to delete quotation');
+      console.error('Error response:', err.response);
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to delete quotation';
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -383,6 +396,13 @@ const QuotationListScreen: React.FC = () => {
       {error && (
         <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
           {error}
+        </Alert>
+      )}
+
+      {/* Success Alert */}
+      {success && (
+        <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccess(null)}>
+          {success}
         </Alert>
       )}
 
@@ -586,9 +606,14 @@ const QuotationListScreen: React.FC = () => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
-            Delete
+          <Button onClick={() => setDeleteDialogOpen(false)} disabled={loading}>Cancel</Button>
+          <Button 
+            onClick={handleDeleteConfirm} 
+            color="error" 
+            variant="contained"
+            disabled={loading}
+          >
+            {loading ? 'Deleting...' : 'Delete'}
           </Button>
         </DialogActions>
       </Dialog>
