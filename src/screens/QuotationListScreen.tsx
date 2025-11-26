@@ -250,12 +250,22 @@ const QuotationListScreen: React.FC = () => {
     if (!selectedQuotation) return;
 
     try {
-      await ApiService.deleteQuotation(selectedQuotation.id);
-      await fetchQuotations();
-      setDeleteDialogOpen(false);
-      setSelectedQuotation(null);
+      setLoading(true);
+      const response = await ApiService.deleteQuotation(selectedQuotation.id);
+      
+      if (response.success) {
+        await fetchQuotations();
+        setDeleteDialogOpen(false);
+        setSelectedQuotation(null);
+        setError(null);
+      } else {
+        throw new Error(response.message || 'Failed to delete quotation');
+      }
     } catch (err: any) {
-      setError(err.message || 'Failed to delete quotation');
+      console.error('Delete quotation error:', err);
+      setError(err.response?.data?.message || err.message || 'Failed to delete quotation');
+    } finally {
+      setLoading(false);
     }
   };
 

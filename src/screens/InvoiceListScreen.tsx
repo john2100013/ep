@@ -37,6 +37,7 @@ import {
 import Sidebar from '../components/Sidebar';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
+import { ApiService } from '../services/api';
 
 interface Invoice {
   id: number;
@@ -183,23 +184,22 @@ const InvoiceListScreen: React.FC = () => {
     if (!selectedInvoice) return;
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`https://erp-backend-beryl.vercel.app/api/invoices/${selectedInvoice.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
+      setLoading(true);
+      const response = await ApiService.deleteInvoice(selectedInvoice.id);
+      
+      if (response.success) {
         await fetchInvoices();
         setDeleteDialogOpen(false);
         setSelectedInvoice(null);
+        setError(null);
       } else {
-        throw new Error('Failed to delete invoice');
+        throw new Error(response.message || 'Failed to delete invoice');
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete invoice');
+    } catch (err: any) {
+      console.error('Delete invoice error:', err);
+      setError(err.response?.data?.message || err.message || 'Failed to delete invoice');
+    } finally {
+      setLoading(false);
     }
   };
 
