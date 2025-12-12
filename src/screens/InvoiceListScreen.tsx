@@ -33,6 +33,7 @@ import {
   Delete as DeleteIcon,
   Visibility as ViewIcon,
   Receipt as ReceiptIcon,
+  ChangeCircle as StatusIcon,
 } from '@mui/icons-material';
 import Sidebar from '../components/Sidebar';
 import { useNavigate } from 'react-router-dom';
@@ -94,6 +95,8 @@ const InvoiceListScreen: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [newStatus, setNewStatus] = useState('');
 
   const fetchInvoices = async () => {
     try {
@@ -176,24 +179,89 @@ const InvoiceListScreen: React.FC = () => {
     handleMenuClose();
   };
 
-  const handleDeleteClick = () => {
-    setDeleteDialogOpen(true);
-    handleMenuClose();
+  const handleChangeStatusClick = () => {
+    // Store the invoice before closing menu - don't clear selectedInvoice yet
+    if (selectedInvoice) {
+      setNewStatus(selectedInvoice.status || '');
+      setStatusDialogOpen(true);
+      setAnchorEl(null); // Close menu but keep selectedInvoice
+    } else {
+      console.error('❌ [FRONTEND] No invoice selected when status change clicked');
+      handleMenuClose();
+    }
   };
 
-  const handleDeleteConfirm = async () => {
-    if (!selectedInvoice) return;
+  const handleStatusChange = async () => {
+    if (!selectedInvoice || !newStatus) {
+      console.error('❌ [FRONTEND] Missing invoice or status:', { selectedInvoice, newStatus });
+      return;
+    }
+
+    console.log('🔵 [FRONTEND] Update status button clicked');
+    console.log('🔵 [FRONTEND] Selected invoice:', selectedInvoice);
+    console.log('🔵 [FRONTEND] New status:', newStatus);
 
     try {
       setLoading(true);
       setError(null);
-      console.log('Deleting invoice with ID:', selectedInvoice.id);
-      
-      const response = await ApiService.deleteInvoice(selectedInvoice.id);
-      console.log('Delete response:', response);
+      console.log('🔵 [FRONTEND] Calling API to update invoice status:', selectedInvoice.id, 'to:', newStatus);
+      const response = await ApiService.updateInvoiceStatus(selectedInvoice.id, newStatus);
+      console.log('🔵 [FRONTEND] Status update API response:', response);
       
       if (response && response.success) {
-        console.log('Invoice deleted successfully');
+        console.log('✅ [FRONTEND] Invoice status updated successfully');
+        setSuccess('Invoice status updated successfully');
+        await fetchInvoices();
+        setStatusDialogOpen(false);
+        setSelectedInvoice(null);
+        setNewStatus('');
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        throw new Error(response?.message || 'Failed to update invoice status');
+      }
+    } catch (err: any) {
+      console.error('❌ [FRONTEND] Status update error:', err);
+      console.error('❌ [FRONTEND] Error response:', err.response);
+      console.error('❌ [FRONTEND] Error message:', err.message);
+      console.error('❌ [FRONTEND] Error stack:', err.stack);
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to update invoice status';
+      setError(errorMsg);
+    } finally {
+      setLoading(false);
+      console.log('🔵 [FRONTEND] Status update operation completed');
+    }
+  };
+
+  const handleDeleteClick = () => {
+    // Store the invoice before closing menu - don't clear selectedInvoice yet
+    if (selectedInvoice) {
+      setDeleteDialogOpen(true);
+      setAnchorEl(null); // Close menu but keep selectedInvoice
+    } else {
+      console.error('❌ [FRONTEND] No invoice selected when delete clicked');
+      handleMenuClose();
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedInvoice) {
+      console.error('❌ [FRONTEND] No invoice selected for deletion');
+      return;
+    }
+
+    console.log('🔴 [FRONTEND] Delete invoice button clicked');
+    console.log('🔴 [FRONTEND] Selected invoice:', selectedInvoice);
+
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('🔴 [FRONTEND] Calling API to delete invoice with ID:', selectedInvoice.id);
+      
+      const response = await ApiService.deleteInvoice(selectedInvoice.id);
+      console.log('🔴 [FRONTEND] Delete API response:', response);
+      
+      if (response && response.success) {
+        console.log('✅ [FRONTEND] Invoice deleted successfully');
         setSuccess('Invoice deleted successfully');
         setError(null);
         await fetchInvoices();
@@ -203,16 +271,19 @@ const InvoiceListScreen: React.FC = () => {
         setTimeout(() => setSuccess(null), 3000);
       } else {
         const errorMsg = response?.message || 'Failed to delete invoice';
-        console.error('Delete failed:', errorMsg);
+        console.error('❌ [FRONTEND] Delete failed:', errorMsg);
         setError(errorMsg);
       }
     } catch (err: any) {
-      console.error('Delete invoice error:', err);
-      console.error('Error response:', err.response);
+      console.error('❌ [FRONTEND] Delete invoice error:', err);
+      console.error('❌ [FRONTEND] Error response:', err.response);
+      console.error('❌ [FRONTEND] Error message:', err.message);
+      console.error('❌ [FRONTEND] Error stack:', err.stack);
       const errorMsg = err.response?.data?.message || err.message || 'Failed to delete invoice';
       setError(errorMsg);
     } finally {
       setLoading(false);
+      console.log('🔴 [FRONTEND] Delete operation completed');
     }
   };
 
@@ -431,6 +502,10 @@ const InvoiceListScreen: React.FC = () => {
             <EditIcon sx={{ mr: 1 }} fontSize="small" />
             Edit Invoice
           </MenuOption>
+          <MenuOption onClick={handleChangeStatusClick}>
+            <StatusIcon sx={{ mr: 1 }} fontSize="small" />
+            Change Status
+          </MenuOption>
           <MenuOption onClick={handleDeleteClick} sx={{ color: 'error.main' }}>
             <DeleteIcon sx={{ mr: 1 }} fontSize="small" />
             Delete
@@ -438,10 +513,66 @@ const InvoiceListScreen: React.FC = () => {
         </MenuList>
       </Menu>
 
+      {/* Status Change Dialog */}
+      <Dialog
+        open={statusDialogOpen}
+        onClose={() => {
+          setStatusDialogOpen(false);
+          setSelectedInvoice(null);
+          setNewStatus('');
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Change Invoice Status</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            Change the status of invoice {selectedInvoice?.invoice_number}.
+          </DialogContentText>
+          <FormControl fullWidth>
+            <InputLabel>Status</InputLabel>
+            <Select
+              value={newStatus}
+              onChange={(e) => setNewStatus(e.target.value)}
+              label="Status"
+            >
+              <MenuItem value="draft">Draft</MenuItem>
+              <MenuItem value="sent">Sent</MenuItem>
+              <MenuItem value="paid">Paid</MenuItem>
+              <MenuItem value="overdue">Overdue</MenuItem>
+              <MenuItem value="cancelled">Cancelled</MenuItem>
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => {
+              setStatusDialogOpen(false);
+              setSelectedInvoice(null);
+              setNewStatus('');
+            }} 
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleStatusChange} 
+            color="primary" 
+            variant="contained"
+            disabled={loading || !newStatus}
+          >
+            {loading ? 'Updating...' : 'Update Status'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
+        onClose={() => {
+          setDeleteDialogOpen(false);
+          setSelectedInvoice(null);
+        }}
       >
         <DialogTitle>Delete Invoice</DialogTitle>
         <DialogContent>
@@ -451,12 +582,21 @@ const InvoiceListScreen: React.FC = () => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)} disabled={loading}>Cancel</Button>
+          <Button 
+            onClick={() => {
+              setDeleteDialogOpen(false);
+              setSelectedInvoice(null);
+            }} 
+            disabled={loading}
+          >
+            Cancel
+          </Button>
           <Button 
             onClick={handleDeleteConfirm} 
             color="error" 
             variant="contained"
             disabled={loading}
+            type="button"
           >
             {loading ? 'Deleting...' : 'Delete'}
           </Button>

@@ -181,36 +181,67 @@ const QuotationListScreen: React.FC = () => {
   };
 
   const handleChangeStatusClick = () => {
-    setNewStatus(selectedQuotation?.status || '');
-    setStatusDialogOpen(true);
-    handleMenuClose();
+    // Store the quotation before closing menu - don't clear selectedQuotation yet
+    if (selectedQuotation) {
+      setNewStatus(selectedQuotation.status || '');
+      setStatusDialogOpen(true);
+      setAnchorEl(null); // Close menu but keep selectedQuotation
+    } else {
+      console.error('❌ [FRONTEND] No quotation selected when status change clicked');
+      handleMenuClose();
+    }
   };
 
   const handleStatusChange = async () => {
-    if (!selectedQuotation || !newStatus) return;
+    if (!selectedQuotation || !newStatus) {
+      console.error('❌ [FRONTEND] Missing quotation or status:', { selectedQuotation, newStatus });
+      return;
+    }
+
+    console.log('🟡 [FRONTEND] Update status button clicked');
+    console.log('🟡 [FRONTEND] Selected quotation:', selectedQuotation);
+    console.log('🟡 [FRONTEND] New status:', newStatus);
 
     try {
-      console.log('Updating status for quotation:', selectedQuotation.id, 'to:', newStatus);
+      setLoading(true);
+      setError(null);
+      console.log('🟡 [FRONTEND] Calling API to update quotation status:', selectedQuotation.id, 'to:', newStatus);
       const response = await ApiService.updateQuotationStatus(selectedQuotation.id, newStatus);
-      console.log('Status update response:', response);
+      console.log('🟡 [FRONTEND] Status update API response:', response);
       
-      if (response.success) {
+      if (response && response.success) {
+        console.log('✅ [FRONTEND] Quotation status updated successfully');
+        setSuccess('Quotation status updated successfully');
         await fetchQuotations();
         setStatusDialogOpen(false);
         setSelectedQuotation(null);
         setNewStatus('');
+        setTimeout(() => setSuccess(null), 3000);
       } else {
-        throw new Error(response.message || 'Failed to update quotation status');
+        throw new Error(response?.message || 'Failed to update quotation status');
       }
     } catch (err: any) {
-      console.error('Status update error:', err);
-      setError(err.message || 'Failed to update quotation status');
+      console.error('❌ [FRONTEND] Status update error:', err);
+      console.error('❌ [FRONTEND] Error response:', err.response);
+      console.error('❌ [FRONTEND] Error message:', err.message);
+      console.error('❌ [FRONTEND] Error stack:', err.stack);
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to update quotation status';
+      setError(errorMsg);
+    } finally {
+      setLoading(false);
+      console.log('🟡 [FRONTEND] Status update operation completed');
     }
   };
 
   const handleConvertClick = () => {
-    setConvertDialogOpen(true);
-    handleMenuClose();
+    // Store the quotation before closing menu - don't clear selectedQuotation yet
+    if (selectedQuotation) {
+      setConvertDialogOpen(true);
+      setAnchorEl(null); // Close menu but keep selectedQuotation
+    } else {
+      console.error('❌ [FRONTEND] No quotation selected when convert clicked');
+      handleMenuClose();
+    }
   };
 
   const handleConvertConfirm = async () => {
@@ -243,23 +274,35 @@ const QuotationListScreen: React.FC = () => {
   };
 
   const handleDeleteClick = () => {
-    setDeleteDialogOpen(true);
-    handleMenuClose();
+    // Store the quotation before closing menu - don't clear selectedQuotation yet
+    if (selectedQuotation) {
+      setDeleteDialogOpen(true);
+      setAnchorEl(null); // Close menu but keep selectedQuotation
+    } else {
+      console.error('❌ [FRONTEND] No quotation selected when delete clicked');
+      handleMenuClose();
+    }
   };
 
   const handleDeleteConfirm = async () => {
-    if (!selectedQuotation) return;
+    if (!selectedQuotation) {
+      console.error('❌ [FRONTEND] No quotation selected for deletion');
+      return;
+    }
+
+    console.log('🟠 [FRONTEND] Delete quotation button clicked');
+    console.log('🟠 [FRONTEND] Selected quotation:', selectedQuotation);
 
     try {
       setLoading(true);
       setError(null);
-      console.log('Deleting quotation with ID:', selectedQuotation.id);
+      console.log('🟠 [FRONTEND] Calling API to delete quotation with ID:', selectedQuotation.id);
       
       const response = await ApiService.deleteQuotation(selectedQuotation.id);
-      console.log('Delete response:', response);
+      console.log('🟠 [FRONTEND] Delete API response:', response);
       
       if (response && response.success) {
-        console.log('Quotation deleted successfully');
+        console.log('✅ [FRONTEND] Quotation deleted successfully');
         setSuccess('Quotation deleted successfully');
         setError(null);
         await fetchQuotations();
@@ -269,16 +312,19 @@ const QuotationListScreen: React.FC = () => {
         setTimeout(() => setSuccess(null), 3000);
       } else {
         const errorMsg = response?.message || 'Failed to delete quotation';
-        console.error('Delete failed:', errorMsg);
+        console.error('❌ [FRONTEND] Delete failed:', errorMsg);
         setError(errorMsg);
       }
     } catch (err: any) {
-      console.error('Delete quotation error:', err);
-      console.error('Error response:', err.response);
+      console.error('❌ [FRONTEND] Delete quotation error:', err);
+      console.error('❌ [FRONTEND] Error response:', err.response);
+      console.error('❌ [FRONTEND] Error message:', err.message);
+      console.error('❌ [FRONTEND] Error stack:', err.stack);
       const errorMsg = err.response?.data?.message || err.message || 'Failed to delete quotation';
       setError(errorMsg);
     } finally {
       setLoading(false);
+      console.log('🟠 [FRONTEND] Delete operation completed');
     }
   };
 
@@ -541,7 +587,10 @@ const QuotationListScreen: React.FC = () => {
       {/* Convert Confirmation Dialog */}
       <Dialog
         open={convertDialogOpen}
-        onClose={() => setConvertDialogOpen(false)}
+        onClose={() => {
+          setConvertDialogOpen(false);
+          setSelectedQuotation(null);
+        }}
       >
         <DialogTitle>Convert to Invoice</DialogTitle>
         <DialogContent>
@@ -551,7 +600,14 @@ const QuotationListScreen: React.FC = () => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConvertDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={() => {
+              setConvertDialogOpen(false);
+              setSelectedQuotation(null);
+            }}
+          >
+            Cancel
+          </Button>
           <Button onClick={handleConvertConfirm} color="primary" variant="contained">
             Convert to Invoice
           </Button>
@@ -561,7 +617,11 @@ const QuotationListScreen: React.FC = () => {
       {/* Status Change Dialog */}
       <Dialog
         open={statusDialogOpen}
-        onClose={() => setStatusDialogOpen(false)}
+        onClose={() => {
+          setStatusDialogOpen(false);
+          setSelectedQuotation(null);
+          setNewStatus('');
+        }}
         maxWidth="sm"
         fullWidth
       >
@@ -586,9 +646,23 @@ const QuotationListScreen: React.FC = () => {
           </FormControl>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setStatusDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleStatusChange} color="primary" variant="contained">
-            Update Status
+          <Button 
+            onClick={() => {
+              setStatusDialogOpen(false);
+              setSelectedQuotation(null);
+              setNewStatus('');
+            }} 
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleStatusChange} 
+            color="primary" 
+            variant="contained"
+            disabled={loading || !newStatus}
+          >
+            {loading ? 'Updating...' : 'Update Status'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -596,7 +670,10 @@ const QuotationListScreen: React.FC = () => {
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
+        onClose={() => {
+          setDeleteDialogOpen(false);
+          setSelectedQuotation(null);
+        }}
       >
         <DialogTitle>Delete Quotation</DialogTitle>
         <DialogContent>
@@ -606,12 +683,21 @@ const QuotationListScreen: React.FC = () => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)} disabled={loading}>Cancel</Button>
+          <Button 
+            onClick={() => {
+              setDeleteDialogOpen(false);
+              setSelectedQuotation(null);
+            }} 
+            disabled={loading}
+          >
+            Cancel
+          </Button>
           <Button 
             onClick={handleDeleteConfirm} 
             color="error" 
             variant="contained"
             disabled={loading}
+            type="button"
           >
             {loading ? 'Deleting...' : 'Delete'}
           </Button>

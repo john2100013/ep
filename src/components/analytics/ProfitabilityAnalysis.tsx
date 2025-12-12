@@ -62,7 +62,9 @@ const ProfitabilityAnalysis: React.FC<ProfitabilityAnalysisProps> = ({ dateRange
     try {
       setLoading(true);
       const { api } = await import('../../services/api');
-      const response = await api.get('/analytics/profitability-analysis');
+      const response = await api.get('/analytics/profitability-analysis', {
+        params: { dateRange }
+      });
       
       if (response.data) {
         setProfitabilityData(response.data.items || []);
@@ -134,21 +136,36 @@ const ProfitabilityAnalysis: React.FC<ProfitabilityAnalysisProps> = ({ dateRange
                   <Box display="flex" justifyContent="space-between" sx={{ mb: 2 }}>
                     <Typography variant="body2">Total Revenue</Typography>
                     <Typography variant="h6" color="primary">
-                      ${summary.totalRevenue.toLocaleString()}
+                      {new Intl.NumberFormat('en-KE', {
+                        style: 'currency',
+                        currency: 'KES',
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0
+                      }).format(summary.totalRevenue)}
                     </Typography>
                   </Box>
                   
                   <Box display="flex" justifyContent="space-between" sx={{ mb: 2 }}>
                     <Typography variant="body2">Total Cost</Typography>
                     <Typography variant="body2" color="error.main" fontWeight="bold">
-                      ${summary.totalCost.toLocaleString()}
+                      {new Intl.NumberFormat('en-KE', {
+                        style: 'currency',
+                        currency: 'KES',
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0
+                      }).format(summary.totalCost)}
                     </Typography>
                   </Box>
                   
                   <Box display="flex" justifyContent="space-between" sx={{ mb: 2 }}>
                     <Typography variant="body2">Gross Profit</Typography>
                     <Typography variant="body2" color="success.main" fontWeight="bold">
-                      ${summary.totalGrossProfit.toLocaleString()}
+                      {new Intl.NumberFormat('en-KE', {
+                        style: 'currency',
+                        currency: 'KES',
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0
+                      }).format(summary.totalGrossProfit)}
                     </Typography>
                   </Box>
                   
@@ -197,6 +214,7 @@ const ProfitabilityAnalysis: React.FC<ProfitabilityAnalysisProps> = ({ dateRange
                   <TableHead>
                     <TableRow>
                       <TableCell>Item</TableCell>
+                      <TableCell align="right">Quantity</TableCell>
                       <TableCell align="right">Revenue</TableCell>
                       <TableCell align="right">Cost</TableCell>
                       <TableCell align="right">Profit</TableCell>
@@ -213,21 +231,44 @@ const ProfitabilityAnalysis: React.FC<ProfitabilityAnalysisProps> = ({ dateRange
                               {item.itemName}
                             </Typography>
                             <Typography variant="caption" color="text.secondary">
-                              {item.category} • {item.unitsSold} units
+                              {item.category}
                             </Typography>
                           </Box>
                         </TableCell>
                         <TableCell align="right">
-                          ${item.revenue.toLocaleString()}
+                          <Typography variant="body2" fontWeight="bold">
+                            {item.unitsSold}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            units
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          {new Intl.NumberFormat('en-KE', {
+                            style: 'currency',
+                            currency: 'KES',
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 0
+                          }).format(item.revenue)}
                         </TableCell>
                         <TableCell align="right">
                           <Typography variant="body2" color="error.main">
-                            ${item.cost.toLocaleString()}
+                            {new Intl.NumberFormat('en-KE', {
+                              style: 'currency',
+                              currency: 'KES',
+                              minimumFractionDigits: 0,
+                              maximumFractionDigits: 0
+                            }).format(item.cost)}
                           </Typography>
                         </TableCell>
                         <TableCell align="right">
                           <Typography variant="body2" color="success.main" fontWeight="medium">
-                            ${item.grossProfit.toLocaleString()}
+                            {new Intl.NumberFormat('en-KE', {
+                              style: 'currency',
+                              currency: 'KES',
+                              minimumFractionDigits: 0,
+                              maximumFractionDigits: 0
+                            }).format(item.grossProfit)}
                           </Typography>
                         </TableCell>
                         <TableCell align="center">

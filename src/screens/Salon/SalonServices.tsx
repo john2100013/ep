@@ -46,11 +46,36 @@ const SalonServices: React.FC = () => {
 
   const loadServices = async () => {
     try {
+      console.log('🔄 Loading salon services...');
       const response = await salonApi.getServices();
-      if (response.data.success) {
-        setServices(response.data.data);
+      console.log('📥 Services response:', response.data);
+      
+      // Handle both response formats: { success: true, data: [...] } or direct array
+      let servicesData: SalonService[] = [];
+      
+      if (Array.isArray(response.data)) {
+        // Direct array response
+        console.log('📋 Received direct array response');
+        servicesData = response.data;
+      } else if (response.data?.success && Array.isArray(response.data.data)) {
+        // Wrapped response with success flag
+        console.log('📋 Received wrapped response');
+        servicesData = response.data.data;
+      } else if (response.data?.data && Array.isArray(response.data.data)) {
+        // Response with data property
+        console.log('📋 Received response with data property');
+        servicesData = response.data.data;
+      } else {
+        console.error('❌ Unexpected response format:', response.data);
+        setError('Unexpected response format from server');
+        return;
       }
+      
+      console.log('✅ Services loaded:', servicesData.length, 'services');
+      setServices(servicesData);
     } catch (err: any) {
+      console.error('❌ Error loading services:', err);
+      console.error('Error details:', err.response?.data);
       setError(err.response?.data?.message || 'Failed to load services');
     }
   };
@@ -95,10 +120,15 @@ const SalonServices: React.FC = () => {
 
   const handleEdit = (service: SalonService) => {
     setEditingService(service);
+    // Convert base_price to number if it's a string (PostgreSQL returns DECIMAL as string)
+    const basePrice = typeof service.base_price === 'string' 
+      ? parseFloat(service.base_price) 
+      : service.base_price || 0;
+    
     setFormData({
       name: service.name,
       description: service.description || '',
-      base_price: service.base_price.toString(),
+      base_price: basePrice.toString(),
       duration_minutes: service.duration_minutes?.toString() || '',
     });
     setShowDialog(true);
@@ -141,24 +171,41 @@ const SalonServices: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {services.map((service) => (
-                  <TableRow key={service.id}>
-                    <TableCell>{service.name}</TableCell>
-                    <TableCell>{service.description || '-'}</TableCell>
-                    <TableCell align="right">{service.base_price.toFixed(2)}</TableCell>
-                    <TableCell align="center">
-                      {service.duration_minutes ? `${service.duration_minutes} min` : '-'}
-                    </TableCell>
-                    <TableCell align="center">
-                      <Chip label={service.is_active ? 'Active' : 'Inactive'} size="small" color={service.is_active ? 'success' : 'default'} />
-                    </TableCell>
-                    <TableCell align="center">
-                      <IconButton size="small" onClick={() => handleEdit(service)}>
-                        <Edit fontSize="small" />
-                      </IconButton>
+                {services.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                      <Typography color="text.secondary">
+                        No services found. Click "Add Service" to create one.
+                      </Typography>
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  services.map((service) => {
+                    // Convert base_price to number if it's a string
+                    const basePrice = typeof service.base_price === 'string' 
+                      ? parseFloat(service.base_price) 
+                      : service.base_price || 0;
+                    
+                    return (
+                      <TableRow key={service.id}>
+                        <TableCell>{service.name}</TableCell>
+                        <TableCell>{service.description || '-'}</TableCell>
+                        <TableCell align="right">{basePrice.toFixed(2)}</TableCell>
+                        <TableCell align="center">
+                          {service.duration_minutes ? `${service.duration_minutes} min` : '-'}
+                        </TableCell>
+                        <TableCell align="center">
+                          <Chip label={service.is_active ? 'Active' : 'Inactive'} size="small" color={service.is_active ? 'success' : 'default'} />
+                        </TableCell>
+                        <TableCell align="center">
+                          <IconButton size="small" onClick={() => handleEdit(service)}>
+                            <Edit fontSize="small" />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
               </TableBody>
             </Table>
           </TableContainer>

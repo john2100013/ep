@@ -67,12 +67,22 @@ const SalonDashboard: React.FC = () => {
         salonApi.getCurrentShift(),
       ]);
 
-      if (statsRes.data.success) {
+      console.log('📥 Dashboard stats response:', statsRes.data);
+      console.log('📥 Current shift response:', shiftRes.data);
+
+      if (statsRes.data?.success) {
+        setStats(statsRes.data.data);
+      } else if (statsRes.data?.data) {
         setStats(statsRes.data.data);
       }
 
-      if (shiftRes.data.success && shiftRes.data.data) {
+      // Handle current shift response
+      if (shiftRes.data?.success && shiftRes.data.data) {
         setCurrentShift(shiftRes.data.data);
+      } else if (shiftRes.data && shiftRes.data.data) {
+        setCurrentShift(shiftRes.data.data);
+      } else {
+        setCurrentShift(null);
       }
 
       setError('');
@@ -105,7 +115,7 @@ const SalonDashboard: React.FC = () => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: 3, width: '100%' }}>
       {/* Header */}
       <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="h4" fontWeight="bold">
@@ -113,11 +123,23 @@ const SalonDashboard: React.FC = () => {
         </Typography>
         
         {currentShift ? (
-          <Chip 
-            label={`Shift Active - Started ${new Date(currentShift.clock_in).toLocaleTimeString()}`}
-            color="success"
-            icon={<AccessTime />}
-          />
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+            <Chip 
+              label={`Shift Active - Started ${new Date(currentShift.clock_in).toLocaleTimeString()}`}
+              color="success"
+              icon={<AccessTime />}
+            />
+            <Button 
+              variant="contained" 
+              color="error"
+              onClick={() => {
+                setTabValue(3);
+                navigate('/salon/shifts');
+              }}
+            >
+              Close Shift
+            </Button>
+          </Box>
         ) : (
           <Button 
             variant="contained" 

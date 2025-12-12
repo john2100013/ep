@@ -1,10 +1,10 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://erp-backend-beryl.vercel.app/api';
 
-// Log the API URL being used for debugging
+// Log the API URL being used for debugging (always enabled)
 console.log('🔗 API Base URL:', API_BASE_URL);
-console.log('🏗️ Environment:', import.meta.env.VITE_APP_ENV || 'development');
+console.log('🏗️ Environment:', import.meta.env.VITE_APP_ENV || 'production');
 
 // Create axios instance
 const api = axios.create({
@@ -165,8 +165,19 @@ export class ApiService {
   }
 
   static async updateQuotationStatus(id: number, status: string) {
+    console.log('🟡 [API SERVICE] updateQuotationStatus called:', { id, status });
+    console.log('🟡 [API SERVICE] URL:', `/quotations/${id}/status`);
+    console.log('🟡 [API SERVICE] Method: PATCH');
+    console.log('🟡 [API SERVICE] Body:', { status });
+    try {
     const response = await api.patch(`/quotations/${id}/status`, { status });
+      console.log('🟡 [API SERVICE] Response received:', response.data);
     return response.data;
+    } catch (error: any) {
+      console.error('❌ [API SERVICE] updateQuotationStatus error:', error);
+      console.error('❌ [API SERVICE] Error response:', error.response);
+      throw error;
+    }
   }
 
   static async convertQuotationToInvoice(id: number) {
@@ -175,8 +186,18 @@ export class ApiService {
   }
 
   static async deleteQuotation(id: number) {
+    console.log('🟠 [API SERVICE] deleteQuotation called:', { id });
+    console.log('🟠 [API SERVICE] URL:', `/quotations/${id}`);
+    console.log('🟠 [API SERVICE] Method: DELETE');
+    try {
     const response = await api.delete(`/quotations/${id}`);
+      console.log('🟠 [API SERVICE] Response received:', response.data);
     return response.data;
+    } catch (error: any) {
+      console.error('❌ [API SERVICE] deleteQuotation error:', error);
+      console.error('❌ [API SERVICE] Error response:', error.response);
+      throw error;
+    }
   }
 
   // Invoice endpoints
@@ -242,13 +263,34 @@ export class ApiService {
   }
 
   static async updateInvoiceStatus(id: number, status: string) {
+    console.log('🔵 [API SERVICE] updateInvoiceStatus called:', { id, status });
+    console.log('🔵 [API SERVICE] URL:', `/invoices/${id}/status`);
+    console.log('🔵 [API SERVICE] Method: PATCH');
+    console.log('🔵 [API SERVICE] Body:', { status });
+    try {
     const response = await api.patch(`/invoices/${id}/status`, { status });
+      console.log('🔵 [API SERVICE] Response received:', response.data);
     return response.data;
+    } catch (error: any) {
+      console.error('❌ [API SERVICE] updateInvoiceStatus error:', error);
+      console.error('❌ [API SERVICE] Error response:', error.response);
+      throw error;
+    }
   }
 
   static async deleteInvoice(id: number) {
+    console.log('🔴 [API SERVICE] deleteInvoice called:', { id });
+    console.log('🔴 [API SERVICE] URL:', `/invoices/${id}`);
+    console.log('🔴 [API SERVICE] Method: DELETE');
+    try {
     const response = await api.delete(`/invoices/${id}`);
+      console.log('🔴 [API SERVICE] Response received:', response.data);
     return response.data;
+    } catch (error: any) {
+      console.error('❌ [API SERVICE] deleteInvoice error:', error);
+      console.error('❌ [API SERVICE] Error response:', error.response);
+      throw error;
+    }
   }
 
   // Financial Account endpoints
@@ -499,14 +541,34 @@ export class ApiService {
     return response.data;
   }
 
-  static async updateLabTestResult(lab_test_id: number, test_result: string) {
-    const response = await api.put(`/hospital/lab-tests/${lab_test_id}/result`, { lab_test_id, test_result });
+  static async updateLabTestResult(
+    lab_test_id: number, 
+    test_result: string, 
+    attachment_url?: string, 
+    attachment_filename?: string
+  ) {
+    const response = await api.put(`/hospital/lab-tests/${lab_test_id}/result`, { 
+      lab_test_id, 
+      test_result,
+      attachment_url,
+      attachment_filename
+    });
     return response.data;
   }
 
   // Pharmacy endpoints
   static async getPendingPrescriptions() {
     const response = await api.get('/hospital/prescriptions/pending');
+    return response.data;
+  }
+
+  static async getAllPrescriptions(params?: {
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+    search?: string;
+  }) {
+    const response = await api.get('/hospital/prescriptions', { params });
     return response.data;
   }
 
@@ -538,10 +600,27 @@ export class ApiService {
   }
 
   static async fulfillPrescription(prescription_id: number, data: {
+    prescription_id?: number;
     items: Array<{ prescription_item_id: number; quantity_fulfilled: number; is_available: boolean }>;
     financial_account_id?: number;
   }) {
     const response = await api.post(`/hospital/prescriptions/${prescription_id}/fulfill`, data);
+    return response.data;
+  }
+
+  // M-Pesa C2B Confirmation endpoints
+  static async getPendingMpesaConfirmations() {
+    const response = await api.get('/mpesa/confirmations/pending');
+    return response.data;
+  }
+
+  static async getAllMpesaConfirmations(params?: { linked?: boolean; limit?: number }) {
+    const response = await api.get('/mpesa/confirmations', { params });
+    return response.data;
+  }
+
+  static async linkMpesaConfirmation(confirmationId: number, invoiceId: number) {
+    const response = await api.post(`/mpesa/confirmations/${confirmationId}/link`, { invoice_id: invoiceId });
     return response.data;
   }
 }

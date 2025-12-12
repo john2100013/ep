@@ -5,6 +5,8 @@ import { useAuth } from './contexts/AuthContext';
 
 // Components
 import Header from './components/Header';
+import SalonHeader from './components/SalonHeader';
+import SalonSidebar from './components/SalonSidebar';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Screens
@@ -41,7 +43,8 @@ import {
   SalonProducts, 
   SalonShifts, 
   SalonPerformance, 
-  SalonReports 
+  SalonReports,
+  PerformanceAnalyticsSalonScreen
 } from './screens/Salon';
 
 // Hospital Module
@@ -360,10 +363,20 @@ function App() {
           path="/salon" 
           element={
             <Box>
-              <Header />
+              <SalonHeader />
+              <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+                <SalonSidebar />
+              </Box>
+              <Box sx={{ 
+                marginLeft: { xs: 0, md: '350px' }, 
+                pt: 2, 
+                width: { xs: '100%', md: 'calc(100% - 350px)' }, 
+                minHeight: 'calc(100vh - 100px)' 
+              }}>
               <ProtectedRoute>
                 <SalonDashboard />
               </ProtectedRoute>
+              </Box>
             </Box>
           } 
         />
@@ -371,10 +384,20 @@ function App() {
           path="/salon/pos" 
           element={
             <Box>
-              <Header />
+              <SalonHeader />
+              <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+                <SalonSidebar />
+              </Box>
+              <Box sx={{ 
+                marginLeft: { xs: 0, md: '350px' }, 
+                pt: 2, 
+                width: { xs: '100%', md: 'calc(100% - 350px)' }, 
+                minHeight: 'calc(100vh - 100px)' 
+              }}>
               <ProtectedRoute>
                 <SalonPOS />
               </ProtectedRoute>
+              </Box>
             </Box>
           } 
         />
@@ -382,10 +405,20 @@ function App() {
           path="/salon/employees" 
           element={
             <Box>
-              <Header />
+              <SalonHeader />
+              <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+                <SalonSidebar />
+              </Box>
+              <Box sx={{ 
+                marginLeft: { xs: 0, md: '350px' }, 
+                pt: 2, 
+                width: { xs: '100%', md: 'calc(100% - 350px)' }, 
+                minHeight: 'calc(100vh - 100px)' 
+              }}>
               <ProtectedRoute>
                 <SalonEmployees />
               </ProtectedRoute>
+              </Box>
             </Box>
           } 
         />
@@ -393,10 +426,20 @@ function App() {
           path="/salon/services" 
           element={
             <Box>
-              <Header />
+              <SalonHeader />
+              <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+                <SalonSidebar />
+              </Box>
+              <Box sx={{ 
+                marginLeft: { xs: 0, md: '350px' }, 
+                pt: 2, 
+                width: { xs: '100%', md: 'calc(100% - 350px)' }, 
+                minHeight: 'calc(100vh - 100px)' 
+              }}>
               <ProtectedRoute>
                 <SalonServices />
               </ProtectedRoute>
+              </Box>
             </Box>
           } 
         />
@@ -404,10 +447,20 @@ function App() {
           path="/salon/products" 
           element={
             <Box>
-              <Header />
+              <SalonHeader />
+              <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+                <SalonSidebar />
+              </Box>
+              <Box sx={{ 
+                marginLeft: { xs: 0, md: '350px' }, 
+                pt: 2, 
+                width: { xs: '100%', md: 'calc(100% - 350px)' }, 
+                minHeight: 'calc(100vh - 100px)' 
+              }}>
               <ProtectedRoute>
                 <SalonProducts />
               </ProtectedRoute>
+              </Box>
             </Box>
           } 
         />
@@ -415,10 +468,20 @@ function App() {
           path="/salon/shifts" 
           element={
             <Box>
-              <Header />
+              <SalonHeader />
+              <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+                <SalonSidebar />
+              </Box>
+              <Box sx={{ 
+                marginLeft: { xs: 0, md: '350px' }, 
+                pt: 2, 
+                width: { xs: '100%', md: 'calc(100% - 350px)' }, 
+                minHeight: 'calc(100vh - 100px)' 
+              }}>
               <ProtectedRoute>
                 <SalonShifts />
               </ProtectedRoute>
+              </Box>
             </Box>
           } 
         />
@@ -426,10 +489,41 @@ function App() {
           path="/salon/performance" 
           element={
             <Box>
-              <Header />
+              <SalonHeader />
+              <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+                <SalonSidebar />
+              </Box>
+              <Box sx={{ 
+                marginLeft: { xs: 0, md: '350px' }, 
+                pt: 2, 
+                width: { xs: '100%', md: 'calc(100% - 350px)' }, 
+                minHeight: 'calc(100vh - 100px)' 
+              }}>
               <ProtectedRoute>
                 <SalonPerformance />
               </ProtectedRoute>
+              </Box>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/salon/analytics" 
+          element={
+            <Box>
+              <SalonHeader />
+              <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+                <SalonSidebar />
+              </Box>
+              <Box sx={{ 
+                marginLeft: { xs: 0, md: '350px' }, 
+                pt: 2, 
+                width: { xs: '100%', md: 'calc(100% - 350px)' }, 
+                minHeight: 'calc(100vh - 100px)' 
+              }}>
+                <ProtectedRoute>
+                  <PerformanceAnalyticsSalonScreen />
+                </ProtectedRoute>
+              </Box>
             </Box>
           } 
         />
@@ -437,10 +531,20 @@ function App() {
           path="/salon/reports" 
           element={
             <Box>
-              <Header />
+              <SalonHeader />
+              <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+                <SalonSidebar />
+              </Box>
+              <Box sx={{ 
+                marginLeft: { xs: 0, md: '350px' }, 
+                pt: 2, 
+                width: { xs: '100%', md: 'calc(100% - 350px)' }, 
+                minHeight: 'calc(100vh - 100px)' 
+              }}>
               <ProtectedRoute>
                 <SalonReports />
               </ProtectedRoute>
+              </Box>
             </Box>
           } 
         />

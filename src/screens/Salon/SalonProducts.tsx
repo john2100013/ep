@@ -17,9 +17,30 @@ const SalonProducts: React.FC = () => {
 
   const loadProducts = async () => {
     try {
+      console.log('🔄 Loading salon products...');
       const response = await salonApi.getProducts();
-      if (response.data.success) setProducts(response.data.data);
+      console.log('📥 Products response:', response.data);
+      
+      // Handle both response formats: { success: true, data: [...] } or direct array
+      let productsData: SalonProduct[] = [];
+      
+      if (Array.isArray(response.data)) {
+        productsData = response.data;
+      } else if (response.data?.success && Array.isArray(response.data.data)) {
+        productsData = response.data.data;
+      } else if (response.data?.data && Array.isArray(response.data.data)) {
+        productsData = response.data.data;
+      } else {
+        console.error('❌ Unexpected response format:', response.data);
+        setError('Unexpected response format from server');
+        return;
+      }
+      
+      console.log('✅ Products loaded:', productsData.length, 'products');
+      setProducts(productsData);
     } catch (err: any) {
+      console.error('❌ Error loading products:', err);
+      console.error('Error details:', err.response?.data);
       setError(err.response?.data?.message || 'Failed to load products');
     }
   };
@@ -51,7 +72,25 @@ const SalonProducts: React.FC = () => {
 
   const handleEdit = (product: SalonProduct) => {
     setEditingProduct(product);
-    setFormData({ name: product.name, description: product.description || '', unit: product.unit, current_stock: product.current_stock.toString(), min_stock_level: product.min_stock_level.toString(), unit_cost: product.unit_cost.toString() });
+    // Convert numeric fields to numbers if they're strings
+    const currentStock = typeof product.current_stock === 'string' 
+      ? parseFloat(product.current_stock) 
+      : product.current_stock || 0;
+    const minStock = typeof product.min_stock_level === 'string'
+      ? parseFloat(product.min_stock_level)
+      : product.min_stock_level || 0;
+    const unitCost = typeof product.unit_cost === 'string'
+      ? parseFloat(product.unit_cost)
+      : product.unit_cost || 0;
+    
+    setFormData({ 
+      name: product.name, 
+      description: product.description || '', 
+      unit: product.unit, 
+      current_stock: currentStock.toString(), 
+      min_stock_level: minStock.toString(), 
+      unit_cost: unitCost.toString() 
+    });
     setShowDialog(true);
   };
 
@@ -83,17 +122,42 @@ const SalonProducts: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {products.map((product) => (
-                  <TableRow key={product.id} sx={{ bgcolor: isLowStock(product) ? '#fff3e0' : 'inherit' }}>
-                    <TableCell>{product.name} {isLowStock(product) && <Warning fontSize="small" color="warning" />}</TableCell>
-                    <TableCell>{product.unit}</TableCell>
-                    <TableCell align="right">{product.current_stock}</TableCell>
-                    <TableCell align="right">{product.min_stock_level}</TableCell>
-                    <TableCell align="right">{product.unit_cost.toFixed(2)}</TableCell>
-                    <TableCell align="center"><Chip label={isLowStock(product) ? 'Low Stock' : 'OK'} size="small" color={isLowStock(product) ? 'warning' : 'success'} /></TableCell>
-                    <TableCell align="center"><IconButton size="small" onClick={() => handleEdit(product)}><Edit fontSize="small" /></IconButton></TableCell>
+                {products.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                      <Typography color="text.secondary">
+                        No products found. Click "Add Product" to create one.
+                      </Typography>
+                    </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  products.map((product) => {
+                    // Convert numeric fields to numbers if they're strings
+                    const currentStock = typeof product.current_stock === 'string' 
+                      ? parseFloat(product.current_stock) 
+                      : product.current_stock || 0;
+                    const minStock = typeof product.min_stock_level === 'string'
+                      ? parseFloat(product.min_stock_level)
+                      : product.min_stock_level || 0;
+                    const unitCost = typeof product.unit_cost === 'string'
+                      ? parseFloat(product.unit_cost)
+                      : product.unit_cost || 0;
+                    
+                    const lowStock = currentStock <= minStock;
+                    
+                    return (
+                      <TableRow key={product.id} sx={{ bgcolor: lowStock ? '#fff3e0' : 'inherit' }}>
+                        <TableCell>{product.name} {lowStock && <Warning fontSize="small" color="warning" />}</TableCell>
+                        <TableCell>{product.unit}</TableCell>
+                        <TableCell align="right">{currentStock}</TableCell>
+                        <TableCell align="right">{minStock}</TableCell>
+                        <TableCell align="right">{unitCost.toFixed(2)}</TableCell>
+                        <TableCell align="center"><Chip label={lowStock ? 'Low Stock' : 'OK'} size="small" color={lowStock ? 'warning' : 'success'} /></TableCell>
+                        <TableCell align="center"><IconButton size="small" onClick={() => handleEdit(product)}><Edit fontSize="small" /></IconButton></TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
               </TableBody>
             </Table>
           </TableContainer>

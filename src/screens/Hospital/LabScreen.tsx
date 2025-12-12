@@ -50,6 +50,8 @@ interface AllLabTest extends LabTest {
   consultation_number?: string;
   test_completed_at?: string;
   test_result?: string;
+  attachment_url?: string;
+  attachment_filename?: string;
 }
 
 const LabScreen: React.FC = () => {
@@ -58,6 +60,9 @@ const LabScreen: React.FC = () => {
   const [allTests, setAllTests] = useState<AllLabTest[]>([]);
   const [selectedTest, setSelectedTest] = useState<LabTest | null>(null);
   const [testResult, setTestResult] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [attachmentUrl, setAttachmentUrl] = useState('');
+  const [attachmentFilename, setAttachmentFilename] = useState('');
   const [resultDialogOpen, setResultDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -110,7 +115,25 @@ const LabScreen: React.FC = () => {
   const handleSelectTest = (test: LabTest) => {
     setSelectedTest(test);
     setTestResult('');
+    setSelectedFile(null);
+    setAttachmentUrl('');
+    setAttachmentFilename('');
     setResultDialogOpen(true);
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      // For now, we'll store the file name and create a data URL
+      // In production, you'd upload to a file storage service (S3, Cloudinary, etc.)
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAttachmentUrl(reader.result as string);
+        setAttachmentFilename(file.name);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmitResult = async () => {
@@ -124,13 +147,21 @@ const LabScreen: React.FC = () => {
     setSuccess('');
 
     try {
-      const response = await ApiService.updateLabTestResult(selectedTest.id, testResult);
+      const response = await ApiService.updateLabTestResult(
+        selectedTest.id, 
+        testResult,
+        attachmentUrl || undefined,
+        attachmentFilename || undefined
+      );
 
       if (response.success) {
         setSuccess('Test result submitted successfully!');
         setResultDialogOpen(false);
         setSelectedTest(null);
         setTestResult('');
+        setSelectedFile(null);
+        setAttachmentUrl('');
+        setAttachmentFilename('');
         await loadPendingTests();
         if (tabValue === 1) {
           await loadAllTests();
@@ -405,12 +436,38 @@ const LabScreen: React.FC = () => {
                     fullWidth
                     label="Test Result"
                     multiline
-                    rows={6}
+                    rows={12}
                     value={testResult}
                     onChange={(e) => setTestResult(e.target.value)}
                     placeholder="Enter detailed test results here..."
                     required
+                    sx={{ mb: 2 }}
                   />
+                </Box>
+                <Box sx={{ gridColumn: '1 / -1' }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Attach File (Optional)
+                  </Typography>
+                  <input
+                    type="file"
+                    accept="image/*,.pdf,.doc,.docx"
+                    onChange={handleFileChange}
+                    style={{ marginBottom: '8px' }}
+                  />
+                  {selectedFile && (
+                    <Box sx={{ mt: 1 }}>
+                      <Typography variant="body2" color="success.main">
+                        ✓ File selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(2)} KB)
+                      </Typography>
+                    </Box>
+                  )}
+                  {attachmentFilename && !selectedFile && (
+                    <Box sx={{ mt: 1 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Current attachment: {attachmentFilename}
+                      </Typography>
+                    </Box>
+                  )}
                 </Box>
               </Box>
             </Box>

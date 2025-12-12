@@ -140,10 +140,37 @@ const CustomerInvoicesListScreen: React.FC = () => {
 
   const getPaymentMethodDisplay = (invoice: Invoice) => {
     if (!invoice.payment_method) return '-';
-    if (invoice.payment_method === 'M-Pesa' && invoice.mpesa_code) {
+    
+    // Map numeric values or IDs to proper payment method names
+    const paymentMethodMap: { [key: string]: string } = {
+      '1': 'Cash',
+      '2': 'M-Pesa',
+      '3': 'Card',
+      '4': 'Bank Transfer',
+      '5': 'Cheque',
+      'cash': 'Cash',
+      'Cash': 'Cash',
+      'mpesa': 'M-Pesa',
+      'M-Pesa': 'M-Pesa',
+      'Mpesa': 'M-Pesa',
+      'mobile_money': 'M-Pesa',
+      'card': 'Card',
+      'Card': 'Card',
+      'bank': 'Bank Transfer',
+      'Bank': 'Bank Transfer',
+      'bank_transfer': 'Bank Transfer',
+      'cheque': 'Cheque',
+      'Cheque': 'Cheque',
+    };
+    
+    const method = paymentMethodMap[invoice.payment_method] || invoice.payment_method;
+    
+    // Add M-Pesa code if available
+    if ((method === 'M-Pesa' || invoice.payment_method === '2' || invoice.payment_method === 'mpesa' || invoice.payment_method === 'mobile_money') && invoice.mpesa_code) {
       return `M-Pesa (${invoice.mpesa_code})`;
     }
-    return invoice.payment_method;
+    
+    return method;
   };
 
   return (
@@ -213,7 +240,15 @@ const CustomerInvoicesListScreen: React.FC = () => {
               </Box>
             ) : (
               <>
-                <TableContainer component={Paper} variant="outlined">
+                {/* Desktop Table View */}
+                <TableContainer 
+                  component={Paper} 
+                  variant="outlined"
+                  sx={{ 
+                    display: { xs: 'none', md: 'block' },
+                    overflowX: 'auto'
+                  }}
+                >
                   <Table>
                     <TableHead>
                       <TableRow>
@@ -310,6 +345,102 @@ const CustomerInvoicesListScreen: React.FC = () => {
                     </TableBody>
                   </Table>
                 </TableContainer>
+
+                {/* Mobile Card View */}
+                <Box sx={{ display: { xs: 'flex', md: 'none' }, flexDirection: 'column', gap: 2 }}>
+                  {invoices.map((invoice) => {
+                    const outstanding = getOutstandingAmount(invoice);
+                    return (
+                      <Card 
+                        key={invoice.id}
+                        sx={{ 
+                          cursor: 'pointer',
+                          '&:hover': { boxShadow: 3 }
+                        }}
+                        onClick={() => handleViewInvoice(invoice.id)}
+                      >
+                        <CardContent>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                            <Box>
+                              <Typography variant="h6" fontWeight="bold" gutterBottom>
+                                {invoice.invoice_number}
+                              </Typography>
+                              <Typography variant="body2" fontWeight="medium" gutterBottom>
+                                {invoice.customer_name}
+                              </Typography>
+                              {invoice.customer_pin && (
+                                <Typography variant="caption" color="text.secondary">
+                                  PIN: {invoice.customer_pin}
+                                </Typography>
+                              )}
+                            </Box>
+                            <Chip 
+                              label={invoice.status.toUpperCase()}
+                              size="small"
+                              color={getStatusColor(invoice.status) as any}
+                            />
+                          </Box>
+                          
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <Typography variant="body2" color="text.secondary">Issue Date:</Typography>
+                              <Typography variant="body2">
+                                {format(new Date(invoice.issue_date), 'MMM dd, yyyy')}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <Typography variant="body2" color="text.secondary">Due Date:</Typography>
+                              <Typography variant="body2">
+                                {format(new Date(invoice.due_date), 'MMM dd, yyyy')}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <Typography variant="body2" color="text.secondary">Total Amount:</Typography>
+                              <Typography variant="body2" fontWeight="bold">
+                                {formatCurrency(invoice.total_amount)}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <Typography variant="body2" color="text.secondary">Amount Paid:</Typography>
+                              <Typography variant="body2" color="success.main" fontWeight="medium">
+                                {formatCurrency(invoice.amount_paid || 0)}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <Typography variant="body2" color="text.secondary">Outstanding:</Typography>
+                              <Typography 
+                                variant="body2" 
+                                fontWeight="bold"
+                                color={outstanding > 0 ? 'error.main' : 'success.main'}
+                              >
+                                {formatCurrency(outstanding)}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <Typography variant="body2" color="text.secondary">Payment Method:</Typography>
+                              <Typography variant="body2">
+                                {getPaymentMethodDisplay(invoice)}
+                              </Typography>
+                            </Box>
+                          </Box>
+
+                          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewInvoice(invoice.id);
+                              }}
+                            >
+                              <ViewIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </Box>
 
                 {/* Pagination */}
                 {pagination.totalPages > 1 && (

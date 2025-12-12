@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Card, CardContent, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Alert, Grid, TextField, Button } from '@mui/material';
-import { TrendingUp, People, AttachMoney } from '@mui/icons-material';
+import { TrendingUp, People, AttachMoney, Analytics } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import * as salonApi from '../../services/salonApi';
 import type { EmployeePerformance } from '../../types';
 
 const SalonPerformance: React.FC = () => {
+  const navigate = useNavigate();
   const [performance, setPerformance] = useState<EmployeePerformance[]>([]);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -38,7 +40,17 @@ const SalonPerformance: React.FC = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" fontWeight="bold" gutterBottom>Employee Performance</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" fontWeight="bold">Employee Performance</Typography>
+        <Button
+          variant="contained"
+          startIcon={<Analytics />}
+          onClick={() => navigate('/salon/analytics')}
+          sx={{ backgroundColor: '#1976d2' }}
+        >
+          View Analytics
+        </Button>
+      </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 

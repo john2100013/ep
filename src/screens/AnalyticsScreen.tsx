@@ -37,6 +37,8 @@ import RevenueTrends from '../components/analytics/RevenueTrends';
 import ProfitabilityAnalysis from '../components/analytics/ProfitabilityAnalysis';
 import StockMovement from '../components/analytics/StockMovement';
 import PendingActions from '../components/analytics/PendingActions';
+import AllInvoices from '../components/analytics/AllInvoices';
+import AllQuotations from '../components/analytics/AllQuotations';
 
 
 interface TabPanelProps {
@@ -341,51 +343,56 @@ const AnalyticsScreen: React.FC = () => {
             scrollButtons="auto"
             sx={{ px: 2 }}
           >
+            <Tab label="All Invoices" />
+            <Tab label="All Quotations" />
             <Tab label="Top Selling Items" />
             <Tab label="Sales Performance" />
+            <Tab label="Profitability" />
             <Tab label="Inventory Overview" />
             <Tab label="Customer Insights" />
-            <Tab label="Quotation Analysis" />
             <Tab label="Revenue Trends" />
-            <Tab label="Profitability" />
             <Tab label="Stock Movement" />
             <Tab label="Pending Actions" />
           </Tabs>
         </Box>
 
         <TabPanel value={tabValue} index={0}>
-          <TopSellingItems dateRange={dateRange} />
+          <AllInvoices dateRange={dateRange} />
         </TabPanel>
 
         <TabPanel value={tabValue} index={1}>
-          <SalesPerformance dateRange={dateRange} />
+          <AllQuotations dateRange={dateRange} />
         </TabPanel>
 
         <TabPanel value={tabValue} index={2}>
-          <InventoryOverview dateRange={dateRange} />
+          <TopSellingItems dateRange={dateRange} />
         </TabPanel>
 
         <TabPanel value={tabValue} index={3}>
-          <CustomerInsights dateRange={dateRange} />
+          <SalesPerformance dateRange={dateRange} />
         </TabPanel>
 
         <TabPanel value={tabValue} index={4}>
-          <QuotationAnalysis dateRange={dateRange} />
-        </TabPanel>
-
-        <TabPanel value={tabValue} index={5}>
-          <RevenueTrends dateRange={dateRange} />
-        </TabPanel>
-
-        <TabPanel value={tabValue} index={6}>
           <ProfitabilityAnalysis dateRange={dateRange} />
         </TabPanel>
 
+        <TabPanel value={tabValue} index={5}>
+          <InventoryOverview dateRange={dateRange} />
+        </TabPanel>
+
+        <TabPanel value={tabValue} index={6}>
+          <CustomerInsights dateRange={dateRange} />
+        </TabPanel>
+
         <TabPanel value={tabValue} index={7}>
-          <StockMovement dateRange={dateRange} />
+          <RevenueTrends dateRange={dateRange} />
         </TabPanel>
 
         <TabPanel value={tabValue} index={8}>
+          <StockMovement dateRange={dateRange} />
+        </TabPanel>
+
+        <TabPanel value={tabValue} index={9}>
           <PendingActions dateRange={dateRange} />
         </TabPanel>
       </Paper>

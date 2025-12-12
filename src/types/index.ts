@@ -183,9 +183,9 @@ export interface SalonTransaction {
   service_name?: string;
   customer_name?: string;
   customer_phone?: string;
-  amount_paid: number;
+  service_price: number;
   payment_method: 'cash' | 'mpesa' | 'card' | 'other';
-  employee_earnings: number;
+  employee_commission: number;
   transaction_date: string;
   notes?: string;
   created_at: string;

@@ -1,5 +1,4 @@
-import { Alert, Card, CardContent, LinearProgress, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
-import { Box } from '@mui/system';
+import { Alert, Card, CardContent, LinearProgress, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Box } from '@mui/material';
 import { useEffect, useState } from 'react';
 import {
   AttachMoney as MoneyIcon,
@@ -12,6 +11,20 @@ interface SalesPerformanceProps {
   dateRange: string;
 }
 
+interface ItemSold {
+  id: number;
+  itemName: string;
+  code: string;
+  quantity: number;
+  total: number;
+}
+
+interface SalesBreakdown {
+  today: number;
+  week: number;
+  month: number;
+}
+
 interface SalesMetrics {
   totalSales: number;
   totalInvoices: number;
@@ -20,6 +33,10 @@ interface SalesMetrics {
   profitMargin: number;
   salesGrowth: number;
   dailySales: DailySales[];
+  itemsSold?: ItemSold[];
+  totalItemsSold?: number;
+  totalItemsQuantity?: number;
+  salesBreakdown?: SalesBreakdown;
 }
 
 interface DailySales {
@@ -72,7 +89,11 @@ const SalesPerformance: React.FC<SalesPerformanceProps> = ({ dateRange }) => {
           grossProfit: metrics.grossProfit || 0,
           profitMargin: metrics.profitMargin || 0,
           salesGrowth: metrics.salesGrowth || 0,
-          dailySales: metrics.dailySales || []
+          dailySales: metrics.dailySales || [],
+          itemsSold: metrics.itemsSold || [],
+          totalItemsSold: metrics.totalItemsSold || 0,
+          totalItemsQuantity: metrics.totalItemsQuantity || 0,
+          salesBreakdown: metrics.salesBreakdown || { today: 0, week: 0, month: 0 }
         });
       } catch (err: any) {
         console.error('Error loading sales performance:', err);
@@ -84,7 +105,11 @@ const SalesPerformance: React.FC<SalesPerformanceProps> = ({ dateRange }) => {
           grossProfit: 0,
           profitMargin: 0,
           salesGrowth: 0,
-          dailySales: []
+          dailySales: [],
+          itemsSold: [],
+          totalItemsSold: 0,
+          totalItemsQuantity: 0,
+          salesBreakdown: { today: 0, week: 0, month: 0 }
         });
       } finally {
         setLoading(false);
@@ -202,6 +227,96 @@ const SalesPerformance: React.FC<SalesPerformanceProps> = ({ dateRange }) => {
           </Card>
         </Box>
       </Box>
+
+      {/* Total Sales Breakdown */}
+      <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', mb: 4 }}>
+        <Card sx={{ flex: 1, minWidth: '200px' }}>
+          <CardContent>
+            <Typography variant="h6" color="primary" gutterBottom>
+              Today Sales
+            </Typography>
+            <Typography variant="h4" fontWeight="bold" color="primary">
+              {formatCurrency(salesMetrics.salesBreakdown?.today || 0)}
+            </Typography>
+          </CardContent>
+        </Card>
+        <Card sx={{ flex: 1, minWidth: '200px' }}>
+          <CardContent>
+            <Typography variant="h6" color="info.main" gutterBottom>
+              This Week Sales
+            </Typography>
+            <Typography variant="h4" fontWeight="bold" color="info.main">
+              {formatCurrency(salesMetrics.salesBreakdown?.week || 0)}
+            </Typography>
+          </CardContent>
+        </Card>
+        <Card sx={{ flex: 1, minWidth: '200px' }}>
+          <CardContent>
+            <Typography variant="h6" color="success.main" gutterBottom>
+              This Month Sales
+            </Typography>
+            <Typography variant="h4" fontWeight="bold" color="success.main">
+              {formatCurrency(salesMetrics.salesBreakdown?.month || 0)}
+            </Typography>
+          </CardContent>
+        </Card>
+      </Box>
+
+      {/* Items Sold Details */}
+      <Card sx={{ mb: 4 }}>
+        <CardContent>
+          <Typography variant="h6" fontWeight="bold" gutterBottom>
+            Items Sold Details
+          </Typography>
+          <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+              Total Items: <strong>{salesMetrics.itemsSold?.length || 0}</strong>
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Total Quantity: <strong>{salesMetrics.totalItemsQuantity || 0}</strong>
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Total Amount: <strong>{formatCurrency(salesMetrics.totalItemsSold || 0)}</strong>
+            </Typography>
+          </Box>
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Item Name</TableCell>
+                  <TableCell>Code</TableCell>
+                  <TableCell align="right">Quantity</TableCell>
+                  <TableCell align="right">Total</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {salesMetrics.itemsSold && salesMetrics.itemsSold.length > 0 ? (
+                  salesMetrics.itemsSold.map((item) => (
+                    <TableRow key={item.id} hover>
+                      <TableCell>{item.itemName}</TableCell>
+                      <TableCell>{item.code || 'N/A'}</TableCell>
+                      <TableCell align="right">{item.quantity}</TableCell>
+                      <TableCell align="right">
+                        <Typography variant="body2" fontWeight="bold">
+                          {formatCurrency(item.total)}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} align="center">
+                      <Typography variant="body2" color="text.secondary">
+                        No items sold for the selected period
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </CardContent>
+      </Card>
 
       {/* Daily Sales Performance */}
       <Card>

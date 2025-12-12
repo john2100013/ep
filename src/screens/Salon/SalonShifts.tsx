@@ -20,10 +20,39 @@ const SalonShifts: React.FC = () => {
 
   const loadData = async () => {
     try {
-      const [shiftsRes, currentRes] = await Promise.all([salonApi.getShifts({}), salonApi.getCurrentShift()]);
-      if (shiftsRes.data.success) setShifts(shiftsRes.data.data);
-      if (currentRes.data.success && currentRes.data.data) setCurrentShift(currentRes.data.data);
+      console.log('🔄 Loading shifts...');
+      const [shiftsRes, currentRes] = await Promise.all([
+        salonApi.getShifts({}), 
+        salonApi.getCurrentShift()
+      ]);
+      
+      console.log('📥 Shifts response:', shiftsRes.data);
+      console.log('📥 Current shift response:', currentRes.data);
+      
+      // Handle shifts response
+      let shiftsData: SalonShift[] = [];
+      if (Array.isArray(shiftsRes.data)) {
+        shiftsData = shiftsRes.data;
+      } else if (shiftsRes.data?.success && Array.isArray(shiftsRes.data.data)) {
+        shiftsData = shiftsRes.data.data;
+      } else if (shiftsRes.data?.data && Array.isArray(shiftsRes.data.data)) {
+        shiftsData = shiftsRes.data.data;
+      }
+      setShifts(shiftsData);
+      console.log('✅ Shifts loaded:', shiftsData.length);
+      
+      // Handle current shift response
+      if (currentRes.data?.success && currentRes.data.data) {
+        setCurrentShift(currentRes.data.data);
+      } else if (currentRes.data && currentRes.data.data) {
+        setCurrentShift(currentRes.data.data);
+      } else if (currentRes.data && !currentRes.data.success && currentRes.data.data === null) {
+        // No current shift
+        setCurrentShift(null);
+      }
     } catch (err: any) {
+      console.error('❌ Error loading shifts:', err);
+      console.error('Error details:', err.response?.data);
       setError(err.response?.data?.message || 'Failed to load shifts');
     }
   };
@@ -41,7 +70,17 @@ const SalonShifts: React.FC = () => {
         setTimeout(() => setSuccess(''), 3000);
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to start shift');
+      console.error('❌ Error starting shift:', err);
+      console.error('Error details:', err.response?.data);
+      const errorMessage = err.response?.data?.message || 'Failed to start shift';
+      // If there's an existing shift in the error response, show it
+      if (err.response?.data?.existing_shift) {
+        setError(`${errorMessage}. Shift ID: ${err.response.data.existing_shift.id}`);
+        // Try to load the existing shift
+        setCurrentShift(err.response.data.existing_shift);
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -107,7 +146,11 @@ const SalonShifts: React.FC = () => {
               </Grid>
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <Typography variant="body2" color="text.secondary">Starting Float</Typography>
-                <Typography variant="h6">{formatCurrency(currentShift.starting_float)}</Typography>
+                <Typography variant="h6">
+                  {formatCurrency(typeof currentShift.starting_float === 'string' 
+                    ? parseFloat(currentShift.starting_float) 
+                    : currentShift.starting_float || 0)}
+                </Typography>
               </Grid>
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <Typography variant="body2" color="text.secondary">Status</Typography>
@@ -137,19 +180,45 @@ const SalonShifts: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {shifts.map((shift) => (
-                  <TableRow key={shift.id}>
-                    <TableCell>{shift.user_name}</TableCell>
-                    <TableCell>{new Date(shift.clock_in).toLocaleString()}</TableCell>
-                    <TableCell>{shift.clock_out ? new Date(shift.clock_out).toLocaleString() : '-'}</TableCell>
-                    <TableCell>{formatDuration(shift.clock_in, shift.clock_out)}</TableCell>
-                    <TableCell align="right">{formatCurrency(shift.total_sales)}</TableCell>
-                    <TableCell align="right">{formatCurrency(shift.expected_cash)}</TableCell>
-                    <TableCell align="right">{shift.actual_cash ? formatCurrency(shift.actual_cash) : '-'}</TableCell>
-                    <TableCell align="right" sx={{ color: shift.difference > 0 ? 'success.main' : shift.difference < 0 ? 'error.main' : 'inherit' }}>{shift.difference !== 0 ? formatCurrency(shift.difference) : '-'}</TableCell>
-                    <TableCell align="center"><Chip label={shift.status.toUpperCase()} size="small" color={shift.status === 'open' ? 'success' : 'default'} /></TableCell>
+                {shifts.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
+                      <Typography color="text.secondary">
+                        No shifts found. Click "Start Shift" to begin.
+                      </Typography>
+                    </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  shifts.map((shift) => {
+                    // Convert numeric fields to numbers if they're strings
+                    const totalSales = typeof shift.total_sales === 'string' 
+                      ? parseFloat(shift.total_sales) 
+                      : shift.total_sales || 0;
+                    const expectedCash = typeof shift.expected_cash === 'string'
+                      ? parseFloat(shift.expected_cash)
+                      : shift.expected_cash || 0;
+                    const actualCash = typeof shift.actual_cash === 'string'
+                      ? parseFloat(shift.actual_cash)
+                      : shift.actual_cash || 0;
+                    const difference = typeof shift.difference === 'string'
+                      ? parseFloat(shift.difference)
+                      : shift.difference || 0;
+                    
+                    return (
+                      <TableRow key={shift.id}>
+                        <TableCell>{shift.user_name || 'N/A'}</TableCell>
+                        <TableCell>{new Date(shift.clock_in).toLocaleString()}</TableCell>
+                        <TableCell>{shift.clock_out ? new Date(shift.clock_out).toLocaleString() : '-'}</TableCell>
+                        <TableCell>{formatDuration(shift.clock_in, shift.clock_out)}</TableCell>
+                        <TableCell align="right">{formatCurrency(totalSales)}</TableCell>
+                        <TableCell align="right">{formatCurrency(expectedCash)}</TableCell>
+                        <TableCell align="right">{actualCash ? formatCurrency(actualCash) : '-'}</TableCell>
+                        <TableCell align="right" sx={{ color: difference > 0 ? 'success.main' : difference < 0 ? 'error.main' : 'inherit' }}>{difference !== 0 ? formatCurrency(difference) : '-'}</TableCell>
+                        <TableCell align="center"><Chip label={shift.status?.toUpperCase() || 'N/A'} size="small" color={shift.status === 'open' ? 'success' : 'default'} /></TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
               </TableBody>
             </Table>
           </TableContainer>

@@ -5,10 +5,22 @@ type TopSellingItem = {
   velocity: 'fast' | 'medium' | 'slow';
   sales: number;
   quantity: number;
+  buyingPrice: number;
+  sellingPrice: number;
+  profit: number;
 };
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, LinearProgress, Alert, Card, CardContent, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Button, ButtonGroup, Chip } from '@mui/material';
 import { TrendingUp as TrendingUpIcon, TrendingDown as TrendingDownIcon } from '@mui/icons-material';
+
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('en-KE', {
+    style: 'currency',
+    currency: 'KES',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(amount);
+};
 
 
 
@@ -130,8 +142,11 @@ const TopSellingItems = ({ dateRange }: { dateRange: string }) => {
             <TableHead>
               <TableRow>
                 <TableCell>Item Name</TableCell>
-                <TableCell>Sales</TableCell>
-                <TableCell>Quantity</TableCell>
+                <TableCell align="right">Quantity</TableCell>
+                <TableCell align="right">Buying Price</TableCell>
+                <TableCell align="right">Selling Price</TableCell>
+                <TableCell align="right">Sales</TableCell>
+                <TableCell align="right">Profit</TableCell>
                 <TableCell>Velocity</TableCell>
               </TableRow>
             </TableHead>
@@ -139,9 +154,23 @@ const TopSellingItems = ({ dateRange }: { dateRange: string }) => {
               {topItems.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell>{item.itemName}</TableCell>
-                  <TableCell>{item.sales}</TableCell>
-                  <TableCell>{item.quantity}</TableCell>
-                  <TableCell>{item.velocity}</TableCell>
+                  <TableCell align="right">{item.quantity}</TableCell>
+                  <TableCell align="right">{formatCurrency(item.buyingPrice)}</TableCell>
+                  <TableCell align="right">{formatCurrency(item.sellingPrice)}</TableCell>
+                  <TableCell align="right" fontWeight="bold">{formatCurrency(item.sales)}</TableCell>
+                  <TableCell align="right" sx={{ color: 'success.main', fontWeight: 'bold' }}>
+                    {formatCurrency(item.profit)}
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={item.velocity}
+                      color={
+                        item.velocity === 'fast' ? 'success' :
+                        item.velocity === 'medium' ? 'warning' : 'default'
+                      }
+                      size="small"
+                    />
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -156,10 +185,13 @@ const TopSellingItems = ({ dateRange }: { dateRange: string }) => {
                   {item.itemName}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Sales: {item.sales}
+                  Quantity: {item.quantity}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Quantity: {item.quantity}
+                  Sales: {formatCurrency(item.sales)}
+                </Typography>
+                <Typography variant="body2" color="success.main" fontWeight="bold">
+                  Profit: {formatCurrency(item.profit)}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Velocity: {item.velocity}

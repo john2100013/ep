@@ -6,3 +6,4 @@ export { default as SalonProducts } from './SalonProducts';
 export { default as SalonShifts } from './SalonShifts';
 export { default as SalonPerformance } from './SalonPerformance';
 export { default as SalonReports } from './SalonReports';
+export { default as PerformanceAnalyticsSalonScreen } from './PerformanceAnalyticsSalonScreen';

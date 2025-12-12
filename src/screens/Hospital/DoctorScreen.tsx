@@ -33,6 +33,7 @@ import {
   Refresh as RefreshIcon,
   LocalPharmacy as PharmacyIcon,
   Science as LabIcon,
+  Close as CloseIcon,
 } from '@mui/icons-material';
 import { ApiService } from '../../services/api';
 
@@ -72,6 +73,8 @@ interface LabTest {
   national_id?: string;
   consultation_number?: string;
   doctor_viewed_at?: string;
+  attachment_url?: string;
+  attachment_filename?: string;
 }
 
 interface Item {
@@ -95,6 +98,11 @@ const DoctorScreen: React.FC = () => {
   const [patientSearchQuery, setPatientSearchQuery] = useState('');
   const [allPatients, setAllPatients] = useState<any[]>([]);
   const [showPatientHistory, setShowPatientHistory] = useState(false);
+  const [patientHistoryData, setPatientHistoryData] = useState<any>(null);
+  const [labResultModalOpen, setLabResultModalOpen] = useState(false);
+  const [selectedLabResult, setSelectedLabResult] = useState<LabTest | null>(null);
+  const [prescriptionModalOpen, setPrescriptionModalOpen] = useState(false);
+  const [selectedPrescription, setSelectedPrescription] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -306,6 +314,14 @@ const DoctorScreen: React.FC = () => {
       if (historyResponse.success && historyResponse.data) {
         const { latest_doctor_visit, lab_tests, prescriptions } = historyResponse.data;
 
+        // Store patient history data for HISTORY PRESCRIPTION card
+        console.log('📋 Patient History Data:', {
+          prescriptions: prescriptions?.length || 0,
+          prescriptionsData: prescriptions,
+          fullData: historyResponse.data
+        });
+        setPatientHistoryData(historyResponse.data);
+
         // If there's a latest doctor visit, populate the form
         if (latest_doctor_visit) {
           setDoctorVisit(latest_doctor_visit);
@@ -328,10 +344,10 @@ const DoctorScreen: React.FC = () => {
             (test: any) => test.test_status === 'completed' && test.test_result
           );
           setLabTestResults(completedTests);
+        } else {
+          // Even if no doctor visit, still set patient history data for prescriptions
+          setPatientHistoryData(historyResponse.data);
         }
-
-        // Note: Prescriptions are loaded but not auto-populated in the form
-        // as the doctor may want to create a new prescription
       }
     } catch (err: any) {
       console.error('Error loading patient history:', err);
@@ -548,42 +564,111 @@ const DoctorScreen: React.FC = () => {
                           <TableCell>Patient</TableCell>
                           <TableCell>Visits</TableCell>
                           <TableCell>Last Visit</TableCell>
+                          <TableCell>Action</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {allPatients.map((patient: any) => (
-                          <TableRow
-                            key={patient.id}
-                            onClick={() => {
-                              // Find consultation for this patient
-                              const consultation = pendingConsultations.find(
-                                (c) => c.national_id === patient.national_id
-                              );
-                              if (consultation) {
-                                handleSelectConsultation(consultation);
-                              }
-                            }}
-                            sx={{ cursor: 'pointer' }}
-                            hover
-                          >
-                            <TableCell>
-                              <Box>
-                                <Typography variant="body2" fontWeight="medium">
-                                  {patient.patient_name}
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  {patient.national_id || 'N/A'}
-                                </Typography>
-                              </Box>
-                            </TableCell>
-                            <TableCell>{patient.visit_count}</TableCell>
-                            <TableCell>
-                              {patient.last_visit
-                                ? new Date(patient.last_visit).toLocaleDateString()
-                                : 'N/A'}
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        {allPatients.map((patient: any) => {
+                          // Find consultation for this patient
+                          const consultation = pendingConsultations.find(
+                            (c) => c.national_id === patient.national_id
+                          );
+                          
+                          return (
+                            <TableRow
+                              key={patient.id}
+                              sx={{
+                                backgroundColor:
+                                  selectedConsultation?.id === consultation?.id ? 'action.selected' : 'inherit',
+                              }}
+                            >
+                              <TableCell
+                                onClick={() => {
+                                  if (consultation) {
+                                    handleSelectConsultation(consultation);
+                                  }
+                                }}
+                                sx={{ cursor: consultation ? 'pointer' : 'default' }}
+                              >
+                                <Box>
+                                  <Typography variant="body2" fontWeight="medium">
+                                    {patient.patient_name}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {patient.national_id || 'N/A'}
+                                  </Typography>
+                                </Box>
+                              </TableCell>
+                              <TableCell
+                                onClick={() => {
+                                  if (consultation) {
+                                    handleSelectConsultation(consultation);
+                                  }
+                                }}
+                                sx={{ cursor: consultation ? 'pointer' : 'default' }}
+                              >
+                                {patient.visit_count}
+                              </TableCell>
+                              <TableCell
+                                onClick={() => {
+                                  if (consultation) {
+                                    handleSelectConsultation(consultation);
+                                  }
+                                }}
+                                sx={{ cursor: consultation ? 'pointer' : 'default' }}
+                              >
+                                {patient.last_visit
+                                  ? new Date(patient.last_visit).toLocaleDateString()
+                                  : 'N/A'}
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    try {
+                                      const historyResponse = await ApiService.getPatientConsultationHistory(
+                                        undefined,
+                                        patient.national_id
+                                      );
+                                      if (historyResponse.success && historyResponse.data) {
+                                        console.log('📋 Patient History Response:', {
+                                          prescriptions: historyResponse.data.prescriptions?.length || 0,
+                                          hasData: !!historyResponse.data
+                                        });
+                                        setPatientHistoryData(historyResponse.data);
+                                        // If there's a consultation, select it; otherwise create a consultation object
+                                        if (consultation) {
+                                          await handleSelectConsultation(consultation);
+                                        } else {
+                                          // Create a consultation-like object from patient data
+                                          const patientConsultation: Consultation = {
+                                            id: patient.id,
+                                            consultation_number: `PAT-${patient.national_id}`,
+                                            patient_name: patient.patient_name,
+                                            national_id: patient.national_id,
+                                            age: patient.age,
+                                            is_first_visit: patient.visit_count === 1,
+                                          };
+                                          await handleSelectConsultation(patientConsultation);
+                                        }
+                                        setSuccess('Patient history loaded successfully');
+                                        setTimeout(() => setSuccess(''), 3000);
+                                      }
+                                    } catch (err: any) {
+                                      console.error('Error loading patient history:', err);
+                                      setError('Failed to load patient history');
+                                      setTimeout(() => setError(''), 3000);
+                                    }
+                                  }}
+                                >
+                                  View History
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </TableContainer>
@@ -596,12 +681,13 @@ const DoctorScreen: React.FC = () => {
                   <TableRow>
                     <TableCell>Consultation #</TableCell>
                     <TableCell>Patient Name</TableCell>
+                    <TableCell>Action</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {pendingConsultations.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={2} align="center">
+                      <TableCell colSpan={3} align="center">
                         No pending consultations
                       </TableCell>
                     </TableRow>
@@ -609,15 +695,49 @@ const DoctorScreen: React.FC = () => {
                     pendingConsultations.map((consultation) => (
                       <TableRow
                         key={consultation.id}
-                        onClick={() => handleSelectConsultation(consultation)}
                         sx={{
-                          cursor: 'pointer',
                           backgroundColor:
                             selectedConsultation?.id === consultation.id ? 'action.selected' : 'inherit',
                         }}
                       >
-                        <TableCell>{consultation.consultation_number}</TableCell>
-                        <TableCell>{consultation.patient_name}</TableCell>
+                        <TableCell 
+                          onClick={() => handleSelectConsultation(consultation)}
+                          sx={{ cursor: 'pointer' }}
+                        >
+                          {consultation.consultation_number}
+                        </TableCell>
+                        <TableCell 
+                          onClick={() => handleSelectConsultation(consultation)}
+                          sx={{ cursor: 'pointer' }}
+                        >
+                          {consultation.patient_name}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              try {
+                                const historyResponse = await ApiService.getPatientConsultationHistory(
+                                  undefined,
+                                  consultation.national_id
+                                );
+                                if (historyResponse.success) {
+                                  setPatientHistoryData(historyResponse.data);
+                                  await handleSelectConsultation(consultation);
+                                  setSuccess('Patient history loaded');
+                                  setTimeout(() => setSuccess(''), 3000);
+                                }
+                              } catch (err: any) {
+                                setError('Failed to load patient history');
+                                setTimeout(() => setError(''), 3000);
+                              }
+                            }}
+                          >
+                            View History
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -817,6 +937,117 @@ const DoctorScreen: React.FC = () => {
               {/* Symptoms & Analysis Tab */}
               {tabValue === 0 && (
                 <Box sx={{ mt: 3 }}>
+                  {/* Patient History Prescription Card */}
+                  {patientHistoryData?.prescriptions && patientHistoryData.prescriptions.length > 0 ? (
+                    <Paper sx={{ p: 2, mb: 3, bgcolor: 'info.light', color: 'white' }}>
+                      <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+                        HISTORY PRESCRIPTION
+                      </Typography>
+                      <TableContainer>
+                        <Table size="small" sx={{ bgcolor: 'transparent' }}>
+                          <TableHead>
+                            <TableRow>
+                              <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Prescription #</TableCell>
+                              <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Date</TableCell>
+                              <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Medicines</TableCell>
+                              <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Status</TableCell>
+                              <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="center">Action</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {patientHistoryData.prescriptions.slice(0, 5).map((prescription: any) => {
+                              // Extract medicine names from items array
+                              const medicineNames = prescription.items && Array.isArray(prescription.items)
+                                ? prescription.items
+                                    .map((item: any) => item.item_name || item.name || 'Unknown Medicine')
+                                    .filter((name: string) => name !== 'Unknown Medicine')
+                                    .join(', ')
+                                : 'No medicines';
+                              
+                              return (
+                                <TableRow key={prescription.id}>
+                                  <TableCell sx={{ color: 'white' }}>
+                                    {prescription.prescription_number || `PRES-${prescription.id}`}
+                                  </TableCell>
+                                  <TableCell sx={{ color: 'white' }}>
+                                    {prescription.created_at 
+                                      ? new Date(prescription.created_at).toLocaleDateString()
+                                      : 'N/A'}
+                                  </TableCell>
+                                  <TableCell sx={{ color: 'white', maxWidth: 300 }}>
+                                    <TextField
+                                      multiline
+                                      rows={2}
+                                      value={medicineNames || 'No medicines'}
+                                      InputProps={{
+                                        readOnly: true,
+                                        sx: {
+                                          color: 'white',
+                                          fontSize: '0.875rem',
+                                          '& .MuiInputBase-input': {
+                                            color: 'white',
+                                            fontSize: '0.875rem',
+                                            padding: '4px 8px',
+                                          },
+                                          '& fieldset': {
+                                            borderColor: 'rgba(255, 255, 255, 0.3)',
+                                          },
+                                          '&:hover fieldset': {
+                                            borderColor: 'rgba(255, 255, 255, 0.5)',
+                                          },
+                                        }
+                                      }}
+                                      sx={{
+                                        width: '100%',
+                                        '& .MuiInputBase-root': {
+                                          backgroundColor: 'transparent',
+                                        }
+                                      }}
+                                    />
+                                  </TableCell>
+                                  <TableCell sx={{ color: 'white' }}>
+                                    <Chip
+                                      label={prescription.status || 'pending'}
+                                      size="small"
+                                      sx={{ bgcolor: 'white', color: 'primary.main' }}
+                                    />
+                                  </TableCell>
+                                  <TableCell sx={{ color: 'white' }} align="center">
+                                    <Button
+                                      size="small"
+                                      variant="contained"
+                                      onClick={() => {
+                                        setSelectedPrescription(prescription);
+                                        setPrescriptionModalOpen(true);
+                                      }}
+                                      sx={{
+                                        bgcolor: 'white',
+                                        color: 'primary.main',
+                                        '&:hover': {
+                                          bgcolor: 'grey.100',
+                                        }
+                                      }}
+                                    >
+                                      View
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    </Paper>
+                  ) : patientHistoryData && (!patientHistoryData.prescriptions || patientHistoryData.prescriptions.length === 0) ? (
+                    <Paper sx={{ p: 2, mb: 3, bgcolor: 'grey.100', border: '1px dashed', borderColor: 'grey.300' }}>
+                      <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
+                        HISTORY PRESCRIPTION
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        No previous prescriptions found for this patient.
+                      </Typography>
+                    </Paper>
+                  ) : null}
                   <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' } }}>
                     <Box sx={{ gridColumn: '1 / -1' }}>
                       <TextField
@@ -1080,9 +1311,23 @@ const DoctorScreen: React.FC = () => {
               {/* Lab Results Tab - Current Patient */}
               {tabValue === 3 && (
                 <Box sx={{ mt: 3 }}>
-                  <Typography variant="subtitle1" gutterBottom>
-                    Lab Test Results - Current Patient
-                  </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="subtitle1">
+                      Lab Test Results - Current Patient
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      onClick={() => {
+                        if (labTestResults.length > 0) {
+                          setSelectedLabResult(labTestResults[0]);
+                          setLabResultModalOpen(true);
+                        }
+                      }}
+                      disabled={labTestResults.length === 0}
+                    >
+                      View Results
+                    </Button>
+                  </Box>
                   {labTestResults.length === 0 ? (
                     <Typography color="text.secondary">No lab test results available for this patient</Typography>
                   ) : (
@@ -1092,9 +1337,9 @@ const DoctorScreen: React.FC = () => {
                           <TableRow>
                             <TableCell>Test Name</TableCell>
                             <TableCell>Type</TableCell>
-                            <TableCell>Result</TableCell>
                             <TableCell>Status</TableCell>
                             <TableCell>Completed At</TableCell>
+                            <TableCell>Action</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
@@ -1102,11 +1347,6 @@ const DoctorScreen: React.FC = () => {
                             <TableRow key={test.id}>
                               <TableCell>{test.test_name}</TableCell>
                               <TableCell>{test.test_type || 'N/A'}</TableCell>
-                              <TableCell>
-                                <Box sx={{ maxWidth: 400, wordBreak: 'break-word' }}>
-                                  {test.test_result || 'Pending'}
-                                </Box>
-                              </TableCell>
                               <TableCell>
                                 <Chip
                                   label={test.test_status}
@@ -1118,6 +1358,18 @@ const DoctorScreen: React.FC = () => {
                                 {test.test_completed_at 
                                   ? new Date(test.test_completed_at).toLocaleString()
                                   : 'N/A'}
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  onClick={() => {
+                                    setSelectedLabResult(test);
+                                    setLabResultModalOpen(true);
+                                  }}
+                                >
+                                  View Details
+                                </Button>
                               </TableCell>
                             </TableRow>
                           ))}
@@ -1367,6 +1619,270 @@ const DoctorScreen: React.FC = () => {
           )}
         </Box>
       </Box>
+
+      {/* Lab Result Modal - Vertical Layout */}
+      <Dialog 
+        open={labResultModalOpen} 
+        onClose={() => setLabResultModalOpen(false)} 
+        maxWidth="md" 
+        fullWidth
+        PaperProps={{
+          sx: { maxHeight: '90vh' }
+        }}
+      >
+        <DialogTitle sx={{ backgroundColor: '#1976d2', color: 'white', fontWeight: 'bold' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6">
+              Lab Test Result - {selectedLabResult?.test_name}
+            </Typography>
+            <IconButton onClick={() => setLabResultModalOpen(false)} sx={{ color: 'white' }}>
+              ×
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          {selectedLabResult && (
+            <Box>
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" color="text.secondary">Patient:</Typography>
+                <Typography variant="body1" fontWeight="medium">
+                  {selectedLabResult.patient_name} ({selectedLabResult.national_id || 'N/A'})
+                </Typography>
+              </Box>
+              
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" color="text.secondary">Test Type:</Typography>
+                <Typography variant="body1">{selectedLabResult.test_type || 'N/A'}</Typography>
+              </Box>
+
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Test Result:
+                </Typography>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={15}
+                  value={selectedLabResult.test_result || 'No result available'}
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                  sx={{
+                    '& .MuiInputBase-input': {
+                      fontSize: '14px',
+                      fontFamily: 'monospace',
+                    }
+                  }}
+                />
+              </Box>
+
+              {selectedLabResult.attachment_url && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Attachment:
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="body2">{selectedLabResult.attachment_filename || 'File'}</Typography>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => {
+                        if (selectedLabResult.attachment_url) {
+                          window.open(selectedLabResult.attachment_url, '_blank');
+                        }
+                      }}
+                    >
+                      View File
+                    </Button>
+                  </Box>
+                </Box>
+              )}
+
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" color="text.secondary">Completed At:</Typography>
+                <Typography variant="body2">
+                  {selectedLabResult.test_completed_at 
+                    ? new Date(selectedLabResult.test_completed_at).toLocaleString()
+                    : 'N/A'}
+                </Typography>
+              </Box>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setLabResultModalOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Prescription Details Modal - Vertical Layout */}
+      <Dialog 
+        open={prescriptionModalOpen} 
+        onClose={() => setPrescriptionModalOpen(false)} 
+        maxWidth="md" 
+        fullWidth
+        PaperProps={{
+          sx: { maxHeight: '90vh' }
+        }}
+      >
+        <DialogTitle sx={{ backgroundColor: '#1976d2', color: 'white', fontWeight: 'bold' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6">
+              Prescription Details - {selectedPrescription?.prescription_number || 'N/A'}
+            </Typography>
+            <IconButton onClick={() => setPrescriptionModalOpen(false)} sx={{ color: 'white' }}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          {selectedPrescription && (
+            <Box>
+              {/* Prescription Information */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Prescription Number:
+                </Typography>
+                <Typography variant="body1" fontWeight="medium">
+                  {selectedPrescription.prescription_number || `PRES-${selectedPrescription.id}`}
+                </Typography>
+              </Box>
+
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Date:
+                </Typography>
+                <Typography variant="body1">
+                  {selectedPrescription.created_at 
+                    ? new Date(selectedPrescription.created_at).toLocaleString()
+                    : 'N/A'}
+                </Typography>
+              </Box>
+
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Status:
+                </Typography>
+                <Chip
+                  label={selectedPrescription.status || 'pending'}
+                  color={
+                    selectedPrescription.status === 'fulfilled' ? 'success' :
+                    selectedPrescription.status === 'partially_fulfilled' ? 'warning' :
+                    selectedPrescription.status === 'cancelled' ? 'error' : 'default'
+                  }
+                  sx={{ mb: 1 }}
+                />
+              </Box>
+
+              {/* Consultation Information */}
+              {selectedPrescription.consultation_number && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Consultation Number:
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedPrescription.consultation_number}
+                  </Typography>
+                </Box>
+              )}
+
+              {/* Medicines List */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Medicines Prescribed:
+                </Typography>
+                {selectedPrescription.items && Array.isArray(selectedPrescription.items) && selectedPrescription.items.length > 0 ? (
+                  <TableContainer sx={{ maxHeight: 300, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell><strong>Medicine Name</strong></TableCell>
+                          <TableCell align="right"><strong>Quantity Prescribed</strong></TableCell>
+                          <TableCell align="right"><strong>Quantity Fulfilled</strong></TableCell>
+                          <TableCell align="right"><strong>Unit Price</strong></TableCell>
+                          <TableCell align="right"><strong>Total Price</strong></TableCell>
+                          <TableCell align="center"><strong>Status</strong></TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {selectedPrescription.items.map((item: any, index: number) => {
+                          const itemTotal = (item.quantity_prescribed || 0) * (item.unit_price || 0);
+                          return (
+                            <TableRow key={item.id || index}>
+                              <TableCell>{item.item_name || item.name || 'Unknown Medicine'}</TableCell>
+                              <TableCell align="right">{item.quantity_prescribed || 0}</TableCell>
+                              <TableCell align="right">{item.quantity_fulfilled || 0}</TableCell>
+                              <TableCell align="right">KES {(item.unit_price || 0).toFixed(2)}</TableCell>
+                              <TableCell align="right">KES {itemTotal.toFixed(2)}</TableCell>
+                              <TableCell align="center">
+                                <Chip
+                                  label={item.is_available ? 'Available' : 'Missing'}
+                                  color={item.is_available ? 'success' : 'error'}
+                                  size="small"
+                                />
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    No medicines found for this prescription.
+                  </Typography>
+                )}
+              </Box>
+
+              {/* Medicines Summary (Textarea) */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Medicines Summary:
+                </Typography>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={4}
+                  value={
+                    selectedPrescription.items && Array.isArray(selectedPrescription.items)
+                      ? selectedPrescription.items
+                          .map((item: any) => {
+                            const name = item.item_name || item.name || 'Unknown Medicine';
+                            const qty = item.quantity_prescribed || 0;
+                            return `${name} (Qty: ${qty})`;
+                          })
+                          .join('\n')
+                      : 'No medicines'
+                  }
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                  sx={{
+                    '& .MuiInputBase-input': {
+                      fontSize: '0.875rem',
+                      fontFamily: 'monospace',
+                    }
+                  }}
+                />
+              </Box>
+
+              {/* Total Amount */}
+              {selectedPrescription.total_amount && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Total Amount:
+                  </Typography>
+                  <Typography variant="h6" color="primary.main" fontWeight="bold">
+                    KES {Number(selectedPrescription.total_amount).toFixed(2)}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPrescriptionModalOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

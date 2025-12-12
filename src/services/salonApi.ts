@@ -2,6 +2,7 @@ import api from './api';
 
 // Salon Users
 export const getSalonUsers = () => api.get('/salon/users');
+export const getAvailableUsers = () => api.get('/salon/users/available');
 export const createSalonUser = (data: any) => api.post('/salon/users', data);
 export const updateSalonUser = (id: string, data: any) => api.put(`/salon/users/${id}`, data);
 
@@ -31,3 +32,11 @@ export const getTransactionDetails = (id: string) => api.get(`/salon/transaction
 // Performance & Analytics
 export const getEmployeePerformance = (params?: any) => api.get('/salon/performance/employees', { params });
 export const getDashboardStats = (params?: any) => api.get('/salon/dashboard/stats', { params });
+
+// Analytics
+export const getInvoiceAnalytics = (params?: any) => api.get('/salon/analytics/invoices', { params });
+export const getEmployeeServiceAnalytics = (params?: any) => api.get('/salon/analytics/employees/services', { params });
+export const getProductSalesAnalytics = (params?: any) => api.get('/salon/analytics/products/sales', { params });
+export const getServiceSalesAnalytics = (params?: any) => api.get('/salon/analytics/services/sales', { params });
+export const getBestWorstPerformers = (params?: any) => api.get('/salon/analytics/performers', { params });
+export const getLowStockProductsAnalytics = () => api.get('/salon/analytics/low-stock');

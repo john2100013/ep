@@ -30,6 +30,7 @@ import {
   ListItemButton,
   Chip,
   DialogActions,
+  InputAdornment,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -37,6 +38,7 @@ import {
   Save as SaveIcon,
   Receipt as InvoiceIcon,
   List as ListIcon,
+  Search as SearchIcon,
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -131,6 +133,8 @@ const CreateInvoiceScreen: React.FC = () => {
   // Payment fields
   const [amountPaid, setAmountPaid] = useState<number>(0);
   const [financialAccounts, setFinancialAccounts] = useState<any[]>([]);
+  const [mpesaConfirmations, setMpesaConfirmations] = useState<any[]>([]);
+  const [mpesaModalOpen, setMpesaModalOpen] = useState(false);
 
   // Fetch items and quotations
   useEffect(() => {
@@ -182,6 +186,42 @@ const CreateInvoiceScreen: React.FC = () => {
       loadInvoiceData(parseInt(invoiceId));
     }
   }, [quotationId, invoiceId]);
+
+  // Fetch pending M-Pesa confirmations
+  const fetchMpesaConfirmations = async () => {
+    try {
+      setLoading(true);
+      const response = await ApiService.getPendingMpesaConfirmations();
+      const confirmations = response.data?.confirmations || [];
+      setMpesaConfirmations(confirmations);
+    } catch (error) {
+      console.error('Failed to fetch M-Pesa confirmations:', error);
+      setError('Failed to load M-Pesa confirmations');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle M-Pesa confirmation selection
+  const handleMpesaConfirmationSelect = async (confirmation: any) => {
+    try {
+      setMpesaCode(confirmation.trans_id);
+      setAmountPaid(parseFloat(confirmation.trans_amount) || 0);
+      setMpesaModalOpen(false);
+      
+      // If we're editing an invoice, link the confirmation
+      if (invoiceId) {
+        try {
+          await ApiService.linkMpesaConfirmation(confirmation.id, parseInt(invoiceId));
+          console.log('✅ M-Pesa confirmation linked to invoice');
+        } catch (linkError) {
+          console.error('Failed to link confirmation:', linkError);
+        }
+      }
+    } catch (error) {
+      console.error('Error selecting M-Pesa confirmation:', error);
+    }
+  };
 
   const loadQuotationData = async (id: number) => {
     try {
@@ -425,6 +465,24 @@ const CreateInvoiceScreen: React.FC = () => {
         response = await ApiService.createInvoice(invoiceData);
         if (response.success) {
           const invoiceNumber = response.data?.invoice_number || response.data?.invoiceNumber || 'Unknown';
+          const createdInvoiceId = response.data?.invoice?.id || response.data?.id;
+          
+          // Link M-Pesa confirmation if M-Pesa code is provided
+          if (paymentTerms === 'M-Pesa' && mpesaCode && createdInvoiceId) {
+            try {
+              const confirmationsResponse = await ApiService.getAllMpesaConfirmations({ linked: false });
+              const confirmations = confirmationsResponse.data?.confirmations || [];
+              const matchingConfirmation = confirmations.find((c: any) => c.trans_id === mpesaCode);
+              
+              if (matchingConfirmation) {
+                await ApiService.linkMpesaConfirmation(matchingConfirmation.id, createdInvoiceId);
+                console.log('✅ M-Pesa confirmation linked to invoice');
+              }
+            } catch (linkError) {
+              console.error('⚠️ Failed to link M-Pesa confirmation:', linkError);
+            }
+          }
+          
           setSuccess(`Invoice created successfully! Invoice #${invoiceNumber}`);
         } else {
           throw new Error(response.message || 'Failed to create invoice');
@@ -812,8 +870,31 @@ const CreateInvoiceScreen: React.FC = () => {
                       label="M-Pesa Transaction Code *"
                       value={mpesaCode}
                       onChange={(e) => setMpesaCode(e.target.value)}
-                      placeholder="e.g., SH12345678"
+                      onClick={() => {
+                        if (paymentTerms === 'M-Pesa') {
+                          fetchMpesaConfirmations();
+                          setMpesaModalOpen(true);
+                        }
+                      }}
+                      placeholder="Click to select from confirmations..."
                       required
+                      InputProps={{
+                        readOnly: true,
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                fetchMpesaConfirmations();
+                                setMpesaModalOpen(true);
+                              }}
+                            >
+                              <SearchIcon />
+                            </IconButton>
+                          </InputAdornment>
+                        )
+                      }}
                     />
                   </Box>
                 )}
@@ -958,6 +1039,87 @@ const CreateInvoiceScreen: React.FC = () => {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setQuotationDialogOpen(false)}>Cancel</Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* M-Pesa Confirmations Modal */}
+        <Dialog open={mpesaModalOpen} onClose={() => setMpesaModalOpen(false)} maxWidth="md" fullWidth>
+          <DialogTitle sx={{ backgroundColor: '#00A859', color: 'white', fontWeight: 'bold' }}>
+            📱 Select M-Pesa Confirmation
+          </DialogTitle>
+          <DialogContent sx={{ pt: 2 }}>
+            {loading ? (
+              <Typography>Loading confirmations...</Typography>
+            ) : mpesaConfirmations.length > 0 ? (
+              <TableContainer sx={{ maxHeight: 400 }}>
+                <Table stickyHeader>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Transaction ID</TableCell>
+                      <TableCell>Amount</TableCell>
+                      <TableCell>Phone Number</TableCell>
+                      <TableCell>Name</TableCell>
+                      <TableCell>Date</TableCell>
+                      <TableCell align="center">Action</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {mpesaConfirmations.map((confirmation) => (
+                      <TableRow 
+                        key={confirmation.id} 
+                        hover
+                        sx={{ 
+                          cursor: 'pointer',
+                          '&:hover': { 
+                            backgroundColor: '#f5f5f5'
+                          }
+                        }}
+                      >
+                        <TableCell sx={{ fontWeight: 'bold' }}>{confirmation.trans_id}</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', color: '#00A859' }}>
+                          {Number(confirmation.trans_amount || 0).toFixed(2)}
+                        </TableCell>
+                        <TableCell>{confirmation.msisdn || 'N/A'}</TableCell>
+                        <TableCell>
+                          {[confirmation.first_name, confirmation.middle_name, confirmation.last_name]
+                            .filter(Boolean).join(' ') || 'N/A'}
+                        </TableCell>
+                        <TableCell>
+                          {confirmation.trans_time 
+                            ? new Date(confirmation.trans_time).toLocaleString() 
+                            : new Date(confirmation.created_at).toLocaleString()}
+                        </TableCell>
+                        <TableCell align="center">
+                          <Button
+                            size="small"
+                            variant="contained"
+                            onClick={() => handleMpesaConfirmationSelect(confirmation)}
+                            sx={{ backgroundColor: '#00A859', '&:hover': { backgroundColor: '#008547' } }}
+                          >
+                            Select
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <Typography color="textSecondary" sx={{ textAlign: 'center', py: 4 }}>
+                No pending M-Pesa confirmations found
+              </Typography>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setMpesaModalOpen(false)}>Close</Button>
+            <Button 
+              onClick={() => {
+                fetchMpesaConfirmations();
+              }}
+              variant="outlined"
+            >
+              Refresh
+            </Button>
           </DialogActions>
         </Dialog>
         </Box>
