@@ -235,14 +235,20 @@ const AllInvoices: React.FC<AllInvoicesProps> = ({ dateRange }) => {
                   </TableCell>
                   <TableCell>{invoice.customerName}</TableCell>
                   <TableCell>{formatDate(invoice.createdAt)}</TableCell>
-                  <TableCell align="right" fontWeight="bold">
-                    {formatCurrency(invoice.totalAmount)}
+                  <TableCell align="right">
+                    <Typography variant="body2" fontWeight="bold">
+                      {formatCurrency(invoice.totalAmount)}
+                    </Typography>
                   </TableCell>
-                  <TableCell align="right" color="success.main">
-                    {formatCurrency(invoice.amountPaid)}
+                  <TableCell align="right">
+                    <Typography variant="body2" color="success.main">
+                      {formatCurrency(invoice.amountPaid)}
+                    </Typography>
                   </TableCell>
-                  <TableCell align="right" color="warning.main">
-                    {formatCurrency(invoice.amountDue)}
+                  <TableCell align="right">
+                    <Typography variant="body2" color="warning.main">
+                      {formatCurrency(invoice.amountDue)}
+                    </Typography>
                   </TableCell>
                   <TableCell>
                     <Chip
@@ -299,8 +305,10 @@ const AllInvoices: React.FC<AllInvoicesProps> = ({ dateRange }) => {
                                 <TableCell align="right">
                                   {formatCurrency(product.unit_price)}
                                 </TableCell>
-                                <TableCell align="right" fontWeight="bold">
-                                  {formatCurrency(product.total)}
+                                <TableCell align="right">
+                                  <Typography variant="body2" fontWeight="bold">
+                                    {formatCurrency(product.total)}
+                                  </Typography>
                                 </TableCell>
                               </TableRow>
                             ))}
