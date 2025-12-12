@@ -157,9 +157,15 @@ const TopSellingItems = ({ dateRange }: { dateRange: string }) => {
                   <TableCell align="right">{item.quantity}</TableCell>
                   <TableCell align="right">{formatCurrency(item.buyingPrice)}</TableCell>
                   <TableCell align="right">{formatCurrency(item.sellingPrice)}</TableCell>
-                  <TableCell align="right" fontWeight="bold">{formatCurrency(item.sales)}</TableCell>
-                  <TableCell align="right" sx={{ color: 'success.main', fontWeight: 'bold' }}>
-                    {formatCurrency(item.profit)}
+                  <TableCell align="right">
+                    <Typography variant="body2" fontWeight="bold">
+                      {formatCurrency(item.sales)}
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="right">
+                    <Typography variant="body2" sx={{ color: 'success.main' }} fontWeight="bold">
+                      {formatCurrency(item.profit)}
+                    </Typography>
                   </TableCell>
                   <TableCell>
                     <Chip
