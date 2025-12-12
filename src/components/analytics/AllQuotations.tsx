@@ -218,8 +218,10 @@ const AllQuotations: React.FC<AllQuotationsProps> = ({ dateRange }) => {
                   <TableCell>
                     {quotation.validUntil ? formatDate(quotation.validUntil) : 'N/A'}
                   </TableCell>
-                  <TableCell align="right" fontWeight="bold">
-                    {formatCurrency(quotation.totalAmount)}
+                  <TableCell align="right">
+                    <Typography variant="body2" fontWeight="bold">
+                      {formatCurrency(quotation.totalAmount)}
+                    </Typography>
                   </TableCell>
                   <TableCell>
                     <Chip
@@ -269,8 +271,10 @@ const AllQuotations: React.FC<AllQuotationsProps> = ({ dateRange }) => {
                                 <TableCell align="right">
                                   {product.vat_rate ? `${product.vat_rate}%` : '0%'}
                                 </TableCell>
-                                <TableCell align="right" fontWeight="bold">
-                                  {formatCurrency(product.total_price)}
+                                <TableCell align="right">
+                                  <Typography variant="body2" fontWeight="bold">
+                                    {formatCurrency(product.total_price)}
+                                  </Typography>
                                 </TableCell>
                               </TableRow>
                             ))}
