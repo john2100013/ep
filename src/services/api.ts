@@ -95,6 +95,8 @@ export class ApiService {
     unit?: string;
     description?: string;
     category_id?: number;
+    category_1_id?: number;
+    category_2_id?: number;
     reorder_level?: number;
     manufacturing_date?: string;
     expiry_date?: string;
