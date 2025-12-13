@@ -31,11 +31,17 @@ const AddItemScreen: React.FC = () => {
     rate: '',
     unit: '',
     category_id: '',
+    category_1_id: '',
+    category_2_id: '',
     reorder_level: '',
   });
   const [manufacturingDate, setManufacturingDate] = useState<Date | null>(null);
   const [expiryDate, setExpiryDate] = useState<Date | null>(null);
   const [categories, setCategories] = useState<any[]>([]);
+  const [businessCategoryNames, setBusinessCategoryNames] = useState({
+    category_1_name: 'Category 1',
+    category_2_name: 'Category 2'
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -44,6 +50,7 @@ const AddItemScreen: React.FC = () => {
 
   useEffect(() => {
     fetchCategories();
+    fetchBusinessCategoryNames();
   }, []);
 
   const fetchCategories = async () => {
@@ -54,6 +61,20 @@ const AddItemScreen: React.FC = () => {
       }
     } catch (err) {
       console.error('Error fetching categories:', err);
+    }
+  };
+
+  const fetchBusinessCategoryNames = async () => {
+    try {
+      const response = await ApiService.getBusinessCategoryNames();
+      if (response.success && response.data) {
+        setBusinessCategoryNames({
+          category_1_name: response.data.category_1_name || 'Category 1',
+          category_2_name: response.data.category_2_name || 'Category 2'
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching business category names:', err);
     }
   };
 
@@ -74,8 +95,9 @@ const AddItemScreen: React.FC = () => {
       return;
     }
 
-    if (!formData.category_id) {
-      setError('Category is required');
+    // Category is optional now, but at least one category should be selected
+    if (!formData.category_id && !formData.category_1_id && !formData.category_2_id) {
+      setError('Please select at least one category');
       return;
     }
 
@@ -105,7 +127,9 @@ const AddItemScreen: React.FC = () => {
         selling_price: parseFloat(formData.selling_price),
         rate: parseFloat(formData.selling_price), // Use selling price as rate for compatibility
         unit: formData.unit.trim() || undefined,
-        category_id: parseInt(formData.category_id),
+        category_id: formData.category_id ? parseInt(formData.category_id) : undefined,
+        category_1_id: formData.category_1_id ? parseInt(formData.category_1_id) : undefined,
+        category_2_id: formData.category_2_id ? parseInt(formData.category_2_id) : undefined,
         reorder_level: formData.reorder_level ? parseInt(formData.reorder_level) : undefined,
         manufacturing_date: manufacturingDate?.toISOString().split('T')[0] || undefined,
         expiry_date: expiryDate?.toISOString().split('T')[0] || undefined,
@@ -123,6 +147,8 @@ const AddItemScreen: React.FC = () => {
         rate: '',
         unit: '',
         category_id: '',
+        category_1_id: '',
+        category_2_id: '',
         reorder_level: '',
       });
       setManufacturingDate(null);
@@ -196,16 +222,54 @@ const AddItemScreen: React.FC = () => {
                       placeholder="e.g., Product Name"
                     />
                     
-                    <FormControl fullWidth margin="normal" required>
-                      <InputLabel>Category *</InputLabel>
+                    <FormControl fullWidth margin="normal">
+                      <InputLabel>Category</InputLabel>
                       <Select
                         name="category_id"
                         value={formData.category_id}
                         onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                        label="Category *"
+                        label="Category"
                       >
                         <MenuItem value="">
                           <em>Select a category</em>
+                        </MenuItem>
+                        {categories.map((category) => (
+                          <MenuItem key={category.id} value={category.id}>
+                            {category.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+
+                    <FormControl fullWidth margin="normal">
+                      <InputLabel>{businessCategoryNames.category_1_name}</InputLabel>
+                      <Select
+                        name="category_1_id"
+                        value={formData.category_1_id}
+                        onChange={(e) => setFormData({ ...formData, category_1_id: e.target.value })}
+                        label={businessCategoryNames.category_1_name}
+                      >
+                        <MenuItem value="">
+                          <em>Select {businessCategoryNames.category_1_name}</em>
+                        </MenuItem>
+                        {categories.map((category) => (
+                          <MenuItem key={category.id} value={category.id}>
+                            {category.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+
+                    <FormControl fullWidth margin="normal">
+                      <InputLabel>{businessCategoryNames.category_2_name}</InputLabel>
+                      <Select
+                        name="category_2_id"
+                        value={formData.category_2_id}
+                        onChange={(e) => setFormData({ ...formData, category_2_id: e.target.value })}
+                        label={businessCategoryNames.category_2_name}
+                      >
+                        <MenuItem value="">
+                          <em>Select {businessCategoryNames.category_2_name}</em>
                         </MenuItem>
                         {categories.map((category) => (
                           <MenuItem key={category.id} value={category.id}>

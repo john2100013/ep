@@ -47,6 +47,17 @@ const ItemCategoriesScreen: React.FC = () => {
   const [editingCategory, setEditingCategory] = useState<ItemCategory | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ItemCategory | null>(null);
   
+  // Business custom category names
+  const [businessCategoryNames, setBusinessCategoryNames] = useState({
+    category_1_name: 'Category 1',
+    category_2_name: 'Category 2'
+  });
+  const [categoryNamesDialogOpen, setCategoryNamesDialogOpen] = useState(false);
+  const [categoryNamesFormData, setCategoryNamesFormData] = useState({
+    category_1_name: 'Category 1',
+    category_2_name: 'Category 2'
+  });
+  
   const [formData, setFormData] = useState({
     name: '',
     description: ''
@@ -54,6 +65,7 @@ const ItemCategoriesScreen: React.FC = () => {
 
   useEffect(() => {
     fetchCategories();
+    fetchBusinessCategoryNames();
   }, []);
 
   useEffect(() => {
@@ -76,6 +88,46 @@ const ItemCategoriesScreen: React.FC = () => {
     } catch (err) {
       console.error('Error fetching categories:', err);
       setError('Failed to fetch categories');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchBusinessCategoryNames = async () => {
+    try {
+      const response = await ApiService.getBusinessCategoryNames();
+      if (response.success && response.data) {
+        setBusinessCategoryNames({
+          category_1_name: response.data.category_1_name || 'Category 1',
+          category_2_name: response.data.category_2_name || 'Category 2'
+        });
+        setCategoryNamesFormData({
+          category_1_name: response.data.category_1_name || 'Category 1',
+          category_2_name: response.data.category_2_name || 'Category 2'
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching business category names:', err);
+    }
+  };
+
+  const handleSaveCategoryNames = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await ApiService.updateBusinessCategoryNames(categoryNamesFormData);
+      if (response.success) {
+        setSuccess('Category names updated successfully!');
+        setBusinessCategoryNames(categoryNamesFormData);
+        setCategoryNamesDialogOpen(false);
+        fetchBusinessCategoryNames();
+      } else {
+        setError(response.message || 'Failed to update category names');
+      }
+    } catch (err: any) {
+      console.error('Error updating category names:', err);
+      setError(err.response?.data?.message || 'Failed to update category names');
     } finally {
       setLoading(false);
     }
@@ -219,6 +271,40 @@ const ItemCategoriesScreen: React.FC = () => {
           </Alert>
         )}
 
+        {/* Category Names Settings */}
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6">Category Label Settings</Typography>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<EditIcon />}
+                onClick={() => {
+                  setCategoryNamesFormData(businessCategoryNames);
+                  setCategoryNamesDialogOpen(true);
+                }}
+              >
+                Edit Category Labels
+              </Button>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              <Paper sx={{ p: 2, flex: '1 1 200px', bgcolor: 'primary.light', color: 'white' }}>
+                <Typography variant="subtitle2">Main Category</Typography>
+                <Typography variant="body1" fontWeight="bold">Category</Typography>
+              </Paper>
+              <Paper sx={{ p: 2, flex: '1 1 200px', bgcolor: 'info.light', color: 'white' }}>
+                <Typography variant="subtitle2">First Additional Category</Typography>
+                <Typography variant="body1" fontWeight="bold">{businessCategoryNames.category_1_name}</Typography>
+              </Paper>
+              <Paper sx={{ p: 2, flex: '1 1 200px', bgcolor: 'success.light', color: 'white' }}>
+                <Typography variant="subtitle2">Second Additional Category</Typography>
+                <Typography variant="body1" fontWeight="bold">{businessCategoryNames.category_2_name}</Typography>
+              </Paper>
+            </Box>
+          </CardContent>
+        </Card>
+
         {/* Categories Table */}
         <Card>
           <CardContent>
@@ -337,6 +423,40 @@ const ItemCategoriesScreen: React.FC = () => {
               disabled={loading}
             >
               {loading ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Category Names Edit Dialog */}
+        <Dialog open={categoryNamesDialogOpen} onClose={() => setCategoryNamesDialogOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>Edit Category Labels</DialogTitle>
+          <DialogContent>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+              <TextField
+                label={`${businessCategoryNames.category_1_name} Label`}
+                fullWidth
+                value={categoryNamesFormData.category_1_name}
+                onChange={(e) => setCategoryNamesFormData({ ...categoryNamesFormData, category_1_name: e.target.value })}
+                helperText="This label will be used for Category 1 in items"
+              />
+              <TextField
+                label={`${businessCategoryNames.category_2_name} Label`}
+                fullWidth
+                value={categoryNamesFormData.category_2_name}
+                onChange={(e) => setCategoryNamesFormData({ ...categoryNamesFormData, category_2_name: e.target.value })}
+                helperText="This label will be used for Category 2 in items"
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setCategoryNamesDialogOpen(false)}>Cancel</Button>
+            <Button 
+              onClick={handleSaveCategoryNames} 
+              variant="contained" 
+              color="primary"
+              disabled={loading}
+            >
+              {loading ? 'Saving...' : 'Save'}
             </Button>
           </DialogActions>
         </Dialog>

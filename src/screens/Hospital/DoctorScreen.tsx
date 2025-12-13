@@ -117,6 +117,7 @@ const DoctorScreen: React.FC = () => {
   const [notes, setNotes] = useState('');
   const [labTestName, setLabTestName] = useState('');
   const [labTestType, setLabTestType] = useState('');
+  const [labTestRows, setLabTestRows] = useState<Array<{ test_name: string; test_type: string; category: string; others: string; price: number }>>([]);
 
   useEffect(() => {
     loadPendingConsultations();
@@ -393,9 +394,39 @@ const DoctorScreen: React.FC = () => {
     }
   };
 
+  const handleAddLabTestRow = () => {
+    if (labTestRows.length >= 7) {
+      setError('Maximum of 7 lab tests allowed');
+      return;
+    }
+    setLabTestRows([...labTestRows, { test_name: '', test_type: '', category: '', others: '', price: 0 }]);
+  };
+
+  const handleUpdateLabTestRow = (index: number, field: string, value: string | number) => {
+    const updated = [...labTestRows];
+    updated[index] = { ...updated[index], [field]: value };
+    setLabTestRows(updated);
+  };
+
+  const handleRemoveLabTestRow = (index: number) => {
+    setLabTestRows(labTestRows.filter((_, i) => i !== index));
+  };
+
   const handleRequestLabTest = async () => {
-    if (!doctorVisit || !labTestName) {
-      setError('Please enter a test name');
+    if (!doctorVisit) {
+      setError('Please select a consultation first');
+      return;
+    }
+
+    if (labTestRows.length === 0) {
+      setError('Please add at least one lab test');
+      return;
+    }
+
+    // Validate all rows have test name
+    const invalidRows = labTestRows.filter(row => !row.test_name.trim());
+    if (invalidRows.length > 0) {
+      setError('Please enter test name for all tests');
       return;
     }
 
@@ -403,18 +434,25 @@ const DoctorScreen: React.FC = () => {
     setError('');
 
     try {
+      const tests = labTestRows.map(row => ({
+        test_name: row.test_name.trim(),
+        test_type: row.test_type.trim() || undefined,
+        category: row.category.trim() || undefined,
+        others: row.others.trim() || undefined,
+        price: parseFloat(row.price.toString()) || 0
+      }));
+
       const response = await ApiService.requestLabTests({
         doctor_visit_id: doctorVisit.id,
-        tests: [{ test_name: labTestName, test_type: labTestType || undefined }],
+        tests,
       });
 
       if (response.success) {
-        setSuccess('Lab test requested successfully!');
-        setLabTestName('');
-        setLabTestType('');
-        setLabTests([...labTests, ...response.data.lab_tests]);
+        setSuccess(`Lab tests requested successfully! Total: KES ${response.data.total_amount?.toFixed(2) || '0.00'}`);
+        setLabTestRows([]);
+        await loadDoctorVisit(); // Reload to get updated lab tests
       } else {
-        setError('Failed to request lab test');
+        setError('Failed to request lab tests');
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'An error occurred');
@@ -1140,50 +1178,146 @@ const DoctorScreen: React.FC = () => {
               {/* Lab Tests Tab */}
               {tabValue === 1 && (
                 <Box sx={{ mt: 3 }}>
-                  <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' } }}>
-                    <Box>
-                      <TextField
-                        fullWidth
-                        label="Test Name"
-                        value={labTestName}
-                        onChange={(e) => setLabTestName(e.target.value)}
-                        placeholder="e.g., Blood Test, X-Ray"
-                      />
+                  <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="h6">Lab Tests (Maximum 7 tests)</Typography>
+                    <Button
+                      variant="outlined"
+                      onClick={handleAddLabTestRow}
+                      disabled={labTestRows.length >= 7}
+                      startIcon={<AddIcon />}
+                    >
+                      Add Test Row
+                    </Button>
+                  </Box>
+
+                  {labTestRows.length === 0 ? (
+                    <Box sx={{ textAlign: 'center', py: 4, border: '2px dashed', borderColor: 'divider', borderRadius: 2 }}>
+                      <Typography color="text.secondary" gutterBottom>
+                        No lab tests added yet
+                      </Typography>
+                      <Button
+                        variant="outlined"
+                        onClick={handleAddLabTestRow}
+                        startIcon={<AddIcon />}
+                        sx={{ mt: 2 }}
+                      >
+                        Add First Test
+                      </Button>
                     </Box>
-                    <Box>
-                      <TextField
-                        fullWidth
-                        label="Test Type"
-                        value={labTestType}
-                        onChange={(e) => setLabTestType(e.target.value)}
-                        placeholder="e.g., CBC, Chest X-Ray"
-                      />
-                    </Box>
-                    <Box sx={{ gridColumn: '1 / -1' }}>
+                  ) : (
+                    <>
+                      <TableContainer component={Paper} sx={{ mb: 2 }}>
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow>
+                              <TableCell width="25%">Test Name *</TableCell>
+                              <TableCell width="20%">Test Type</TableCell>
+                              <TableCell width="15%">Category</TableCell>
+                              <TableCell width="20%">Others</TableCell>
+                              <TableCell width="15%">Price (KES)</TableCell>
+                              <TableCell width="5%" align="center">Action</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {labTestRows.map((row, index) => (
+                              <TableRow key={index}>
+                                <TableCell>
+                                  <TextField
+                                    fullWidth
+                                    size="small"
+                                    value={row.test_name}
+                                    onChange={(e) => handleUpdateLabTestRow(index, 'test_name', e.target.value)}
+                                    placeholder="e.g., Blood Test"
+                                    required
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <TextField
+                                    fullWidth
+                                    size="small"
+                                    value={row.test_type}
+                                    onChange={(e) => handleUpdateLabTestRow(index, 'test_type', e.target.value)}
+                                    placeholder="e.g., CBC"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <TextField
+                                    fullWidth
+                                    size="small"
+                                    value={row.category}
+                                    onChange={(e) => handleUpdateLabTestRow(index, 'category', e.target.value)}
+                                    placeholder="e.g., Hematology"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <TextField
+                                    fullWidth
+                                    size="small"
+                                    value={row.others}
+                                    onChange={(e) => handleUpdateLabTestRow(index, 'others', e.target.value)}
+                                    placeholder="Additional notes"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <TextField
+                                    fullWidth
+                                    size="small"
+                                    type="number"
+                                    value={row.price}
+                                    onChange={(e) => handleUpdateLabTestRow(index, 'price', parseFloat(e.target.value) || 0)}
+                                    inputProps={{ min: 0, step: 0.01 }}
+                                  />
+                                </TableCell>
+                                <TableCell align="center">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleRemoveLabTestRow(index)}
+                                    color="error"
+                                  >
+                                    <CloseIcon />
+                                  </IconButton>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+
+                      <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+                        <Typography variant="h6" gutterBottom>
+                          Total: KES {labTestRows.reduce((sum, row) => sum + (parseFloat(row.price.toString()) || 0), 0).toFixed(2)}
+                        </Typography>
+                      </Box>
+
                       <Button
                         variant="contained"
                         onClick={handleRequestLabTest}
-                        disabled={loading || !doctorVisit}
+                        disabled={loading || !doctorVisit || labTestRows.length === 0}
                         startIcon={<LabIcon />}
+                        fullWidth
+                        size="large"
                       >
-                        Request Lab Test
+                        {loading ? 'Requesting...' : 'Request Lab Tests'}
                       </Button>
-                    </Box>
-                    {labTests.length > 0 && (
-                      <Box sx={{ gridColumn: '1 / -1' }}>
-                        <Typography variant="subtitle2" gutterBottom>
-                          Requested Tests:
-                        </Typography>
+                    </>
+                  )}
+
+                  {labTests.length > 0 && (
+                    <Box sx={{ mt: 3 }}>
+                      <Typography variant="subtitle2" gutterBottom>
+                        Previously Requested Tests:
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                         {labTests.map((test) => (
                           <Chip
                             key={test.id}
-                            label={`${test.test_name}${test.test_type ? ` (${test.test_type})` : ''}`}
-                            sx={{ mr: 1, mb: 1 }}
+                            label={`${test.test_name}${test.test_type ? ` (${test.test_type})` : ''} - KES ${(test as any).price || 0}`}
+                            sx={{ mb: 1 }}
                           />
                         ))}
                       </Box>
-                    )}
-                  </Box>
+                    </Box>
+                  )}
                 </Box>
               )}
 

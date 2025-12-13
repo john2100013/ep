@@ -36,6 +36,10 @@ const ItemsListScreen: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [businessCategoryNames, setBusinessCategoryNames] = useState({
+    category_1_name: 'Category 1',
+    category_2_name: 'Category 2'
+  });
   const [stats, setStats] = useState({
     totalItems: 0,
     totalValue: 0,
@@ -47,7 +51,22 @@ const ItemsListScreen: React.FC = () => {
   useEffect(() => {
     loadItems();
     loadStats();
+    fetchBusinessCategoryNames();
   }, []);
+
+  const fetchBusinessCategoryNames = async () => {
+    try {
+      const response = await ApiService.getBusinessCategoryNames();
+      if (response.success && response.data) {
+        setBusinessCategoryNames({
+          category_1_name: response.data.category_1_name || 'Category 1',
+          category_2_name: response.data.category_2_name || 'Category 2'
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching business category names:', err);
+    }
+  };
 
   useEffect(() => {
     // Filter items based on search query
@@ -57,9 +76,15 @@ const ItemsListScreen: React.FC = () => {
       const filtered = items.filter(item => {
         const itemName = item.item_name || item.description || '';
         const description = item.description || '';
+        const categoryName = (item as any).category_name || '';
+        const category1Name = (item as any).category_1_name || '';
+        const category2Name = (item as any).category_2_name || '';
         const searchLower = searchQuery.toLowerCase();
         return itemName.toLowerCase().includes(searchLower) ||
-               description.toLowerCase().includes(searchLower);
+               description.toLowerCase().includes(searchLower) ||
+               categoryName.toLowerCase().includes(searchLower) ||
+               category1Name.toLowerCase().includes(searchLower) ||
+               category2Name.toLowerCase().includes(searchLower);
       });
       setFilteredItems(filtered);
     }
@@ -206,6 +231,9 @@ const ItemsListScreen: React.FC = () => {
                   <TableCell sx={{ bgcolor: 'grey.100', minWidth: 60 }}><strong>ITEM NO</strong></TableCell>
                   <TableCell sx={{ bgcolor: 'grey.100', minWidth: 120 }}><strong>ITEM NAME</strong></TableCell>
                   <TableCell sx={{ bgcolor: 'grey.100', minWidth: 200 }}><strong>DESCRIPTION</strong></TableCell>
+                  <TableCell sx={{ bgcolor: 'grey.100', minWidth: 100 }}><strong>CATEGORY</strong></TableCell>
+                  <TableCell sx={{ bgcolor: 'grey.100', minWidth: 100 }}><strong>{businessCategoryNames.category_1_name.toUpperCase()}</strong></TableCell>
+                  <TableCell sx={{ bgcolor: 'grey.100', minWidth: 100 }}><strong>{businessCategoryNames.category_2_name.toUpperCase()}</strong></TableCell>
                   <TableCell sx={{ bgcolor: 'grey.100', minWidth: 80 }}><strong>QTY</strong></TableCell>
                   <TableCell sx={{ bgcolor: 'grey.100', minWidth: 80 }}><strong>UOM</strong></TableCell>
                   <TableCell sx={{ bgcolor: 'grey.100', minWidth: 120 }}><strong>UNIT PRICE</strong></TableCell>
@@ -234,6 +262,30 @@ const ItemsListScreen: React.FC = () => {
                         {item.description || 'No description'}
                       </Typography>
                     </TableCell>
+                    <TableCell>
+                      <Chip 
+                        label={(item as any).category_name || 'N/A'} 
+                        size="small" 
+                        color="primary" 
+                        variant="outlined"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Chip 
+                        label={(item as any).category_1_name || 'N/A'} 
+                        size="small" 
+                        color="info" 
+                        variant="outlined"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Chip 
+                        label={(item as any).category_2_name || 'N/A'} 
+                        size="small" 
+                        color="success" 
+                        variant="outlined"
+                      />
+                    </TableCell>
                     <TableCell align="center">{item.quantity || item.stock_quantity || 0}</TableCell>
                     <TableCell align="center">{item.unit || item.uom || 'PCS'}</TableCell>
                     <TableCell align="right">{formatPrice(item.rate || item.unit_price || 0)}</TableCell>
@@ -243,7 +295,7 @@ const ItemsListScreen: React.FC = () => {
 
                 {filteredItems.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                    <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
                       <Typography variant="body2" color="text.secondary">
                         {searchQuery ? 'No items found matching your search' : 'No items available'}
                       </Typography>

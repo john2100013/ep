@@ -398,6 +398,17 @@ export class ApiService {
     return response.data;
   }
 
+  // Business custom category names
+  static async getBusinessCategoryNames() {
+    const response = await api.get('/item-categories/business/names');
+    return response.data;
+  }
+
+  static async updateBusinessCategoryNames(data: { category_1_name?: string; category_2_name?: string }) {
+    const response = await api.put('/item-categories/business/names', data);
+    return response.data;
+  }
+
   // Generic API method for custom requests
   static async get(endpoint: string, params?: any) {
     const response = await api.get(endpoint, { params });
@@ -485,7 +496,7 @@ export class ApiService {
 
   static async requestLabTests(data: {
     doctor_visit_id: number;
-    tests: Array<{ test_name: string; test_type?: string }>;
+    tests: Array<{ test_name: string; test_type?: string; category?: string; others?: string; price?: number }>;
   }) {
     const response = await api.post('/hospital/lab-tests/request', data);
     return response.data;
@@ -530,6 +541,11 @@ export class ApiService {
   // Lab endpoints
   static async getPendingLabTests() {
     const response = await api.get('/hospital/lab-tests/pending');
+    return response.data;
+  }
+
+  static async getGroupedPendingLabTests() {
+    const response = await api.get('/hospital/lab-tests/pending/grouped');
     return response.data;
   }
 
@@ -621,6 +637,55 @@ export class ApiService {
 
   static async linkMpesaConfirmation(confirmationId: number, invoiceId: number) {
     const response = await api.post(`/mpesa/confirmations/${confirmationId}/link`, { invoice_id: invoiceId });
+    return response.data;
+  }
+
+  // Pharmacy lab test endpoints
+  static async getPendingLabTestsForPharmacy() {
+    const response = await api.get('/hospital/lab-tests/pharmacy/pending');
+    return response.data;
+  }
+
+  static async getGroupedPendingLabTestsForPharmacy() {
+    const response = await api.get('/hospital/lab-tests/pharmacy/pending/grouped');
+    return response.data;
+  }
+
+  static async getAllLabTestsForPharmacy(params?: {
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+    search?: string;
+    payment_status?: string;
+  }) {
+    const response = await api.get('/hospital/lab-tests/pharmacy/all', { params });
+    return response.data;
+  }
+
+  static async billLabTests(data: {
+    lab_test_ids: number[];
+    amount_paid?: number;
+    financial_account_id?: number;
+  }) {
+    const response = await api.post('/hospital/lab-tests/pharmacy/bill', data);
+    return response.data;
+  }
+
+  // Lab test analytics
+  static async getLabTestAnalytics(params?: {
+    startDate?: string;
+    endDate?: string;
+  }) {
+    const response = await api.get('/hospital/lab-tests/analytics', { params });
+    return response.data;
+  }
+
+  // Hospital analytics
+  static async getHospitalAnalytics(params?: {
+    startDate?: string;
+    endDate?: string;
+  }) {
+    const response = await api.get('/hospital/analytics', { params });
     return response.data;
   }
 }

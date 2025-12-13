@@ -17,11 +17,37 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Tabs,
+  Tab,
+  Paper,
 } from '@mui/material';
 import { Receipt as ReceiptIcon } from '@mui/icons-material';
 import { ServiceBillingAPI } from '../../services/serviceBillingApi';
+import ServiceBillingPOSTab from './ServiceBillingPOSTab';
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`billing-tabpanel-${index}`}
+      aria-labelledby={`billing-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+    </div>
+  );
+}
 
 const BillingTab: React.FC = () => {
+  const [currentTab, setCurrentTab] = useState(0);
   const [assignments, setAssignments] = useState<any[]>([]);
   const [selectedAssignments, setSelectedAssignments] = useState<number[]>([]);
   const [groupedByCustomer, setGroupedByCustomer] = useState<Map<number, any[]>>(new Map());
@@ -37,22 +63,48 @@ const BillingTab: React.FC = () => {
 
   const loadData = async () => {
     try {
+      setError('');
       const response = await ServiceBillingAPI.getAssignmentsForBilling();
-      const assignmentsData = response.data.data.assignments;
+      console.log('📋 [BillingTab] getAssignmentsForBilling response:', response);
+      
+      // Handle different response structures
+      const responseData = (response as any)?.data || response;
+      const assignmentsData = responseData?.data?.assignments || 
+                              responseData?.assignments || 
+                              [];
+      
+      console.log('📋 [BillingTab] Parsed assignments:', assignmentsData);
+      
+      if (!Array.isArray(assignmentsData)) {
+        console.error('❌ [BillingTab] Assignments data is not an array:', assignmentsData);
+        setError('Invalid response format from server');
+        setAssignments([]);
+        setGroupedByCustomer(new Map());
+        return;
+      }
+      
       setAssignments(assignmentsData);
       
       // Group assignments by customer
       const grouped = new Map<number, any[]>();
       assignmentsData.forEach((assignment: any) => {
-        const customerId = assignment.customer_id;
-        if (!grouped.has(customerId)) {
-          grouped.set(customerId, []);
+        if (assignment && assignment.customer_id) {
+          const customerId = assignment.customer_id;
+          if (!grouped.has(customerId)) {
+            grouped.set(customerId, []);
+          }
+          grouped.get(customerId)!.push(assignment);
         }
-        grouped.get(customerId)!.push(assignment);
       });
       setGroupedByCustomer(grouped);
-    } catch (err) {
-      console.error('Failed to load billing data:', err);
+      
+      console.log('✅ [BillingTab] Loaded', assignmentsData.length, 'assignments, grouped into', grouped.size, 'customers');
+    } catch (err: any) {
+      console.error('❌ [BillingTab] Failed to load billing data:', err);
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to load billing data';
+      setError(errorMessage);
+      setAssignments([]);
+      setGroupedByCustomer(new Map());
     }
   };
 
@@ -227,12 +279,36 @@ const BillingTab: React.FC = () => {
     return subtotal + vat;
   };
 
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setCurrentTab(newValue);
+  };
+
   return (
     <Box sx={{ p: 2 }}>
-      <Typography variant="h6" sx={{ mb: 3 }}>Billing - Service Assignments</Typography>
+      <Typography variant="h6" sx={{ mb: 3 }}>Billing</Typography>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
-      {success && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>{success}</Alert>}
+      <Paper sx={{ borderRadius: 2, mb: 3 }}>
+        <Tabs
+          value={currentTab}
+          onChange={handleTabChange}
+          variant="fullWidth"
+          sx={{
+            borderBottom: 1,
+            borderColor: 'divider',
+            '& .MuiTab-root': {
+              fontWeight: 'bold',
+              textTransform: 'none',
+              fontSize: '1rem',
+            },
+          }}
+        >
+          <Tab label="📋 Assignment Billing" />
+          <Tab label="💳 POS Billing" />
+        </Tabs>
+
+        <TabPanel value={currentTab} index={0}>
+          {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
+          {success && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>{success}</Alert>}
 
       <Alert severity="info" sx={{ mb: 2 }}>
         <Typography variant="body2">
@@ -416,6 +492,12 @@ const BillingTab: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+        </TabPanel>
+
+        <TabPanel value={currentTab} index={1}>
+          <ServiceBillingPOSTab />
+        </TabPanel>
+      </Paper>
     </Box>
   );
 };

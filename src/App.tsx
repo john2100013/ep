@@ -29,6 +29,7 @@ import DamageTrackingScreen from './screens/DamageTrackingScreen';
 import AnalyticsScreen from './screens/AnalyticsScreen';
 import POSScreen from './screens/POSScreen';
 import ServiceBillingScreen from './screens/ServiceBilling/ServiceBillingScreen';
+import ServiceBillingAnalyticsScreen from './screens/ServiceBilling/ServiceBillingAnalyticsScreen';
 import CustomersScreen from './screens/CustomersScreen';
 import CustomerInvoicesScreen from './screens/CustomerInvoicesScreen';
 import ItemCategoriesScreen from './screens/ItemCategoriesScreen';
@@ -52,8 +53,10 @@ import {
   ReceptionistScreen,
   DoctorScreen,
   LabScreen,
-  PharmacyScreen
-  , HospitalScreen
+  PharmacyScreen,
+  HospitalScreen,
+  LabTestAnalyticsScreen,
+  HospitalAnalyticsScreen
 } from './screens/Hospital';
 
 function App() {
@@ -309,6 +312,17 @@ function App() {
               <Header />
               <ProtectedRoute>
                 <ServiceBillingScreen />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/service-billing/analytics" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <ServiceBillingAnalyticsScreen />
               </ProtectedRoute>
             </Box>
           } 
@@ -595,12 +609,34 @@ function App() {
           } 
         />
         <Route 
+          path="/hospital/lab-analytics" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <LabTestAnalyticsScreen />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+        <Route 
           path="/hospital/pharmacy" 
           element={
             <Box>
               <Header />
               <ProtectedRoute>
                 <PharmacyScreen />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/hospital/analytics" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <HospitalAnalyticsScreen />
               </ProtectedRoute>
             </Box>
           } 

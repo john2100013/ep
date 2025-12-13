@@ -121,30 +121,13 @@ const POSScreen: React.FC = () => {
   const [posPaymentMethod, setPosPaymentMethod] = useState<string>('Cash');
   const [mpesaConfirmations, setMpesaConfirmations] = useState<any[]>([]);
   const [mpesaModalOpen, setMpesaModalOpen] = useState(false);
+  const [businessCategoryNames, setBusinessCategoryNames] = useState({
+    category_1_name: 'Category 1',
+    category_2_name: 'Category 2'
+  });
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [categories, setCategories] = useState<any[]>([]);
 
-  // Fetch available items
-  const fetchAvailableItems = async () => {
-    try {
-      setError('');
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('Please login to access items');
-        console.error('No token found in localStorage');
-        return;
-      }
-      const response = await ApiService.getItems();
-      setAvailableItems(response.data?.items || response.items || []);
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch items';
-      setError(errorMessage);
-      console.error('Fetch items error:', err);
-      
-      // If it's an auth error, the interceptor will handle redirect
-      if (err.response?.status === 401 || err.response?.status === 403) {
-        setError('Session expired. Please login again.');
-      }
-    }
-  };
 
   // Fetch financial accounts
   const fetchFinancialAccounts = async () => {
@@ -245,19 +228,93 @@ const POSScreen: React.FC = () => {
     
     fetchAvailableItems();
     fetchFinancialAccounts();
+    fetchCategories();
+    fetchBusinessCategoryNames();
   }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await ApiService.getItemCategories();
+      if (response.success) {
+        setCategories(response.data.categories || []);
+      }
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+    }
+  };
+
+  const fetchBusinessCategoryNames = async () => {
+    try {
+      const response = await ApiService.getBusinessCategoryNames();
+      if (response.success && response.data) {
+        setBusinessCategoryNames({
+          category_1_name: response.data.category_1_name || 'Category 1',
+          category_2_name: response.data.category_2_name || 'Category 2'
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching business category names:', err);
+    }
+  };
+
+  // Store all items separately for filtering
+  const [allItems, setAllItems] = useState<AvailableItem[]>([]);
+
+  // Fetch available items
+  const fetchAvailableItems = async () => {
+    try {
+      setError('');
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Please login to access items');
+        console.error('No token found in localStorage');
+        return;
+      }
+      const response = await ApiService.getItems();
+      const items = response.data?.items || response.items || [];
+      setAllItems(items);
+      setAvailableItems(items);
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch items';
+      setError(errorMessage);
+      console.error('Fetch items error:', err);
+      
+      // If it's an auth error, the interceptor will handle redirect
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        setError('Session expired. Please login again.');
+      }
+    }
+  };
 
   // Search items
   const handleSearchItems = () => {
-    if (searchQuery.trim()) {
-      const filtered = availableItems.filter(
-        (item) =>
-          item.item_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.code?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setAvailableItems(filtered);
-    }
+    // Filtering is handled by useEffect
   };
+
+  // Filter items based on search and category
+  useEffect(() => {
+    if (!searchQuery.trim() && categoryFilter === 'all') {
+      setAvailableItems(allItems);
+      return;
+    }
+
+    const filtered = allItems.filter((item: any) => {
+      const matchesSearch = !searchQuery.trim() || 
+        item.item_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item as any).category_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item as any).category_1_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item as any).category_2_name?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesCategory = categoryFilter === 'all' ||
+        (item as any).category_id === parseInt(categoryFilter) ||
+        (item as any).category_1_id === parseInt(categoryFilter) ||
+        (item as any).category_2_id === parseInt(categoryFilter);
+      
+      return matchesSearch && matchesCategory;
+    });
+    setAvailableItems(filtered);
+  }, [searchQuery, categoryFilter, allItems]);
 
   // Add item to POS
   const addItemToPOS = (item: AvailableItem) => {
@@ -1187,14 +1244,30 @@ const POSScreen: React.FC = () => {
             Lookup Items
           </DialogTitle>
           <DialogContent sx={{ pt: 2 }}>
-            <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+            <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
               <TextField
                 fullWidth
-                placeholder="Search by name or code..."
+                placeholder="Search by name, code, or category..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSearchItems()}
+                sx={{ flex: '1 1 300px' }}
               />
+              <FormControl sx={{ minWidth: 150 }}>
+                <InputLabel>Filter by Category</InputLabel>
+                <Select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  label="Filter by Category"
+                >
+                  <MenuItem value="all">All Categories</MenuItem>
+                  {categories.map((category) => (
+                    <MenuItem key={category.id} value={category.id}>
+                      {category.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
               <Button variant="contained" onClick={handleSearchItems} sx={{ backgroundColor: '#1976d2' }}>
                 Search
               </Button>
@@ -1205,16 +1278,40 @@ const POSScreen: React.FC = () => {
                   <TableRow>
                     <TableCell>Name</TableCell>
                     <TableCell>Code</TableCell>
+                    <TableCell>Category</TableCell>
+                    <TableCell>{businessCategoryNames.category_1_name}</TableCell>
+                    <TableCell>{businessCategoryNames.category_2_name}</TableCell>
                     <TableCell align="right">Stock</TableCell>
                     <TableCell align="right">Price</TableCell>
                     <TableCell align="center">Action</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {availableItems.map((item) => (
+                  {availableItems.map((item: any) => (
                     <TableRow key={item.id}>
                       <TableCell>{item.item_name || 'Unknown'}</TableCell>
                       <TableCell>{item.code || '-'}</TableCell>
+                      <TableCell>
+                        {item.category_name ? (
+                          <Chip label={item.category_name} size="small" color="primary" variant="outlined" />
+                        ) : (
+                          <Typography variant="caption" color="text.secondary">N/A</Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {item.category_1_name ? (
+                          <Chip label={item.category_1_name} size="small" color="info" variant="outlined" />
+                        ) : (
+                          <Typography variant="caption" color="text.secondary">N/A</Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {item.category_2_name ? (
+                          <Chip label={item.category_2_name} size="small" color="success" variant="outlined" />
+                        ) : (
+                          <Typography variant="caption" color="text.secondary">N/A</Typography>
+                        )}
+                      </TableCell>
                       <TableCell align="right">{item.quantity || 0}</TableCell>
                       <TableCell align="right">{Number(item.selling_price || 0).toFixed(2)}</TableCell>
                       <TableCell align="center">

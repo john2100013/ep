@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Fragment } from 'react';
 import {
   Box,
   Container,
@@ -31,7 +31,9 @@ import {
   Refresh as RefreshIcon,
   CheckCircle as CheckCircleIcon,
   Search as SearchIcon,
+  Assessment as AssessmentIcon,
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { ApiService } from '../../services/api';
 
 interface LabTest {
@@ -44,6 +46,10 @@ interface LabTest {
   national_id?: string;
   symptoms?: string;
   disease_diagnosis?: string;
+  payment_status?: string;
+  amount_due?: number;
+  amount_paid?: number;
+  price?: number;
 }
 
 interface AllLabTest extends LabTest {
@@ -54,9 +60,26 @@ interface AllLabTest extends LabTest {
   attachment_filename?: string;
 }
 
+interface GroupedLabTest {
+  doctor_visit_id: number;
+  patient_id: number;
+  patient_name: string;
+  national_id?: string;
+  requested_at: string;
+  test_count: number;
+  paid_count: number;
+  unpaid_count: number;
+  payment_status: string;
+  test_status: string;
+  tests: LabTest[];
+}
+
 const LabScreen: React.FC = () => {
+  const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
   const [pendingTests, setPendingTests] = useState<LabTest[]>([]);
+  const [groupedPendingTests, setGroupedPendingTests] = useState<GroupedLabTest[]>([]);
+  const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set());
   const [allTests, setAllTests] = useState<AllLabTest[]>([]);
   const [selectedTest, setSelectedTest] = useState<LabTest | null>(null);
   const [testResult, setTestResult] = useState('');
@@ -66,6 +89,7 @@ const LabScreen: React.FC = () => {
   const [resultDialogOpen, setResultDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'unpaid'>('all');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -81,17 +105,33 @@ const LabScreen: React.FC = () => {
     if (tabValue === 1) {
       loadAllTests();
     }
-  }, [tabValue, searchQuery, statusFilter]);
+  }, [tabValue, searchQuery, statusFilter, paymentFilter]);
 
   const loadPendingTests = async () => {
     try {
-      const response = await ApiService.getPendingLabTests();
+      const response = await ApiService.getGroupedPendingLabTests();
       if (response.success) {
-        setPendingTests(response.data.lab_tests || []);
+        setGroupedPendingTests(response.data.grouped_lab_tests || []);
+        // Also keep individual tests for backward compatibility
+        const allTests: LabTest[] = [];
+        (response.data.grouped_lab_tests || []).forEach((group: GroupedLabTest) => {
+          allTests.push(...group.tests);
+        });
+        setPendingTests(allTests);
       }
     } catch (err: any) {
       console.error('Error loading lab tests:', err);
     }
+  };
+
+  const toggleGroupExpansion = (doctorVisitId: number) => {
+    const newExpanded = new Set(expandedGroups);
+    if (newExpanded.has(doctorVisitId)) {
+      newExpanded.delete(doctorVisitId);
+    } else {
+      newExpanded.add(doctorVisitId);
+    }
+    setExpandedGroups(newExpanded);
   };
 
   const loadAllTests = async () => {
@@ -102,7 +142,18 @@ const LabScreen: React.FC = () => {
         statusFilter !== 'all' ? statusFilter : undefined
       );
       if (response.success) {
-        setAllTests(response.data.lab_tests || []);
+        let tests = response.data.lab_tests || [];
+        // Filter by payment status
+        if (paymentFilter !== 'all') {
+          tests = tests.filter((test: LabTest) => {
+            if (paymentFilter === 'paid') {
+              return test.payment_status === 'paid' || test.payment_status === 'partially_paid';
+            } else {
+              return test.payment_status !== 'paid' && test.payment_status !== 'partially_paid';
+            }
+          });
+        }
+        setAllTests(tests);
       }
     } catch (err: any) {
       console.error('Error loading all lab tests:', err);
@@ -113,6 +164,11 @@ const LabScreen: React.FC = () => {
   };
 
   const handleSelectTest = (test: LabTest) => {
+    // Check if test is paid before allowing result entry
+    if (test.payment_status !== 'paid' && test.payment_status !== 'partially_paid') {
+      setError('This test has not been paid for. Please send the patient to pharmacy to pay first.');
+      return;
+    }
     setSelectedTest(test);
     setTestResult('');
     setSelectedFile(null);
@@ -179,9 +235,18 @@ const LabScreen: React.FC = () => {
 
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom sx={{ mb: 3 }}>
-        Lab Technician - Test Results
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" component="h1">
+          Lab Technician - Test Results
+        </Typography>
+        <Button
+          variant="outlined"
+          startIcon={<AssessmentIcon />}
+          onClick={() => navigate('/hospital/lab-analytics')}
+        >
+          View Analytics
+        </Button>
+      </Box>
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
@@ -212,57 +277,131 @@ const LabScreen: React.FC = () => {
               </IconButton>
             </Box>
 
-        <TableContainer>
+            <TableContainer>
           <Table>
             <TableHead>
               <TableRow>
+                <TableCell width="50px"></TableCell>
                 <TableCell>Patient Name</TableCell>
                 <TableCell>ID Number</TableCell>
-                <TableCell>Test Name</TableCell>
-                <TableCell>Test Type</TableCell>
                 <TableCell>Requested At</TableCell>
-                <TableCell>Status</TableCell>
+                <TableCell>Payment Status</TableCell>
+                <TableCell>Test Status</TableCell>
+                <TableCell>Tests Count</TableCell>
                 <TableCell>Action</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {pendingTests.length === 0 ? (
+              {groupedPendingTests.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
                     <Typography color="text.secondary">
                       No pending lab tests. New tests will appear here when requested by doctors.
                     </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
-                pendingTests.map((test) => (
-                  <TableRow key={test.id} hover>
-                    <TableCell>{test.patient_name}</TableCell>
-                    <TableCell>{test.national_id || 'N/A'}</TableCell>
-                    <TableCell>{test.test_name}</TableCell>
-                    <TableCell>{test.test_type || 'N/A'}</TableCell>
-                    <TableCell>
-                      {new Date(test.test_requested_at).toLocaleString()}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={test.test_status}
-                        color={test.test_status === 'completed' ? 'success' : 'warning'}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        size="small"
-                        variant="contained"
-                        onClick={() => handleSelectTest(test)}
-                        startIcon={<CheckCircleIcon />}
-                        disabled={test.test_status === 'completed'}
-                      >
-                        Enter Result
-                      </Button>
-                    </TableCell>
-                  </TableRow>
+                groupedPendingTests.map((group) => (
+                  <Fragment key={group.doctor_visit_id}>
+                    <TableRow 
+                      hover 
+                      sx={{ 
+                        cursor: 'pointer',
+                        backgroundColor: expandedGroups.has(group.doctor_visit_id) ? 'action.selected' : 'inherit'
+                      }}
+                      onClick={() => toggleGroupExpansion(group.doctor_visit_id)}
+                    >
+                      <TableCell>
+                        {expandedGroups.has(group.doctor_visit_id) ? '▼' : '▶'}
+                      </TableCell>
+                      <TableCell><strong>{group.patient_name}</strong></TableCell>
+                      <TableCell>{group.national_id || 'N/A'}</TableCell>
+                      <TableCell>
+                        {new Date(group.requested_at).toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={group.payment_status || 'unpaid'}
+                          color={group.payment_status === 'paid' ? 'success' : group.payment_status === 'partially_paid' ? 'warning' : 'error'}
+                          size="small"
+                        />
+                        {group.payment_status !== 'paid' && (
+                          <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>
+                            Send to pharmacy
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={group.test_status || 'pending'}
+                          color={group.test_status === 'completed' ? 'success' : 'warning'}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Chip label={`${group.test_count} test(s)`} size="small" />
+                      </TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        {group.payment_status === 'paid' && (
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => toggleGroupExpansion(group.doctor_visit_id)}
+                          >
+                            View Tests
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                    {expandedGroups.has(group.doctor_visit_id) && (
+                      <TableRow>
+                        <TableCell colSpan={8} sx={{ py: 2, backgroundColor: 'grey.50' }}>
+                          <Table size="small">
+                            <TableHead>
+                              <TableRow>
+                                <TableCell>Test Name</TableCell>
+                                <TableCell>Test Type</TableCell>
+                                <TableCell>Category</TableCell>
+                                <TableCell>Others</TableCell>
+                                <TableCell align="right">Price</TableCell>
+                                <TableCell>Status</TableCell>
+                                <TableCell>Action</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {group.tests.map((test) => (
+                                <TableRow key={test.id}>
+                                  <TableCell>{test.test_name}</TableCell>
+                                  <TableCell>{test.test_type || 'N/A'}</TableCell>
+                                  <TableCell>{(test as any).category || 'N/A'}</TableCell>
+                                  <TableCell>{(test as any).others || 'N/A'}</TableCell>
+                                  <TableCell align="right">KES {Number((test as any).price || 0).toFixed(2)}</TableCell>
+                                  <TableCell>
+                                    <Chip
+                                      label={test.test_status}
+                                      color={test.test_status === 'completed' ? 'success' : 'warning'}
+                                      size="small"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Button
+                                      size="small"
+                                      variant="contained"
+                                      onClick={() => handleSelectTest(test)}
+                                      startIcon={<CheckCircleIcon />}
+                                      disabled={test.test_status === 'completed' || test.payment_status !== 'paid'}
+                                    >
+                                      {test.payment_status !== 'paid' ? 'Not Paid' : test.test_status === 'completed' ? 'Completed' : 'Enter Result'}
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </Fragment>
                 ))
               )}
             </TableBody>
@@ -294,17 +433,29 @@ const LabScreen: React.FC = () => {
                 }}
               />
               <FormControl size="small" sx={{ minWidth: 150 }}>
-                <InputLabel>Status</InputLabel>
+                <InputLabel>Test Status</InputLabel>
                 <Select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  label="Status"
+                  label="Test Status"
                 >
                   <MenuItem value="all">All</MenuItem>
                   <MenuItem value="pending">Pending</MenuItem>
                   <MenuItem value="in_progress">In Progress</MenuItem>
                   <MenuItem value="completed">Completed</MenuItem>
                   <MenuItem value="cancelled">Cancelled</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 150 }}>
+                <InputLabel>Payment Status</InputLabel>
+                <Select
+                  value={paymentFilter}
+                  onChange={(e) => setPaymentFilter(e.target.value as 'all' | 'paid' | 'unpaid')}
+                  label="Payment Status"
+                >
+                  <MenuItem value="all">All</MenuItem>
+                  <MenuItem value="paid">Paid</MenuItem>
+                  <MenuItem value="unpaid">Unpaid</MenuItem>
                 </Select>
               </FormControl>
               <Button
@@ -329,14 +480,15 @@ const LabScreen: React.FC = () => {
                     <TableCell>Requested At</TableCell>
                     <TableCell>Completed At</TableCell>
                     <TableCell>Result</TableCell>
-                    <TableCell>Status</TableCell>
+                    <TableCell>Payment Status</TableCell>
+                    <TableCell>Test Status</TableCell>
                     <TableCell>Action</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {allTests.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
+                      <TableCell colSpan={11} align="center" sx={{ py: 4 }}>
                         <Typography color="text.secondary">
                           {loading ? 'Loading...' : 'No lab tests found'}
                         </Typography>
@@ -365,6 +517,18 @@ const LabScreen: React.FC = () => {
                         </TableCell>
                         <TableCell>
                           <Chip
+                            label={test.payment_status || 'unpaid'}
+                            color={test.payment_status === 'paid' ? 'success' : test.payment_status === 'partially_paid' ? 'warning' : 'error'}
+                            size="small"
+                          />
+                          {test.amount_due && test.amount_due > 0 && (
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                              Due: KES {Number(test.amount_due).toFixed(2)}
+                            </Typography>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Chip
                             label={test.test_status}
                             color={
                               test.test_status === 'completed'
@@ -383,8 +547,9 @@ const LabScreen: React.FC = () => {
                               variant="contained"
                               onClick={() => handleSelectTest(test)}
                               startIcon={<CheckCircleIcon />}
+                              disabled={test.payment_status !== 'paid' && test.payment_status !== 'partially_paid'}
                             >
-                              Enter Result
+                              {test.payment_status !== 'paid' && test.payment_status !== 'partially_paid' ? 'Not Paid' : 'Enter Result'}
                             </Button>
                           )}
                         </TableCell>

@@ -58,4 +58,16 @@ export const ServiceBillingAPI = {
     serviceBillingApi.post(`/assignments/${assignmentId}/complete`),
   getAssignmentsForBilling: () => serviceBillingApi.get('/assignments/billing'),
   createInvoiceFromAssignments: (data: any) => serviceBillingApi.post('/assignments/invoice', data),
+
+  // Analytics
+  getServiceAnalytics: (params?: { startDate?: string; endDate?: string }) =>
+    serviceBillingApi.get('/analytics/services', { params }),
+  getEmployeeAnalytics: (params?: { startDate?: string; endDate?: string }) =>
+    serviceBillingApi.get('/analytics/employees', { params }),
+  getProductAnalytics: (params?: { startDate?: string; endDate?: string }) =>
+    serviceBillingApi.get('/analytics/products', { params }),
+  getPerformanceAnalytics: (params?: { startDate?: string; endDate?: string }) =>
+    serviceBillingApi.get('/analytics/performance', { params }),
+  getReturningCustomers: (params?: { startDate?: string; endDate?: string }) =>
+    serviceBillingApi.get('/analytics/returning-customers', { params }),
 };

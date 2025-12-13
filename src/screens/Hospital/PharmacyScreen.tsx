@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Fragment } from 'react';
 import {
   Box,
   Container,
@@ -65,6 +65,37 @@ interface PrescriptionItem {
   current_stock?: number;
 }
 
+interface LabTest {
+  id: number;
+  test_name: string;
+  test_type?: string;
+  category?: string;
+  others?: string;
+  price: number;
+  amount_due: number;
+  amount_paid: number;
+  payment_status: string;
+  patient_name: string;
+  national_id?: string;
+  consultation_number?: string;
+  disease_diagnosis?: string;
+  test_requested_at: string;
+  doctor_visit_id?: number;
+}
+
+interface GroupedLabTest {
+  doctor_visit_id: number;
+  patient_id: number;
+  patient_name: string;
+  national_id?: string;
+  consultation_number?: string;
+  requested_at: string;
+  test_count: number;
+  total_amount: number;
+  total_due: number;
+  tests: LabTest[];
+}
+
 const PharmacyScreen: React.FC = () => {
   const [pendingPrescriptions, setPendingPrescriptions] = useState<Prescription[]>([]);
   const [selectedPrescription, setSelectedPrescription] = useState<Prescription | null>(null);
@@ -92,6 +123,14 @@ const PharmacyScreen: React.FC = () => {
   const [endDate, setEndDate] = useState<Date | null>(new Date(new Date().setHours(23, 59, 59, 999)));
   const [loadingPrescriptions, setLoadingPrescriptions] = useState(false);
 
+  // Lab test state
+  const [pendingLabTests, setPendingLabTests] = useState<LabTest[]>([]);
+  const [groupedPendingLabTests, setGroupedPendingLabTests] = useState<GroupedLabTest[]>([]);
+  const [expandedLabGroups, setExpandedLabGroups] = useState<Set<number>>(new Set());
+  const [selectedLabTests, setSelectedLabTests] = useState<number[]>([]);
+  const [labTestDialogOpen, setLabTestDialogOpen] = useState(false);
+  const [labTestAmountPaid, setLabTestAmountPaid] = useState<number>(0);
+
   // Helper function to safely get numeric value
   const getNumericValue = (value: any): number => {
     const num = Number(value);
@@ -100,9 +139,13 @@ const PharmacyScreen: React.FC = () => {
 
   useEffect(() => {
     loadPendingPrescriptions();
+    loadPendingLabTests();
     loadFinancialAccounts();
     // Refresh every 30 seconds
-    const interval = setInterval(loadPendingPrescriptions, 30000);
+    const interval = setInterval(() => {
+      loadPendingPrescriptions();
+      loadPendingLabTests();
+    }, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -293,6 +336,99 @@ const PharmacyScreen: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Error loading financial accounts:', err);
+    }
+  };
+
+  const loadPendingLabTests = async () => {
+    try {
+      const response = await ApiService.getGroupedPendingLabTestsForPharmacy();
+      if (response.success) {
+        setGroupedPendingLabTests(response.data.grouped_lab_tests || []);
+        // Also keep individual tests for backward compatibility
+        const allTests: LabTest[] = [];
+        (response.data.grouped_lab_tests || []).forEach((group: GroupedLabTest) => {
+          allTests.push(...group.tests);
+        });
+        setPendingLabTests(allTests);
+      }
+    } catch (err: any) {
+      console.error('Error loading pending lab tests:', err);
+    }
+  };
+
+  const toggleLabGroupExpansion = (doctorVisitId: number) => {
+    const newExpanded = new Set(expandedLabGroups);
+    if (newExpanded.has(doctorVisitId)) {
+      newExpanded.delete(doctorVisitId);
+    } else {
+      newExpanded.add(doctorVisitId);
+    }
+    setExpandedLabGroups(newExpanded);
+  };
+
+  const handleSelectAllTestsInGroup = (group: GroupedLabTest, select: boolean) => {
+    if (select) {
+      const testIds = group.tests.map(t => t.id);
+      setSelectedLabTests([...selectedLabTests, ...testIds]);
+    } else {
+      const testIds = group.tests.map(t => t.id);
+      setSelectedLabTests(selectedLabTests.filter(id => !testIds.includes(id)));
+    }
+  };
+
+  const handleSelectLabTestsForBilling = () => {
+    if (selectedLabTests.length === 0) {
+      setError('Please select at least one lab test to bill');
+      return;
+    }
+    const selected = pendingLabTests.filter(test => selectedLabTests.includes(test.id));
+    const total = selected.reduce((sum, test) => sum + getNumericValue(test.price || test.amount_due), 0);
+    setLabTestAmountPaid(total);
+    setLabTestDialogOpen(true);
+  };
+
+  const handleBillLabTests = async () => {
+    if (selectedLabTests.length === 0) {
+      setError('Please select lab tests to bill');
+      return;
+    }
+
+    if (!selectedAccount) {
+      setError('Please select a financial account');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const total = pendingLabTests
+        .filter(test => selectedLabTests.includes(test.id))
+        .reduce((sum, test) => sum + getNumericValue(test.price || test.amount_due), 0);
+
+      const response = await ApiService.billLabTests({
+        lab_test_ids: selectedLabTests,
+        amount_paid: labTestAmountPaid || total,
+        financial_account_id: Number(selectedAccount),
+      });
+
+      if (response.success) {
+        setSuccess('Lab tests billed successfully!');
+        setLabTestDialogOpen(false);
+        setSelectedLabTests([]);
+        setLabTestAmountPaid(0);
+        await loadPendingLabTests();
+        await loadFinancialAccounts();
+      } else {
+        setError('Failed to bill lab tests');
+      }
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'An error occurred';
+      setError(errorMessage);
+      console.error('Error billing lab tests:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -736,6 +872,183 @@ const PharmacyScreen: React.FC = () => {
                     </TableCell>
                   </TableRow>
                 ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
+
+      {/* Lab Tests Section */}
+      <Paper sx={{ p: 3, mt: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h6">Pending Lab Tests for Billing</Typography>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <IconButton onClick={loadPendingLabTests} size="small">
+              <RefreshIcon />
+            </IconButton>
+            {selectedLabTests.length > 0 && (
+              <Button
+                variant="contained"
+                onClick={handleSelectLabTestsForBilling}
+                startIcon={<PharmacyIcon />}
+                size="small"
+              >
+                Bill Selected ({selectedLabTests.length})
+              </Button>
+            )}
+          </Box>
+        </Box>
+
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell width="50px"></TableCell>
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    indeterminate={selectedLabTests.length > 0 && selectedLabTests.length < pendingLabTests.length}
+                    checked={pendingLabTests.length > 0 && selectedLabTests.length === pendingLabTests.length}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedLabTests(pendingLabTests.map(test => test.id));
+                      } else {
+                        setSelectedLabTests([]);
+                      }
+                    }}
+                  />
+                </TableCell>
+                <TableCell>Patient Name</TableCell>
+                <TableCell>ID Number</TableCell>
+                <TableCell>Consultation #</TableCell>
+                <TableCell>Requested At</TableCell>
+                <TableCell align="right">Total Amount</TableCell>
+                <TableCell>Tests Count</TableCell>
+                <TableCell>Action</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {groupedPendingLabTests.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
+                    <Typography color="text.secondary">
+                      No pending lab tests. New tests will appear here when created by doctors.
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                groupedPendingLabTests.map((group) => {
+                  const allSelected = group.tests.every(test => selectedLabTests.includes(test.id));
+                  const someSelected = group.tests.some(test => selectedLabTests.includes(test.id));
+                  return (
+                    <Fragment key={group.doctor_visit_id}>
+                      <TableRow 
+                        hover 
+                        sx={{ 
+                          cursor: 'pointer',
+                          backgroundColor: expandedLabGroups.has(group.doctor_visit_id) ? 'action.selected' : 'inherit'
+                        }}
+                      >
+                        <TableCell onClick={() => toggleLabGroupExpansion(group.doctor_visit_id)}>
+                          {expandedLabGroups.has(group.doctor_visit_id) ? '▼' : '▶'}
+                        </TableCell>
+                        <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={allSelected}
+                            indeterminate={someSelected && !allSelected}
+                            onChange={(e) => handleSelectAllTestsInGroup(group, e.target.checked)}
+                          />
+                        </TableCell>
+                        <TableCell onClick={() => toggleLabGroupExpansion(group.doctor_visit_id)}>
+                          <strong>{group.patient_name}</strong>
+                        </TableCell>
+                        <TableCell onClick={() => toggleLabGroupExpansion(group.doctor_visit_id)}>
+                          {group.national_id || 'N/A'}
+                        </TableCell>
+                        <TableCell onClick={() => toggleLabGroupExpansion(group.doctor_visit_id)}>
+                          {group.consultation_number || 'N/A'}
+                        </TableCell>
+                        <TableCell onClick={() => toggleLabGroupExpansion(group.doctor_visit_id)}>
+                          {new Date(group.requested_at).toLocaleString()}
+                        </TableCell>
+                        <TableCell align="right" onClick={() => toggleLabGroupExpansion(group.doctor_visit_id)}>
+                          KES {getNumericValue(group.total_amount || group.total_due).toFixed(2)}
+                        </TableCell>
+                        <TableCell onClick={() => toggleLabGroupExpansion(group.doctor_visit_id)}>
+                          <Chip label={`${group.test_count} test(s)`} size="small" />
+                        </TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => {
+                              toggleLabGroupExpansion(group.doctor_visit_id);
+                              if (!expandedLabGroups.has(group.doctor_visit_id)) {
+                                handleSelectAllTestsInGroup(group, true);
+                              }
+                            }}
+                          >
+                            View & Select
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                      {expandedLabGroups.has(group.doctor_visit_id) && (
+                        <TableRow>
+                          <TableCell colSpan={9} sx={{ py: 2, backgroundColor: 'grey.50' }}>
+                            <Table size="small">
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell padding="checkbox">
+                                    <Checkbox
+                                      checked={allSelected}
+                                      indeterminate={someSelected && !allSelected}
+                                      onChange={(e) => handleSelectAllTestsInGroup(group, e.target.checked)}
+                                    />
+                                  </TableCell>
+                                  <TableCell>Test Name</TableCell>
+                                  <TableCell>Test Type</TableCell>
+                                  <TableCell>Category</TableCell>
+                                  <TableCell>Others</TableCell>
+                                  <TableCell align="right">Price</TableCell>
+                                  <TableCell>Status</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {group.tests.map((test) => (
+                                  <TableRow key={test.id}>
+                                    <TableCell padding="checkbox">
+                                      <Checkbox
+                                        checked={selectedLabTests.includes(test.id)}
+                                        onChange={(e) => {
+                                          if (e.target.checked) {
+                                            setSelectedLabTests([...selectedLabTests, test.id]);
+                                          } else {
+                                            setSelectedLabTests(selectedLabTests.filter(id => id !== test.id));
+                                          }
+                                        }}
+                                      />
+                                    </TableCell>
+                                    <TableCell>{test.test_name}</TableCell>
+                                    <TableCell>{test.test_type || 'N/A'}</TableCell>
+                                    <TableCell>{test.category || 'N/A'}</TableCell>
+                                    <TableCell>{test.others || 'N/A'}</TableCell>
+                                    <TableCell align="right">KES {getNumericValue(test.price || test.amount_due).toFixed(2)}</TableCell>
+                                    <TableCell>
+                                      <Chip
+                                        label={test.payment_status || 'unpaid'}
+                                        color={test.payment_status === 'paid' ? 'success' : 'error'}
+                                        size="small"
+                                      />
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </Fragment>
+                  );
+                })
               )}
             </TableBody>
           </Table>
@@ -1288,6 +1601,115 @@ const PharmacyScreen: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setAllPrescriptionsModalOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Lab Test Billing Dialog */}
+      <Dialog
+        open={labTestDialogOpen}
+        onClose={() => setLabTestDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          Bill Lab Tests
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              Selected Tests: {selectedLabTests.length}
+            </Typography>
+
+            <TableContainer sx={{ mt: 2, mb: 2 }}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Test Name</TableCell>
+                    <TableCell>Patient</TableCell>
+                    <TableCell align="right">Price</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {pendingLabTests
+                    .filter(test => selectedLabTests.includes(test.id))
+                    .map((test) => (
+                      <TableRow key={test.id}>
+                        <TableCell>{test.test_name}</TableCell>
+                        <TableCell>{test.patient_name}</TableCell>
+                        <TableCell align="right">KES {getNumericValue(test.price || test.amount_due).toFixed(2)}</TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+              <Typography variant="h6" gutterBottom>
+                Total: KES {pendingLabTests
+                  .filter(test => selectedLabTests.includes(test.id))
+                  .reduce((sum, test) => sum + getNumericValue(test.price || test.amount_due), 0)
+                  .toFixed(2)}
+              </Typography>
+
+              <TextField
+                fullWidth
+                label="Amount Paid"
+                type="number"
+                size="small"
+                value={labTestAmountPaid}
+                onChange={(e) => setLabTestAmountPaid(parseFloat(e.target.value) || 0)}
+                inputProps={{ 
+                  step: 0.01,
+                  min: 0
+                }}
+                sx={{ mt: 2, mb: 2 }}
+              />
+
+              <FormControl fullWidth sx={{ mb: 2 }}>
+                <InputLabel>Financial Account</InputLabel>
+                <Select
+                  value={selectedAccount}
+                  onChange={(e) => setSelectedAccount(e.target.value)}
+                  label="Financial Account"
+                >
+                  {financialAccounts.map((account) => (
+                    <MenuItem key={account.id} value={account.id}>
+                      {account.account_name} - Balance: KES{' '}
+                      {Number(account.current_balance || account.balance || 0).toFixed(2)}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="body2" color="text.secondary">Amount Due:</Typography>
+                <Typography 
+                  variant="body2" 
+                  fontWeight="bold"
+                  sx={{ 
+                    color: (pendingLabTests
+                      .filter(test => selectedLabTests.includes(test.id))
+                      .reduce((sum, test) => sum + getNumericValue(test.price || test.amount_due), 0) - labTestAmountPaid) > 0 ? 'error.main' : 'success.main'
+                  }}
+                >
+                  {Number(Math.max(0, pendingLabTests
+                    .filter(test => selectedLabTests.includes(test.id))
+                    .reduce((sum, test) => sum + getNumericValue(test.price || test.amount_due), 0) - labTestAmountPaid)).toFixed(2)}
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setLabTestDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleBillLabTests}
+            variant="contained"
+            disabled={loading || !selectedAccount}
+            startIcon={<PharmacyIcon />}
+          >
+            {loading ? 'Processing...' : 'Bill Lab Tests'}
+          </Button>
         </DialogActions>
       </Dialog>
       </Container>

@@ -6,6 +6,7 @@ import {
   MedicalServices as DoctorIcon,
   Science as LabIcon,
   LocalPharmacy as PharmacyIcon,
+  Assessment as AnalyticsIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -62,6 +63,14 @@ const HospitalScreen: React.FC = () => {
           >
             Pharmacy
           </Button>
+
+          <Button
+            variant={currentPath === '/hospital/analytics' ? 'contained' : 'outlined'}
+            startIcon={<AnalyticsIcon />}
+            onClick={() => go('/hospital/analytics')}
+          >
+            Analytics
+          </Button>
         </Box>
       </Paper>
 
@@ -77,6 +86,7 @@ const HospitalScreen: React.FC = () => {
           <Button onClick={() => go('/hospital/doctor')}>Doctor</Button>
           <Button onClick={() => go('/hospital/lab')}>Lab</Button>
           <Button onClick={() => go('/hospital/pharmacy')}>Pharmacy</Button>
+          <Button onClick={() => go('/hospital/analytics')}>Analytics</Button>
         </Box>
       </Paper>
     </Container>

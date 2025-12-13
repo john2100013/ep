@@ -8,7 +8,10 @@ import {
   Tabs,
   Tab,
   Paper,
+  Button,
 } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { Assessment as AnalyticsIcon } from '@mui/icons-material';
 import ServicesTab from './ServicesTab.tsx';
 import CustomersTab from './CustomersTab.tsx';
 import EmployeesTab from './EmployeesTab.tsx';
@@ -42,6 +45,7 @@ function TabPanel(props: TabPanelProps) {
 
 const ServiceBillingScreen: React.FC = () => {
   const [currentTab, setCurrentTab] = useState(0);
+  const navigate = useNavigate();
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setCurrentTab(newValue);
@@ -56,6 +60,18 @@ const ServiceBillingScreen: React.FC = () => {
             <Typography variant="h6" fontWeight="bold" sx={{ flexGrow: 1 }}>
               💆 Service Billing Management
             </Typography>
+            <Button
+              variant="contained"
+              startIcon={<AnalyticsIcon />}
+              onClick={() => navigate('/service-billing/analytics')}
+              sx={{ 
+                backgroundColor: '#fff', 
+                color: '#673ab7',
+                '&:hover': { backgroundColor: '#f5f5f5' }
+              }}
+            >
+              Analytics
+            </Button>
           </Toolbar>
         </AppBar>
 
