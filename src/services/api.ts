@@ -262,6 +262,7 @@ export class ApiService {
     notes?: string;
     due_date: string;
     payment_terms?: string;
+    discount_amount?: number;
   }) {
     const response = await api.post('/invoices', invoiceData);
     return response.data;
@@ -288,6 +289,7 @@ export class ApiService {
     due_date: string;
     payment_terms?: string;
     quotation_id?: number | null;
+    discount_amount?: number;
   }) {
     const response = await api.put(`/invoices/${id}`, invoiceData);
     return response.data;

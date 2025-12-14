@@ -134,6 +134,7 @@ const CreateInvoiceScreen: React.FC = () => {
   
   // Payment fields
   const [amountPaid, setAmountPaid] = useState<number>(0);
+  const [discount, setDiscount] = useState<number>(0); // Discount amount
   const [financialAccounts, setFinancialAccounts] = useState<any[]>([]);
   const [mpesaConfirmations, setMpesaConfirmations] = useState<any[]>([]);
   const [mpesaModalOpen, setMpesaModalOpen] = useState(false);
@@ -311,6 +312,7 @@ const CreateInvoiceScreen: React.FC = () => {
         setCustomerPin(quotation.customer_pin || '');
         setNotes(quotation.notes || '');
         setSelectedQuotationId(quotation.id);
+        setDiscount(quotation.discount_amount || 0);
         
         // Convert quotation lines to invoice lines
         if (quotation.lines) {
@@ -349,6 +351,7 @@ const CreateInvoiceScreen: React.FC = () => {
         setPaymentTerms(invoice.payment_terms || 'Cash');
         setDueDate(invoice.due_date ? new Date(invoice.due_date) : null);
         setSelectedQuotationId(invoice.quotation_id || null);
+        setDiscount(invoice.discount_amount || 0);
         
         // Set the invoice number from database
         if (invoice.invoice_number) {
@@ -471,10 +474,17 @@ const CreateInvoiceScreen: React.FC = () => {
       return sum + (isNaN(lineTotal) ? 0 : lineTotal);
     }, 0);
     const vatAmount = subtotal * 0.16;
-    const totalBeforeRounding = subtotal + vatAmount;
+    const discountAmount = Number(discount) || 0;
+    const totalBeforeDiscount = subtotal + vatAmount;
+    const totalBeforeRounding = Math.max(0, totalBeforeDiscount - discountAmount); // Ensure total doesn't go negative
     const totalAmount = Math.round(totalBeforeRounding); // Round to nearest whole number
     
-    return { subtotal: isNaN(subtotal) ? 0 : subtotal, vatAmount: isNaN(vatAmount) ? 0 : vatAmount, totalAmount: isNaN(totalAmount) ? 0 : totalAmount };
+    return { 
+      subtotal: isNaN(subtotal) ? 0 : subtotal, 
+      vatAmount: isNaN(vatAmount) ? 0 : vatAmount, 
+      discountAmount: isNaN(discountAmount) ? 0 : discountAmount,
+      totalAmount: isNaN(totalAmount) ? 0 : totalAmount 
+    };
   };
 
   const handleQuotationSelect = async (quotation: Quotation) => {
@@ -521,6 +531,7 @@ const CreateInvoiceScreen: React.FC = () => {
         quotation_id: selectedQuotationId,
         amountPaid: calculatedAmountPaid,
         paymentMethod: paymentMethod || null,
+        discount_amount: discount,
         lines: lines.map(line => ({
           item_id: line.item_id ? parseInt(line.item_id.toString()) : undefined,
           quantity: parseFloat(line.quantity.toString()),
@@ -578,7 +589,7 @@ const CreateInvoiceScreen: React.FC = () => {
     }
   };
 
-  const { subtotal, vatAmount, totalAmount } = calculateTotals();
+  const { subtotal, vatAmount, discountAmount, totalAmount } = calculateTotals();
 
   const filteredItems = items.filter(item =>
     item.item_name.toLowerCase().includes(itemSearchQuery.toLowerCase()) ||
@@ -884,6 +895,21 @@ const CreateInvoiceScreen: React.FC = () => {
                 Summary
               </Typography>
               <Box sx={{ maxWidth: { xs: '100%', md: 400 }, ml: { xs: 0, md: 'auto' } }}>
+                <Box sx={{ mb: 2 }}>
+                  <TextField
+                    fullWidth
+                    label="Discount Amount (KES)"
+                    type="number"
+                    size="small"
+                    value={discount}
+                    onChange={(e) => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
+                    inputProps={{ 
+                      min: 0,
+                      step: 0.01
+                    }}
+                    helperText="Enter discount amount to apply to total"
+                  />
+                </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, gap: 2 }}>
                   <Typography variant="body2">Subtotal:</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{formatCurrency(subtotal)}</Typography>
@@ -892,6 +918,14 @@ const CreateInvoiceScreen: React.FC = () => {
                   <Typography variant="body2">VAT (16%):</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{formatCurrency(vatAmount)}</Typography>
                 </Box>
+                {discount > 0 && (
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, gap: 2 }}>
+                    <Typography variant="body2" sx={{ color: 'error.main' }}>Discount:</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'error.main' }}>
+                      -{formatCurrency(discountAmount)}
+                    </Typography>
+                  </Box>
+                )}
                 <Divider sx={{ my: 1 }} />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, gap: 2 }}>
                   <Typography sx={{ fontSize: { xs: '1rem', md: '1.5rem' }, fontWeight: 'bold' }}>Total:</Typography>
