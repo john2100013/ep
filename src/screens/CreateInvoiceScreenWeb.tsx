@@ -31,6 +31,8 @@ import {
   Chip,
   DialogActions,
   InputAdornment,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -135,6 +137,10 @@ const CreateInvoiceScreen: React.FC = () => {
   const [financialAccounts, setFinancialAccounts] = useState<any[]>([]);
   const [mpesaConfirmations, setMpesaConfirmations] = useState<any[]>([]);
   const [mpesaModalOpen, setMpesaModalOpen] = useState(false);
+  const [mpesaTabValue, setMpesaTabValue] = useState(0);
+  const [manualMpesaCode, setManualMpesaCode] = useState('');
+  const [searchingCode, setSearchingCode] = useState(false);
+  const [codeSearchResult, setCodeSearchResult] = useState<{ found: boolean; confirmation: any } | null>(null);
 
   // Fetch items and quotations
   useEffect(() => {
@@ -220,6 +226,78 @@ const CreateInvoiceScreen: React.FC = () => {
       }
     } catch (error) {
       console.error('Error selecting M-Pesa confirmation:', error);
+    }
+  };
+
+  // Search M-Pesa confirmation by code
+  const handleSearchMpesaCode = async () => {
+    if (!manualMpesaCode.trim()) {
+      setError('Please enter a transaction code');
+      return;
+    }
+
+    try {
+      setSearchingCode(true);
+      setError(null);
+      const response = await ApiService.searchMpesaConfirmationByCode(manualMpesaCode.trim());
+      
+      if (response.success && response.data.found) {
+        const confirmation = response.data.confirmation;
+        setCodeSearchResult({ found: true, confirmation });
+        setMpesaCode(confirmation.trans_id);
+        setAmountPaid(parseFloat(confirmation.trans_amount) || 0);
+        setSuccess('M-Pesa confirmation found and amount populated!');
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        setCodeSearchResult({ found: false, confirmation: null });
+        // Ask user if they want to save the code
+        const shouldSave = window.confirm(
+          `M-Pesa confirmation with code "${manualMpesaCode.trim()}" not found. Do you want to save this code for future reference?`
+        );
+        
+        if (shouldSave) {
+          await handleSaveManualMpesaCode();
+        }
+      }
+    } catch (err: any) {
+      console.error('Error searching M-Pesa code:', err);
+      setError(err.response?.data?.message || 'Failed to search M-Pesa confirmation');
+    } finally {
+      setSearchingCode(false);
+    }
+  };
+
+  // Save manual M-Pesa confirmation
+  const handleSaveManualMpesaCode = async () => {
+    if (!manualMpesaCode.trim()) {
+      setError('Please enter a transaction code');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await ApiService.saveManualMpesaConfirmation({
+        trans_id: manualMpesaCode.trim(),
+        trans_amount: amountPaid || 0,
+      });
+
+      if (response.success) {
+        setMpesaCode(manualMpesaCode.trim());
+        setSuccess('M-Pesa confirmation code saved successfully!');
+        setMpesaModalOpen(false);
+        setMpesaTabValue(0);
+        setManualMpesaCode('');
+        setCodeSearchResult(null);
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        throw new Error(response.message || 'Failed to save confirmation code');
+      }
+    } catch (err: any) {
+      console.error('Error saving manual M-Pesa code:', err);
+      setError(err.response?.data?.message || 'Failed to save M-Pesa confirmation code');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -1043,83 +1121,184 @@ const CreateInvoiceScreen: React.FC = () => {
         </Dialog>
 
         {/* M-Pesa Confirmations Modal */}
-        <Dialog open={mpesaModalOpen} onClose={() => setMpesaModalOpen(false)} maxWidth="md" fullWidth>
+        <Dialog open={mpesaModalOpen} onClose={() => {
+          setMpesaModalOpen(false);
+          setMpesaTabValue(0);
+          setManualMpesaCode('');
+          setCodeSearchResult(null);
+        }} maxWidth="md" fullWidth>
           <DialogTitle sx={{ backgroundColor: '#00A859', color: 'white', fontWeight: 'bold' }}>
-            📱 Select M-Pesa Confirmation
+            📱 M-Pesa Confirmation
           </DialogTitle>
           <DialogContent sx={{ pt: 2 }}>
-            {loading ? (
-              <Typography>Loading confirmations...</Typography>
-            ) : mpesaConfirmations.length > 0 ? (
-              <TableContainer sx={{ maxHeight: 400 }}>
-                <Table stickyHeader>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Transaction ID</TableCell>
-                      <TableCell>Amount</TableCell>
-                      <TableCell>Phone Number</TableCell>
-                      <TableCell>Name</TableCell>
-                      <TableCell>Date</TableCell>
-                      <TableCell align="center">Action</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {mpesaConfirmations.map((confirmation) => (
-                      <TableRow 
-                        key={confirmation.id} 
-                        hover
-                        sx={{ 
-                          cursor: 'pointer',
-                          '&:hover': { 
-                            backgroundColor: '#f5f5f5'
-                          }
-                        }}
-                      >
-                        <TableCell sx={{ fontWeight: 'bold' }}>{confirmation.trans_id}</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', color: '#00A859' }}>
-                          {Number(confirmation.trans_amount || 0).toFixed(2)}
-                        </TableCell>
-                        <TableCell>{confirmation.msisdn || 'N/A'}</TableCell>
-                        <TableCell>
-                          {[confirmation.first_name, confirmation.middle_name, confirmation.last_name]
-                            .filter(Boolean).join(' ') || 'N/A'}
-                        </TableCell>
-                        <TableCell>
-                          {confirmation.trans_time 
-                            ? new Date(confirmation.trans_time).toLocaleString() 
-                            : new Date(confirmation.created_at).toLocaleString()}
-                        </TableCell>
-                        <TableCell align="center">
-                          <Button
-                            size="small"
-                            variant="contained"
-                            onClick={() => handleMpesaConfirmationSelect(confirmation)}
-                            sx={{ backgroundColor: '#00A859', '&:hover': { backgroundColor: '#008547' } }}
+            <Tabs value={mpesaTabValue} onChange={(_, newValue) => {
+              setMpesaTabValue(newValue);
+              setCodeSearchResult(null);
+            }} sx={{ mb: 2 }}>
+              <Tab label="Link to Customer" />
+              <Tab label="Enter Confirmation Code" />
+            </Tabs>
+
+            {mpesaTabValue === 0 ? (
+              // Tab 1: Link to Customer (existing functionality)
+              <>
+                {loading ? (
+                  <Typography>Loading confirmations...</Typography>
+                ) : mpesaConfirmations.length > 0 ? (
+                  <TableContainer sx={{ maxHeight: 400 }}>
+                    <Table stickyHeader>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Transaction ID</TableCell>
+                          <TableCell>Amount</TableCell>
+                          <TableCell>Phone Number</TableCell>
+                          <TableCell>Name</TableCell>
+                          <TableCell>Date</TableCell>
+                          <TableCell align="center">Action</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {mpesaConfirmations.map((confirmation) => (
+                          <TableRow 
+                            key={confirmation.id} 
+                            hover
+                            sx={{ 
+                              cursor: 'pointer',
+                              '&:hover': { 
+                                backgroundColor: '#f5f5f5'
+                              }
+                            }}
                           >
-                            Select
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                            <TableCell sx={{ fontWeight: 'bold' }}>{confirmation.trans_id}</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold', color: '#00A859' }}>
+                              {Number(confirmation.trans_amount || 0).toFixed(2)}
+                            </TableCell>
+                            <TableCell>{confirmation.msisdn || 'N/A'}</TableCell>
+                            <TableCell>
+                              {[confirmation.first_name, confirmation.middle_name, confirmation.last_name]
+                                .filter(Boolean).join(' ') || 'N/A'}
+                            </TableCell>
+                            <TableCell>
+                              {confirmation.trans_time 
+                                ? new Date(confirmation.trans_time).toLocaleString() 
+                                : new Date(confirmation.created_at).toLocaleString()}
+                            </TableCell>
+                            <TableCell align="center">
+                              <Button
+                                size="small"
+                                variant="contained"
+                                onClick={() => handleMpesaConfirmationSelect(confirmation)}
+                                sx={{ backgroundColor: '#00A859', '&:hover': { backgroundColor: '#008547' } }}
+                              >
+                                Select
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                ) : (
+                  <Typography color="textSecondary" sx={{ textAlign: 'center', py: 4 }}>
+                    No pending M-Pesa confirmations found
+                  </Typography>
+                )}
+              </>
             ) : (
-              <Typography color="textSecondary" sx={{ textAlign: 'center', py: 4 }}>
-                No pending M-Pesa confirmations found
-              </Typography>
+              // Tab 2: Enter Confirmation Code
+              <Box sx={{ pt: 2 }}>
+                <TextField
+                  fullWidth
+                  label="M-Pesa Transaction Code"
+                  value={manualMpesaCode}
+                  onChange={(e) => {
+                    setManualMpesaCode(e.target.value);
+                    setCodeSearchResult(null);
+                  }}
+                  placeholder="Enter transaction code (e.g., QGH123456789)"
+                  sx={{ mb: 2 }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSearchMpesaCode();
+                    }
+                  }}
+                />
+                
+                {codeSearchResult && codeSearchResult.found && (
+                  <Alert severity="success" sx={{ mb: 2 }}>
+                    <Typography variant="body2" fontWeight="bold">
+                      ✅ Confirmation Found!
+                    </Typography>
+                    <Typography variant="body2">
+                      Amount: KES {Number(codeSearchResult.confirmation.trans_amount || 0).toFixed(2)}
+                    </Typography>
+                    <Typography variant="body2">
+                      Phone: {codeSearchResult.confirmation.msisdn || 'N/A'}
+                    </Typography>
+                    <Typography variant="body2">
+                      Name: {[codeSearchResult.confirmation.first_name, codeSearchResult.confirmation.middle_name, codeSearchResult.confirmation.last_name]
+                        .filter(Boolean).join(' ') || 'N/A'}
+                    </Typography>
+                  </Alert>
+                )}
+
+                {codeSearchResult && !codeSearchResult.found && (
+                  <Alert severity="warning" sx={{ mb: 2 }}>
+                    <Typography variant="body2">
+                      M-Pesa confirmation not found. You can save this code for future reference.
+                    </Typography>
+                  </Alert>
+                )}
+
+                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                  <Button
+                    variant="outlined"
+                    onClick={() => {
+                      setManualMpesaCode('');
+                      setCodeSearchResult(null);
+                    }}
+                  >
+                    Clear
+                  </Button>
+                  <Button
+                    variant="contained"
+                    onClick={handleSearchMpesaCode}
+                    disabled={!manualMpesaCode.trim() || searchingCode}
+                    sx={{ backgroundColor: '#00A859', '&:hover': { backgroundColor: '#008547' } }}
+                  >
+                    {searchingCode ? 'Searching...' : 'Search'}
+                  </Button>
+                  {codeSearchResult && !codeSearchResult.found && (
+                    <Button
+                      variant="contained"
+                      onClick={handleSaveManualMpesaCode}
+                      disabled={loading}
+                      sx={{ backgroundColor: '#1976d2' }}
+                    >
+                      {loading ? 'Saving...' : 'Save Code'}
+                    </Button>
+                  )}
+                </Box>
+              </Box>
             )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setMpesaModalOpen(false)}>Close</Button>
-            <Button 
-              onClick={() => {
-                fetchMpesaConfirmations();
-              }}
-              variant="outlined"
-            >
-              Refresh
-            </Button>
+            <Button onClick={() => {
+              setMpesaModalOpen(false);
+              setMpesaTabValue(0);
+              setManualMpesaCode('');
+              setCodeSearchResult(null);
+            }}>Close</Button>
+            {mpesaTabValue === 0 && (
+              <Button 
+                onClick={() => {
+                  fetchMpesaConfirmations();
+                }}
+                variant="outlined"
+              >
+                Refresh
+              </Button>
+            )}
           </DialogActions>
         </Dialog>
         </Box>

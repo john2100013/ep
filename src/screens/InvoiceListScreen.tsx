@@ -101,28 +101,16 @@ const InvoiceListScreen: React.FC = () => {
   const fetchInvoices = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
       
-      const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        limit: pagination.limit.toString(),
-      });
+      const params: any = {
+        page: pagination.page,
+        limit: pagination.limit,
+      };
       
-      if (searchTerm) params.append('search', searchTerm);
-      if (statusFilter) params.append('status', statusFilter);
+      if (searchTerm) params.search = searchTerm;
+      if (statusFilter) params.status = statusFilter;
 
-      const response = await fetch(`https://erp-backend-beryl.vercel.app/api/invoices?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch invoices');
-      }
-
-      const data: InvoiceListResponse = await response.json();
+      const data: InvoiceListResponse = await ApiService.getInvoices(params);
       
       if (data.success) {
         setInvoices(data.data.invoices);

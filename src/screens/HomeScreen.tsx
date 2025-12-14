@@ -24,9 +24,11 @@ import {
   Analytics as AnalyticsIcon,
   Store as StoreIcon,
   LocalHospital as HospitalIcon,
+  Storage as DatabaseIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { ApiService } from '../services/api';
 
 const HomeScreen: React.FC = () => {
   const navigate = useNavigate();
@@ -38,19 +40,9 @@ const HomeScreen: React.FC = () => {
   useEffect(() => {
     const fetchBusinessSettings = async () => {
       try {
-        const response = await fetch('https://erp-backend-beryl.vercel.app/api/business-settings', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.data && data.data.businessName) {
-            setBusinessName(data.data.businessName);
-          }
+        const data = await ApiService.getBusinessSettings();
+        if (data.success && data.data && data.data.businessName) {
+          setBusinessName(data.data.businessName);
         }
       } catch (error) {
         console.error('Error fetching business settings:', error);
@@ -294,6 +286,16 @@ const HomeScreen: React.FC = () => {
               Settings
             </Button>
 
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<DatabaseIcon />}
+              onClick={() => navigate('/database-settings')}
+              sx={{ py: 2, borderColor: '#1976D2', color: '#1976D2' }}
+            >
+              Database Settings
+            </Button>
+
             {/* Previously Salon/Hospital buttons moved to Advance Package modal */}
           </Box>
           </CardContent>
@@ -319,6 +321,7 @@ const HomeScreen: React.FC = () => {
             <Button onClick={() => setAdvanceOpen(false)}>Close</Button>
           </DialogActions>
         </Dialog>
+
 
         {/* Features Section */}
         <Card sx={{ elevation: 4 }}>

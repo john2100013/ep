@@ -6,6 +6,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import './index.css'
 import App from './App.tsx'
 import { AuthProvider } from './contexts/AuthContext';
+import { DatabaseProvider } from './contexts/DatabaseContext';
 
 const theme = createTheme({
   palette: {
@@ -24,7 +25,9 @@ createRoot(document.getElementById('root')!).render(
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <AuthProvider>
+          <DatabaseProvider>
           <App />
+          </DatabaseProvider>
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>

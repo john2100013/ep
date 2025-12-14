@@ -1,13 +1,24 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "main": "electron/dist/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:electron": "npm run build && npm run build:electron-main",
+    "build:electron-main": "tsc -p tsconfig.electron.json && npm run rename-electron-files",
+    "rename-electron-files": "node -e \"const fs=require('fs');const path=require('path');const dir='electron/dist';fs.readdirSync(dir).forEach(f=>{if(f.endsWith('.js')){const oldPath=path.join(dir,f);const newPath=path.join(dir,f.replace('.js','.cjs'));fs.renameSync(oldPath,newPath);}});\"",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:build": "npm run build:electron && electron-builder && node copy-backend.cjs",
+    "electron:build:win": "npm run build:electron && electron-builder --win && node copy-backend.cjs",
+    "electron:build:mac": "npm run build:electron && electron-builder --mac",
+    "electron:build:linux": "npm run build:electron && electron-builder --linux",
+    "electron:pack": "npm run build:electron && electron-builder --dir",
+    "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -33,6 +44,9 @@
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "@vitejs/plugin-react": "^5.1.0",
+    "concurrently": "^9.2.1",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
@@ -40,6 +54,7 @@
     "terser": "^5.44.1",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.3",
-    "vite": "^7.2.2"
+    "vite": "^7.2.2",
+    "wait-on": "^8.0.5"
   }
 }

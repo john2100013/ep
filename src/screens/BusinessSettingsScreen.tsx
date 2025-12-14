@@ -21,6 +21,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
+import { ApiService } from '../services/api';
 
 interface BusinessSettings {
   businessName: string;
@@ -59,19 +60,9 @@ const BusinessSettingsScreen: React.FC = () => {
 
   const loadSettings = async () => {
     try {
-      const response = await fetch(`https://erp-backend-beryl.vercel.app/api/business-settings`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
-          setSettings(data.data);
-        }
+      const response = await ApiService.getBusinessSettings();
+      if (response.success && response.data) {
+        setSettings(response.data);
       }
     } catch (error) {
       console.error('Error loading business settings:', error);
@@ -178,17 +169,10 @@ const BusinessSettingsScreen: React.FC = () => {
       }
 
       // Save to database
-      const response = await fetch(`https://erp-backend-beryl.vercel.app/api/business-settings`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(settings),
-      });
+      const response = await ApiService.updateBusinessSettings(settings);
       
-      if (!response.ok) {
-        throw new Error('Failed to save settings to database');
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to save settings to database');
       }
       
       // Also save to localStorage as backup

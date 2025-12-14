@@ -29,6 +29,8 @@ import {
   Divider,
   useMediaQuery,
   useTheme,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import { Add, Delete, Search as SearchIcon, Print as PrintIcon, Category as CategoryIcon, People as PeopleIcon, Visibility as ViewIcon, Edit as EditIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -73,6 +75,7 @@ const SalonPOS: React.FC = () => {
   const [services, setServices] = useState<SalonService[]>([]);
   const [products, setProducts] = useState<any[]>([]); // Changed to any[] to match items from main table
   const [includeVAT, setIncludeVAT] = useState(true); // VAT checkbox state
+  const [discount, setDiscount] = useState<number>(0); // Discount amount
   
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [selectedService, setSelectedService] = useState('');
@@ -83,6 +86,10 @@ const SalonPOS: React.FC = () => {
   const [mpesaCode, setMpesaCode] = useState('');
   const [mpesaModalOpen, setMpesaModalOpen] = useState(false);
   const [mpesaConfirmations, setMpesaConfirmations] = useState<any[]>([]);
+  const [mpesaTabValue, setMpesaTabValue] = useState(0);
+  const [manualMpesaCode, setManualMpesaCode] = useState('');
+  const [searchingCode, setSearchingCode] = useState(false);
+  const [codeSearchResult, setCodeSearchResult] = useState<{ found: boolean; confirmation: any } | null>(null);
   const [generateInvoice, setGenerateInvoice] = useState(true);
   const [selectedAccount, setSelectedAccount] = useState<string>('');
   const [accounts, setAccounts] = useState<any[]>([]);
@@ -147,7 +154,80 @@ const SalonPOS: React.FC = () => {
   // Handle M-Pesa confirmation selection
   const handleMpesaConfirmationSelect = (confirmation: any) => {
     setMpesaCode(confirmation.trans_id);
+    setAmountPaid(parseFloat(confirmation.trans_amount) || 0);
     setMpesaModalOpen(false);
+  };
+
+  // Search M-Pesa confirmation by code
+  const handleSearchMpesaCode = async () => {
+    if (!manualMpesaCode.trim()) {
+      setError('Please enter a transaction code');
+      return;
+    }
+
+    try {
+      setSearchingCode(true);
+      setError('');
+      const response = await ApiService.searchMpesaConfirmationByCode(manualMpesaCode.trim());
+      
+      if (response.success && response.data.found) {
+        const confirmation = response.data.confirmation;
+        setCodeSearchResult({ found: true, confirmation });
+        setMpesaCode(confirmation.trans_id);
+        setAmountPaid(parseFloat(confirmation.trans_amount) || 0);
+        setSuccess('M-Pesa confirmation found and amount populated!');
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        setCodeSearchResult({ found: false, confirmation: null });
+        // Ask user if they want to save the code
+        const shouldSave = window.confirm(
+          `M-Pesa confirmation with code "${manualMpesaCode.trim()}" not found. Do you want to save this code for future reference?`
+        );
+        
+        if (shouldSave) {
+          await handleSaveManualMpesaCode();
+        }
+      }
+    } catch (err: any) {
+      console.error('Error searching M-Pesa code:', err);
+      setError(err.response?.data?.message || 'Failed to search M-Pesa confirmation');
+    } finally {
+      setSearchingCode(false);
+    }
+  };
+
+  // Save manual M-Pesa confirmation
+  const handleSaveManualMpesaCode = async () => {
+    if (!manualMpesaCode.trim()) {
+      setError('Please enter a transaction code');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+      const response = await ApiService.saveManualMpesaConfirmation({
+        trans_id: manualMpesaCode.trim(),
+        trans_amount: amountPaid || 0,
+      });
+
+      if (response.success) {
+        setMpesaCode(manualMpesaCode.trim());
+        setSuccess('M-Pesa confirmation code saved successfully!');
+        setMpesaModalOpen(false);
+        setMpesaTabValue(0);
+        setManualMpesaCode('');
+        setCodeSearchResult(null);
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        throw new Error(response.message || 'Failed to save confirmation code');
+      }
+    } catch (err: any) {
+      console.error('Error saving manual M-Pesa code:', err);
+      setError(err.response?.data?.message || 'Failed to save M-Pesa confirmation code');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const loadData = async () => {
@@ -327,10 +407,12 @@ const SalonPOS: React.FC = () => {
   const calculateBillTotals = () => {
     const subtotal = billItems.reduce((sum, item) => sum + item.total, 0);
     const vat = includeVAT ? subtotal * 0.16 : 0; // 16% VAT if enabled
-    const total = subtotal + vat;
+    const totalBeforeDiscount = subtotal + vat;
+    const discountAmount = Number(discount) || 0;
+    const total = Math.max(0, totalBeforeDiscount - discountAmount); // Ensure total doesn't go negative
     const balanceDue = Math.max(0, total - amountPaid);
     const paymentStatus = amountPaid >= total ? 'paid' : amountPaid > 0 ? 'partial' : 'unpaid';
-    return { subtotal, vat, total, balanceDue, paymentStatus };
+    return { subtotal, vat, discountAmount, total, balanceDue, paymentStatus };
   };
 
   // Fetch salon invoices
@@ -606,12 +688,13 @@ const SalonPOS: React.FC = () => {
 
     const business = JSON.parse(localStorage.getItem('business') || '{}');
     const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const { subtotal, vat, total } = billItems.length > 0 
+    const { subtotal, vat, discountAmount, total } = billItems.length > 0 
       ? calculateBillTotals() 
       : (() => {
           const st = itemsToPrint.reduce((sum: number, item: any) => sum + (item.total || item.unit_price || 0), 0);
           const v = st * 0.16;
-          return { subtotal: st, vat: v, total: st + v };
+          const d = 0; // No discount for historical receipts
+          return { subtotal: st, vat: v, discountAmount: d, total: st + v - d };
         })();
     
     const printWindow = window.open('', '_blank');
@@ -780,6 +863,12 @@ const SalonPOS: React.FC = () => {
             <span>KES ${Number(vat).toFixed(2)}</span>
           </div>
           ` : ''}
+          ${discountAmount > 0 ? `
+          <div class="totals-row" style="color: #d32f2f;">
+            <span>Discount:</span>
+            <span>-KES ${Number(discountAmount).toFixed(2)}</span>
+          </div>
+          ` : ''}
           <div class="totals-row total-final">
             <span>TOTAL:</span>
             <span>KES ${Number(total).toFixed(2)}</span>
@@ -821,7 +910,7 @@ const SalonPOS: React.FC = () => {
       setLoading(true);
       setError('');
         
-        const { subtotal, vat, total } = calculateBillTotals();
+        const { subtotal, vat, discountAmount, total } = calculateBillTotals();
         const currentDate = new Date().toISOString().split('T')[0];
         
         const invoiceData: any = {
@@ -865,6 +954,7 @@ const SalonPOS: React.FC = () => {
         setPaymentMethod('cash');
         setMpesaCode('');
         setAmountPaid(0);
+        setDiscount(0);
         
         // Refresh invoices list
         await fetchSalonInvoices();
@@ -951,6 +1041,7 @@ const SalonPOS: React.FC = () => {
         setPaymentMethod('cash');
       setMpesaCode('');
       setAmountPaid(0);
+      setDiscount(0);
       setCreatedInvoiceId(null);
       
       // Refresh invoices list
@@ -975,11 +1066,11 @@ const SalonPOS: React.FC = () => {
 
       const invoiceNumber = await generateInvoiceNumber();
       const currentDate = new Date().toISOString().split('T')[0];
-      const { subtotal, vat, total } = calculateBillTotals();
+      const { subtotal, vat, discountAmount, total } = calculateBillTotals();
       
       // Only include VAT in invoice if VAT is enabled
       const invoiceVAT = includeVAT ? vat : 0;
-      const invoiceTotal = includeVAT ? total : subtotal;
+      const invoiceTotal = total; // Total already includes discount
 
       const employee = employees.find(e => e.user_id === selectedEmployee);
 
@@ -1392,6 +1483,14 @@ const SalonPOS: React.FC = () => {
                       </Typography>
                     </Box>
                   )}
+                  {discount > 0 && (
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography variant="body2" color="error.main">Discount:</Typography>
+                      <Typography variant="body2" fontWeight="bold" color="error.main">
+                        -KES {calculateBillTotals().discountAmount.toFixed(2)}
+                      </Typography>
+                    </Box>
+                  )}
                   <Divider sx={{ my: 1 }} />
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Typography variant="h6" fontWeight="bold">Total:</Typography>
@@ -1434,6 +1533,14 @@ const SalonPOS: React.FC = () => {
                           <TableCell>VAT (16%)</TableCell>
                           <TableCell align="right">
                             KES {calculateBillTotals().vat.toFixed(2)}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      {discount > 0 && (
+                        <TableRow>
+                          <TableCell sx={{ color: 'error.main' }}>Discount</TableCell>
+                          <TableCell align="right" sx={{ color: 'error.main' }}>
+                            -KES {calculateBillTotals().discountAmount.toFixed(2)}
                           </TableCell>
                         </TableRow>
                       )}
@@ -1491,6 +1598,23 @@ const SalonPOS: React.FC = () => {
                     />
                   }
                   label="Include VAT (16%)"
+                />
+              </Box>
+
+              {/* Discount Field */}
+              <Box sx={{ mb: 2 }}>
+                <TextField
+                  fullWidth
+                  label="Discount Amount (KES)"
+                  type="number"
+                  size="small"
+                  value={discount}
+                  onChange={(e) => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
+                  inputProps={{ 
+                    min: 0,
+                    step: 0.01
+                  }}
+                  helperText="Enter discount amount to apply to total"
                 />
               </Box>
 
@@ -1637,11 +1761,27 @@ const SalonPOS: React.FC = () => {
       </Grid>
 
       {/* M-Pesa Confirmations Modal */}
-      <Dialog open={mpesaModalOpen} onClose={() => setMpesaModalOpen(false)} maxWidth="md" fullWidth>
+      <Dialog open={mpesaModalOpen} onClose={() => {
+        setMpesaModalOpen(false);
+        setMpesaTabValue(0);
+        setManualMpesaCode('');
+        setCodeSearchResult(null);
+      }} maxWidth="md" fullWidth>
         <DialogTitle sx={{ backgroundColor: '#00A859', color: 'white', fontWeight: 'bold' }}>
-          📱 Select M-Pesa Confirmation
+          📱 M-Pesa Confirmation
         </DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
+          <Tabs value={mpesaTabValue} onChange={(_, newValue) => {
+            setMpesaTabValue(newValue);
+            setCodeSearchResult(null);
+          }} sx={{ mb: 2 }}>
+            <Tab label="Link to Customer" />
+            <Tab label="Enter Confirmation Code" />
+          </Tabs>
+
+          {mpesaTabValue === 0 ? (
+            // Tab 1: Link to Customer (existing functionality)
+            <>
           {loading ? (
             <Typography>Loading confirmations...</Typography>
           ) : mpesaConfirmations.length > 0 ? (
@@ -1697,10 +1837,94 @@ const SalonPOS: React.FC = () => {
             <Typography color="textSecondary" sx={{ textAlign: 'center', py: 4 }}>
               No pending M-Pesa confirmations found. You can enter the code manually.
             </Typography>
+              )}
+            </>
+          ) : (
+            // Tab 2: Enter Confirmation Code
+            <Box sx={{ pt: 2 }}>
+              <TextField
+                fullWidth
+                label="M-Pesa Transaction Code"
+                value={manualMpesaCode}
+                onChange={(e) => {
+                  setManualMpesaCode(e.target.value);
+                  setCodeSearchResult(null);
+                }}
+                placeholder="Enter transaction code (e.g., QGH123456789)"
+                sx={{ mb: 2 }}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearchMpesaCode();
+                  }
+                }}
+              />
+              
+              {codeSearchResult && codeSearchResult.found && (
+                <Alert severity="success" sx={{ mb: 2 }}>
+                  <Typography variant="body2" fontWeight="bold">
+                    ✅ Confirmation Found!
+                  </Typography>
+                  <Typography variant="body2">
+                    Amount: KES {Number(codeSearchResult.confirmation.trans_amount || 0).toFixed(2)}
+                  </Typography>
+                  <Typography variant="body2">
+                    Phone: {codeSearchResult.confirmation.msisdn || 'N/A'}
+                  </Typography>
+                  <Typography variant="body2">
+                    Name: {[codeSearchResult.confirmation.first_name, codeSearchResult.confirmation.middle_name, codeSearchResult.confirmation.last_name]
+                      .filter(Boolean).join(' ') || 'N/A'}
+                  </Typography>
+                </Alert>
+              )}
+
+              {codeSearchResult && !codeSearchResult.found && (
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                  <Typography variant="body2">
+                    M-Pesa confirmation not found. You can save this code for future reference.
+                  </Typography>
+                </Alert>
+              )}
+
+              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    setManualMpesaCode('');
+                    setCodeSearchResult(null);
+                  }}
+                >
+                  Clear
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={handleSearchMpesaCode}
+                  disabled={!manualMpesaCode.trim() || searchingCode}
+                  sx={{ backgroundColor: '#00A859', '&:hover': { backgroundColor: '#008547' } }}
+                >
+                  {searchingCode ? 'Searching...' : 'Search'}
+                </Button>
+                {codeSearchResult && !codeSearchResult.found && (
+                  <Button
+                    variant="contained"
+                    onClick={handleSaveManualMpesaCode}
+                    disabled={loading}
+                    sx={{ backgroundColor: '#1976d2' }}
+                  >
+                    {loading ? 'Saving...' : 'Save Code'}
+                  </Button>
+                )}
+              </Box>
+            </Box>
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setMpesaModalOpen(false)}>Close</Button>
+          <Button onClick={() => {
+            setMpesaModalOpen(false);
+            setMpesaTabValue(0);
+            setManualMpesaCode('');
+            setCodeSearchResult(null);
+          }}>Close</Button>
+          {mpesaTabValue === 0 && (
           <Button 
             onClick={() => {
               fetchMpesaConfirmations();
@@ -1709,6 +1933,7 @@ const SalonPOS: React.FC = () => {
           >
             Refresh
           </Button>
+          )}
           </DialogActions>
         </Dialog>
 

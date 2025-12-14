@@ -17,11 +17,15 @@ import { Save as SaveIcon, Cancel as CancelIcon } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ApiService } from '../services/api';
 import Sidebar from '../components/Sidebar';
 
 const AddItemScreen: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const editItemId = searchParams.get('edit');
+  const isEditMode = !!editItemId;
+
   const [formData, setFormData] = useState({
     item_name: '',
     description: '',
@@ -51,7 +55,45 @@ const AddItemScreen: React.FC = () => {
   useEffect(() => {
     fetchCategories();
     fetchBusinessCategoryNames();
-  }, []);
+    if (isEditMode && editItemId) {
+      loadItemForEdit(parseInt(editItemId));
+    }
+  }, [isEditMode, editItemId]);
+
+  const loadItemForEdit = async (itemId: number) => {
+    try {
+      setLoading(true);
+      const response = await ApiService.getItem(itemId);
+      if (response.success && response.data) {
+        const item = response.data.item || response.data;
+        setFormData({
+          item_name: item.item_name || item.name || '',
+          description: item.description || '',
+          quantity: item.quantity?.toString() || item.stock_quantity?.toString() || '',
+          buying_price: item.buying_price?.toString() || '',
+          selling_price: item.selling_price?.toString() || item.rate?.toString() || item.unit_price?.toString() || '',
+          rate: item.rate?.toString() || item.unit_price?.toString() || '',
+          unit: item.unit || item.uom || '',
+          category_id: item.category_id?.toString() || '',
+          category_1_id: item.category_1_id?.toString() || '',
+          category_2_id: item.category_2_id?.toString() || '',
+          reorder_level: item.reorder_level?.toString() || '',
+        });
+        
+        if (item.manufacturing_date) {
+          setManufacturingDate(new Date(item.manufacturing_date));
+        }
+        if (item.expiry_date) {
+          setExpiryDate(new Date(item.expiry_date));
+        }
+      }
+    } catch (error: any) {
+      console.error('Error loading item:', error);
+      setError('Failed to load item data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchCategories = async () => {
     try {
@@ -119,47 +161,62 @@ const AddItemScreen: React.FC = () => {
     setLoading(true);
 
     try {
-      await ApiService.createItem({
-        item_name: formData.item_name.trim(),
-        description: formData.description.trim(),
-        quantity: parseFloat(formData.quantity),
-        buying_price: parseFloat(formData.buying_price),
-        selling_price: parseFloat(formData.selling_price),
-        rate: parseFloat(formData.selling_price), // Use selling price as rate for compatibility
-        unit: formData.unit.trim() || undefined,
-        category_id: formData.category_id ? parseInt(formData.category_id) : undefined,
-        category_1_id: formData.category_1_id ? parseInt(formData.category_1_id) : undefined,
-        category_2_id: formData.category_2_id ? parseInt(formData.category_2_id) : undefined,
-        reorder_level: formData.reorder_level ? parseInt(formData.reorder_level) : undefined,
-        manufacturing_date: manufacturingDate?.toISOString().split('T')[0] || undefined,
-        expiry_date: expiryDate?.toISOString().split('T')[0] || undefined,
-      });
-
-      setSuccess('Item added successfully!');
-      
-      // Reset form
-      setFormData({
-        item_name: '',
-        description: '',
-        quantity: '',
-        buying_price: '',
-        selling_price: '',
-        rate: '',
-        unit: '',
-        category_id: '',
-        category_1_id: '',
-        category_2_id: '',
-        reorder_level: '',
-      });
-      setManufacturingDate(null);
-      setExpiryDate(null);
+      if (isEditMode && editItemId) {
+        // Update existing item
+        await ApiService.updateItem(parseInt(editItemId), {
+          item_name: formData.item_name.trim(),
+          description: formData.description.trim(),
+          quantity: parseFloat(formData.quantity),
+          rate: parseFloat(formData.selling_price), // Use selling price as rate for compatibility
+          unit: formData.unit.trim() || undefined,
+          category_id: formData.category_id ? parseInt(formData.category_id) : undefined,
+          category_1_id: formData.category_1_id ? parseInt(formData.category_1_id) : undefined,
+          category_2_id: formData.category_2_id ? parseInt(formData.category_2_id) : undefined,
+        });
+        setSuccess('Item updated successfully!');
+      } else {
+        // Create new item
+        await ApiService.createItem({
+          item_name: formData.item_name.trim(),
+          description: formData.description.trim(),
+          quantity: parseFloat(formData.quantity),
+          buying_price: parseFloat(formData.buying_price),
+          selling_price: parseFloat(formData.selling_price),
+          rate: parseFloat(formData.selling_price), // Use selling price as rate for compatibility
+          unit: formData.unit.trim() || undefined,
+          category_id: formData.category_id ? parseInt(formData.category_id) : undefined,
+          category_1_id: formData.category_1_id ? parseInt(formData.category_1_id) : undefined,
+          category_2_id: formData.category_2_id ? parseInt(formData.category_2_id) : undefined,
+          reorder_level: formData.reorder_level ? parseInt(formData.reorder_level) : undefined,
+          manufacturing_date: manufacturingDate?.toISOString().split('T')[0] || undefined,
+          expiry_date: expiryDate?.toISOString().split('T')[0] || undefined,
+        });
+        setSuccess('Item added successfully!');
+        
+        // Reset form only for new items
+        setFormData({
+          item_name: '',
+          description: '',
+          quantity: '',
+          buying_price: '',
+          selling_price: '',
+          rate: '',
+          unit: '',
+          category_id: '',
+          category_1_id: '',
+          category_2_id: '',
+          reorder_level: '',
+        });
+        setManufacturingDate(null);
+        setExpiryDate(null);
+      }
       
       // Navigate back after short delay
       setTimeout(() => {
         navigate('/items-list');
       }, 1500);
     } catch (error: any) {
-      setError(error.response?.data?.message || 'Failed to add item');
+      setError(error.response?.data?.message || (isEditMode ? 'Failed to update item' : 'Failed to add item'));
     } finally {
       setLoading(false);
     }
@@ -173,7 +230,7 @@ const AddItemScreen: React.FC = () => {
     <Box sx={{ display: 'flex', width: '100vw', minHeight: '100vh', margin: 0 }}>
       {/* Sidebar - hidden on mobile */}
       <Box sx={{ display: { xs: 'none', md: 'block' } }}>
-        <Sidebar title="Add New Item" />
+        <Sidebar title={isEditMode ? "Edit Item" : "Add New Item"} />
       </Box>
 
       {/* Main Content */}
@@ -190,7 +247,7 @@ const AddItemScreen: React.FC = () => {
           <Card elevation={4}>
             <CardContent sx={{ p: { xs: 1.5, md: 2 } }}>
               <Typography variant="h4" component="h1" gutterBottom color="primary" align="center" sx={{ fontSize: { xs: '1.5rem', md: '2.125rem' } }}>
-                Add New Item
+                {isEditMode ? 'Edit Item' : 'Add New Item'}
               </Typography>
 
               {error && (

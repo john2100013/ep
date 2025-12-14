@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDatabase } from '../contexts/DatabaseContext';
 import {
   Box,
   Container,
@@ -19,6 +20,14 @@ import {
   ListItem,
   ListItemButton,
   ListItemText,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Switch,
+  FormControlLabel,
+  Alert,
+  Divider,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -37,19 +46,41 @@ import {
   ShoppingCart as POSIcon,
   Handshake as ServiceIcon,
   CreditCard as BillingIcon,
+  Storage as DatabaseIcon,
+  Settings as SettingsIcon,
 } from '@mui/icons-material';
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const { mode, isVercel, canSwitchMode, switchMode, refreshStatus } = useDatabase();
   const [mobileDrawerOpen, setMobileDrawerOpen] = React.useState(false);
+  const [dbConfigOpen, setDbConfigOpen] = useState(false);
+  const [switching, setSwitching] = useState(false);
+
+  useEffect(() => {
+    // Refresh database status on mount
+    refreshStatus();
+  }, [refreshStatus]);
 
   const toggleDrawer = (open: boolean) => (event: React.KeyboardEvent | React.MouseEvent) => {
     if (event.type === 'keydown' && ((event as React.KeyboardEvent).key === 'Tab' || (event as React.KeyboardEvent).key === 'Shift')) {
       return;
     }
     setMobileDrawerOpen(open);
+  };
+
+  const handleModeToggle = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newMode = event.target.checked ? 'neon' : 'local';
+    setSwitching(true);
+    try {
+      await switchMode(newMode);
+    } catch (error: any) {
+      alert(`Failed to switch database mode: ${error.message}`);
+    } finally {
+      setSwitching(false);
+    }
   };
 
   const navItems = [
@@ -294,6 +325,21 @@ const LandingPage: React.FC = () => {
                   {item.label}
                 </Typography>
               ))}
+              {!isVercel && canSwitchMode && (
+                <Button
+                  variant="outlined"
+                  startIcon={<DatabaseIcon />}
+                  sx={{
+                    borderColor: '#667eea',
+                    color: '#667eea',
+                    fontWeight: 'bold',
+                    '&:hover': { backgroundColor: '#f3e8ff' },
+                  }}
+                  onClick={() => setDbConfigOpen(true)}
+                >
+                  Database Config
+                </Button>
+              )}
               <Button
                 variant="outlined"
                 sx={{
@@ -340,6 +386,23 @@ const LandingPage: React.FC = () => {
                     ))}
                   </List>
                   <Box sx={{ px: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    {!isVercel && canSwitchMode && (
+                      <Button
+                        fullWidth
+                        variant="outlined"
+                        startIcon={<DatabaseIcon />}
+                        sx={{
+                          borderColor: '#667eea',
+                          color: '#667eea',
+                        }}
+                        onClick={() => {
+                          setMobileDrawerOpen(false);
+                          setDbConfigOpen(true);
+                        }}
+                      >
+                        Database Config
+                      </Button>
+                    )}
                     <Button
                       fullWidth
                       variant="outlined"
@@ -775,6 +838,76 @@ const LandingPage: React.FC = () => {
           </Box>
         </Box>
       </Box>
+
+      {/* Database Configuration Dialog */}
+      {!isVercel && canSwitchMode && (
+        <Dialog open={dbConfigOpen} onClose={() => setDbConfigOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <DatabaseIcon color="primary" />
+              <Typography variant="h6">Database Configuration</Typography>
+            </Box>
+          </DialogTitle>
+          <DialogContent>
+            <Alert severity="info" sx={{ mb: 3 }}>
+              <Typography variant="body2">
+                Choose where your data will be stored. This setting will apply when you create your account.
+              </Typography>
+            </Alert>
+
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                Select Database Mode:
+              </Typography>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={mode === 'neon'}
+                    onChange={handleModeToggle}
+                    disabled={switching}
+                    color="primary"
+                  />
+                }
+                label={
+                  <Box>
+                    <Typography variant="body1" fontWeight="bold">
+                      {mode === 'local' ? 'Local PostgreSQL' : 'Neon Cloud Database'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {mode === 'local'
+                        ? 'Data will be saved to your local PostgreSQL database. Faster and works offline.'
+                        : 'Data will be saved to Neon cloud database. Requires internet but accessible from anywhere.'}
+                    </Typography>
+                  </Box>
+                }
+              />
+            </Box>
+
+            <Divider sx={{ my: 2 }} />
+
+            <Box>
+              <Typography variant="body2" color="text.secondary">
+                <strong>Current Selection:</strong> {mode === 'local' ? 'Local PostgreSQL' : 'Neon Cloud'}
+              </Typography>
+              <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                You can change this setting anytime after logging in from the Database Settings page.
+              </Typography>
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDbConfigOpen(false)}>Close</Button>
+            <Button
+              variant="contained"
+              onClick={() => {
+                setDbConfigOpen(false);
+                navigate('/register');
+              }}
+            >
+              Continue to Sign Up
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
     </Box>
   );
 };

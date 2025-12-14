@@ -34,6 +34,7 @@ import CustomersScreen from './screens/CustomersScreen';
 import CustomerInvoicesScreen from './screens/CustomerInvoicesScreen';
 import ItemCategoriesScreen from './screens/ItemCategoriesScreen';
 import CustomerInvoicesListScreen from './screens/CustomerInvoicesListScreen';
+import DatabaseSettingsScreen from './screens/DatabaseSettingsScreen';
 
 // Salon Module
 import { 
@@ -246,6 +247,17 @@ function App() {
               <Header />
               <ProtectedRoute>
                 <BusinessSettingsScreen />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/database-settings" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <DatabaseSettingsScreen />
               </ProtectedRoute>
             </Box>
           } 

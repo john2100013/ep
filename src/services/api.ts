@@ -1,18 +1,44 @@
 import axios from 'axios';
+// Electron type definitions are automatically included via tsconfig
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://erp-backend-beryl.vercel.app/api';
+// Detect if running in Electron
+const isElectron = (): boolean => {
+  return typeof window !== 'undefined' && window.electronAPI !== undefined;
+};
+
+// Get API base URL - prioritize Electron local backend, then env var, then default
+// For Electron, default to localhost, for web use env var or Vercel URL
+const getApiBaseUrl = (): string => {
+  if (isElectron()) {
+    // In Electron, always use localhost backend
+    return 'http://localhost:3001/api';
+  }
+  return import.meta.env.VITE_API_BASE_URL || 'https://erp-backend-beryl.vercel.app/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Log the API URL being used for debugging (always enabled)
 console.log('🔗 API Base URL:', API_BASE_URL);
-console.log('🏗️ Environment:', import.meta.env.VITE_APP_ENV || 'production');
+console.log('🏗️ Environment:', isElectron() ? 'electron' : (import.meta.env.VITE_APP_ENV || 'production'));
 
-// Create axios instance
+// Create axios instance with dynamic base URL
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+// Update base URL dynamically if in Electron (after window loads)
+if (isElectron() && typeof window !== 'undefined') {
+  window.electronAPI?.getBackendUrl().then((url: string) => {
+    api.defaults.baseURL = `${url}/api`;
+    console.log('🔗 Updated API Base URL for Electron:', api.defaults.baseURL);
+  }).catch(() => {
+    // Already set to localhost:3001/api, so this is fine
+  });
+}
 
 // Add auth token to requests
 api.interceptors.request.use((config) => {
@@ -116,6 +142,9 @@ export class ApiService {
     rate?: number;
     unit?: string;
     description?: string;
+    category_id?: number;
+    category_1_id?: number;
+    category_2_id?: number;
   }) {
     const response = await api.put(`/items/${id}`, itemData);
     return response.data;
@@ -400,6 +429,28 @@ export class ApiService {
     return response.data;
   }
 
+  // Business settings
+  static async getBusinessSettings() {
+    const response = await api.get('/business-settings');
+    return response.data;
+  }
+
+  static async updateBusinessSettings(settings: {
+    businessName: string;
+    street?: string;
+    city?: string;
+    email: string;
+    telephone: string;
+    createdBy?: string;
+    approvedBy?: string;
+    createdBySignature?: string;
+    approvedBySignature?: string;
+    logo?: string;
+  }) {
+    const response = await api.post('/business-settings', settings);
+    return response.data;
+  }
+
   // Business custom category names
   static async getBusinessCategoryNames() {
     const response = await api.get('/item-categories/business/names');
@@ -444,6 +495,32 @@ export class ApiService {
   // Health check
   static async healthCheck() {
     const response = await api.get('/health');
+    return response.data;
+  }
+
+  // ============ DATABASE SYNC ENDPOINTS ============
+  
+  // Get database sync status
+  static async getSyncStatus() {
+    const response = await api.get('/sync/status');
+    return response.data;
+  }
+
+  // Switch database mode (local or neon)
+  static async switchDatabaseMode(mode: 'local' | 'neon') {
+    const response = await api.post('/sync/mode', { mode });
+    return response.data;
+  }
+
+  // Sync all data from local to Neon
+  static async syncAllData() {
+    const response = await api.post('/sync/sync-all');
+    return response.data;
+  }
+
+  // Sync specific table from local to Neon
+  static async syncTable(tableName: string) {
+    const response = await api.post('/sync/sync-table', { tableName });
     return response.data;
   }
 
@@ -639,6 +716,24 @@ export class ApiService {
 
   static async linkMpesaConfirmation(confirmationId: number, invoiceId: number) {
     const response = await api.post(`/mpesa/confirmations/${confirmationId}/link`, { invoice_id: invoiceId });
+    return response.data;
+  }
+
+  static async searchMpesaConfirmationByCode(code: string) {
+    const response = await api.get(`/mpesa/confirmations/search/${encodeURIComponent(code)}`);
+    return response.data;
+  }
+
+  static async saveManualMpesaConfirmation(data: {
+    trans_id: string;
+    trans_amount?: number;
+    msisdn?: string;
+    first_name?: string;
+    middle_name?: string;
+    last_name?: string;
+    trans_time?: string;
+  }) {
+    const response = await api.post('/mpesa/confirmations/manual', data);
     return response.data;
   }
 

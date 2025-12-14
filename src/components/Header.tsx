@@ -34,9 +34,11 @@ import {
   ErrorOutline as DamageIcon,
   BarChart as AnalyticsIcon,
   StorefrontOutlined as ShopIcon,
+  Storage as DatabaseIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useDatabase } from '../contexts/DatabaseContext';
 
 interface HeaderProps {
   title?: string;
@@ -47,6 +49,7 @@ const Header: React.FC<HeaderProps> = ({ title = 'Invoice App' }) => {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [businessEmail, setBusinessEmail] = useState<string>('');
   const { user, business, logout, isAuthenticated } = useAuth();
+  const { isVercel } = useDatabase();
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -55,19 +58,10 @@ const Header: React.FC<HeaderProps> = ({ title = 'Invoice App' }) => {
   useEffect(() => {
     const fetchBusinessSettings = async () => {
       try {
-        const response = await fetch('https://erp-backend-beryl.vercel.app/api/business-settings', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.data && data.data.email) {
-            setBusinessEmail(data.data.email);
-          }
+        const { ApiService } = await import('../services/api');
+        const response = await ApiService.getBusinessSettings();
+        if (response.success && response.data && response.data.email) {
+          setBusinessEmail(response.data.email);
         }
       } catch (error) {
         console.error('Error fetching business settings:', error);
@@ -365,8 +359,29 @@ const Header: React.FC<HeaderProps> = ({ title = 'Invoice App' }) => {
           <ListItemIcon>
             <SettingsIcon fontSize="small" sx={{ color: '#0066ff' }} />
           </ListItemIcon>
-          <ListItemText>Settings</ListItemText>
+          <ListItemText>Business Settings</ListItemText>
         </MenuItem>
+
+        {/* Database Settings - Only show when running locally (Electron) */}
+        {!isVercel && (
+          <MenuItem
+            onClick={() => {
+              navigate('/database-settings');
+              handleClose();
+            }}
+            sx={{
+              py: 1,
+              '&:hover': {
+                bgcolor: '#f5f5f5',
+              },
+            }}
+          >
+            <ListItemIcon>
+              <DatabaseIcon fontSize="small" sx={{ color: '#0066ff' }} />
+            </ListItemIcon>
+            <ListItemText>Database Settings</ListItemText>
+          </MenuItem>
+        )}
 
         <Divider sx={{ my: 1 }} />
 
@@ -442,6 +457,38 @@ const Header: React.FC<HeaderProps> = ({ title = 'Invoice App' }) => {
                 />
               </ListItem>
             ))}
+            {/* Database Settings - Only show when running locally (Electron) */}
+            {!isVercel && (
+              <ListItem
+                onClick={() => handleNavigate('/database-settings')}
+                component="button"
+                sx={{
+                  py: 1.5,
+                  px: 2,
+                  borderLeft: '3px solid transparent',
+                  cursor: 'pointer',
+                  background: 'none',
+                  border: 'none',
+                  width: '100%',
+                  textAlign: 'left',
+                  '&:hover': {
+                    bgcolor: 'rgba(0, 102, 255, 0.05)',
+                    borderLeftColor: '#0066ff',
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: '#0066ff', minWidth: 40 }}>
+                  <DatabaseIcon />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Database Settings"
+                  primaryTypographyProps={{
+                    fontSize: '0.95rem',
+                    fontWeight: 500,
+                  }}
+                />
+              </ListItem>
+            )}
           </List>
 
           <Divider sx={{ my: 2 }} />

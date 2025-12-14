@@ -109,11 +109,22 @@ const ItemsListScreen: React.FC = () => {
   const loadStats = async () => {
     try {
       const response = await ApiService.getItemStats();
-      if (response.success) {
-        setStats(response.data.stats);
+      if (response.success && response.data) {
+        // Backend returns stats directly in data, not wrapped in stats property
+        setStats({
+          totalItems: response.data.totalItems || 0,
+          totalValue: response.data.totalValue || 0,
+          lowStockItems: response.data.lowStockItems || 0,
+        });
       }
     } catch (error) {
       console.error('Error loading stats:', error);
+      // Set default stats on error
+      setStats({
+        totalItems: 0,
+        totalValue: 0,
+        lowStockItems: 0,
+      });
     }
   };
 
@@ -144,11 +155,11 @@ const ItemsListScreen: React.FC = () => {
 
   // Calculate stats for sidebar
   const currentStats = {
-    total: stats.totalItems,
-    totalValue: stats.totalValue,
+    total: stats?.totalItems || 0,
+    totalValue: stats?.totalValue || 0,
     statusCounts: {
       'in-stock': items.filter(item => item.stock_quantity > 0).length,
-      'low-stock': stats.lowStockItems,
+      'low-stock': stats?.lowStockItems || 0,
       'out-of-stock': items.filter(item => item.stock_quantity === 0).length,
       'showing': filteredItems.length,
     }
@@ -245,6 +256,7 @@ const ItemsListScreen: React.FC = () => {
                   <TableRow 
                     key={item.id}
                     hover
+                    onClick={() => navigate(`/add-item?edit=${item.id}`)}
                     sx={{ 
                       '&:hover': { bgcolor: 'rgba(0, 102, 255, 0.04)' },
                       cursor: 'pointer'
