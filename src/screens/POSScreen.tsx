@@ -48,6 +48,9 @@ import {
 } from '@mui/icons-material';
 import { Chip } from '@mui/material';
 import ApiService, { api } from '../services/api';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import { saveAs } from 'file-saver';
 
 interface POSItem {
   id: string;
@@ -130,6 +133,7 @@ const POSScreen: React.FC = () => {
   const [manualMpesaCode, setManualMpesaCode] = useState('');
   const [searchingCode, setSearchingCode] = useState(false);
   const [codeSearchResult, setCodeSearchResult] = useState<{ found: boolean; confirmation: any } | null>(null);
+  const [mpesaMessage, setMpesaMessage] = useState('');
   const [businessCategoryNames, setBusinessCategoryNames] = useState({
     category_1_name: 'Category 1',
     category_2_name: 'Category 2'
@@ -264,6 +268,54 @@ const POSScreen: React.FC = () => {
       setError(err.response?.data?.message || 'Failed to search M-Pesa confirmation');
     } finally {
       setSearchingCode(false);
+    }
+  };
+
+  // Parse M-Pesa message to extract transaction code and amount
+  const parseMpesaMessage = (message: string) => {
+    try {
+      // Extract transaction code - usually alphanumeric code before "Confirmed"
+      // Pattern: alphanumeric code (usually uppercase, 8-12 characters) followed by "Confirmed"
+      // Also try pattern without space: "CODEConfirmed"
+      let codeMatch = message.match(/([A-Z0-9]{8,12})\s+Confirmed/i);
+      if (!codeMatch) {
+        // Try pattern without space
+        codeMatch = message.match(/([A-Z0-9]{8,12})Confirmed/i);
+      }
+      const extractedCode = codeMatch ? codeMatch[1].trim() : null;
+
+      // Extract amount - look for "Ksh" or "KES" followed by number
+      // Pattern: "Ksh" or "KES" followed by number with optional commas and decimals
+      // Try multiple patterns to handle variations
+      let amountMatch = message.match(/(?:Ksh|KES)\s*([\d,]+\.?\d*)/i);
+      if (!amountMatch) {
+        // Try pattern with "received" keyword: "received Ksh1,000.00"
+        amountMatch = message.match(/received\s+(?:Ksh|KES)\s*([\d,]+\.?\d*)/i);
+      }
+      if (!amountMatch) {
+        // Try pattern: "Ksh1,000.00" (no space)
+        amountMatch = message.match(/(?:Ksh|KES)([\d,]+\.?\d*)/i);
+      }
+      
+      let extractedAmount = 0;
+      if (amountMatch) {
+        // Remove commas and parse the number
+        const amountStr = amountMatch[1].replace(/,/g, '');
+        extractedAmount = parseFloat(amountStr) || 0;
+        // Round to nearest whole number
+        extractedAmount = Math.round(extractedAmount);
+      }
+
+      return {
+        code: extractedCode,
+        amount: extractedAmount
+      };
+    } catch (err) {
+      console.error('Error parsing M-Pesa message:', err);
+      return {
+        code: null,
+        amount: 0
+      };
     }
   };
 
@@ -828,109 +880,41 @@ const POSScreen: React.FC = () => {
     }
   };
 
-  // Print receipt
-  const printReceipt = () => {
-    const receiptTotals = calculateTotals();
-    const { subTotal, vatTotal, discountAmount, total } = receiptTotals;
-    const business = JSON.parse(localStorage.getItem('business') || '{}');
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert('Please allow popups to print receipt');
+  // Print receipt - Generate PDF instead of using browser print dialog (works on mobile)
+  const printReceipt = async () => {
+    if (posItems.length === 0) {
+      setError('No items to print');
       return;
     }
     
-    const receiptHTML = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Receipt</title>
-        <style>
-          @media print {
-            @page { margin: 0.5cm; size: 80mm auto; }
-          }
-          body {
-            font-family: 'Courier New', monospace;
-            width: 80mm;
-            margin: 0 auto;
-            padding: 10px;
-            font-size: 12px;
-          }
-          .header {
-            text-align: center;
-            border-bottom: 2px dashed #000;
-            padding-bottom: 10px;
-            margin-bottom: 10px;
-          }
-          .header h2 {
-            margin: 5px 0;
-            font-size: 18px;
-          }
-          .header p {
-            margin: 3px 0;
-            font-size: 11px;
-          }
-          .info {
-            margin: 10px 0;
-            font-size: 11px;
-          }
-          .items {
-            width: 100%;
-            margin: 10px 0;
-            border-collapse: collapse;
-          }
-          .items th {
-            border-bottom: 1px solid #000;
-            padding: 5px 2px;
-            text-align: left;
-            font-size: 11px;
-          }
-          .items td {
-            padding: 5px 2px;
-            font-size: 11px;
-          }
-          .items tr {
-            border-bottom: 1px dashed #ccc;
-          }
-          .totals {
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 2px dashed #000;
-          }
-          .totals-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 3px 0;
-            font-size: 12px;
-          }
-          .total-final {
-            font-weight: bold;
-            font-size: 14px;
-            border-top: 1px solid #000;
-            margin-top: 5px;
-            padding-top: 5px;
-          }
-          .footer {
-            text-align: center;
-            margin-top: 15px;
-            padding-top: 10px;
-            border-top: 2px dashed #000;
-            font-size: 11px;
-          }
-          .text-right { text-align: right; }
-          .text-center { text-align: center; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h2>${business.business_name || 'Invoice App'}</h2>
-          <p>${business.address || 'Business Address'}</p>
-          <p>Tel: ${business.phone || 'N/A'} | Email: ${business.email || user.email || 'N/A'}</p>
-          <p>PIN: ${business.pin || 'N/A'}</p>
+    try {
+      setLoading(true);
+      setError('');
+      const receiptTotals = calculateTotals();
+      const { subTotal, vatTotal, discountAmount, total } = receiptTotals;
+      const business = JSON.parse(localStorage.getItem('business') || '{}');
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      
+      // Create a temporary hidden div to render the receipt
+      const tempDiv = document.createElement('div');
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
+      tempDiv.style.width = '80mm';
+      tempDiv.style.padding = '10px';
+      tempDiv.style.fontFamily = "'Courier New', monospace";
+      tempDiv.style.fontSize = '12px';
+      tempDiv.style.backgroundColor = '#ffffff';
+      tempDiv.style.color = '#000000';
+      
+      tempDiv.innerHTML = `
+        <div style="text-align: center; border-bottom: 2px dashed #000; padding-bottom: 10px; margin-bottom: 10px;">
+          <h2 style="margin: 5px 0; font-size: 18px;">${business.business_name || 'Invoice App'}</h2>
+          <p style="margin: 3px 0; font-size: 11px;">${business.address || 'Business Address'}</p>
+          <p style="margin: 3px 0; font-size: 11px;">Tel: ${business.phone || 'N/A'} | Email: ${business.email || user.email || 'N/A'}</p>
+          <p style="margin: 3px 0; font-size: 11px;">PIN: ${business.pin || 'N/A'}</p>
         </div>
         
-        <div class="info">
+        <div style="margin: 10px 0; font-size: 11px;">
           <div style="display: flex; justify-content: space-between;">
             <span>Date:</span>
             <span>${new Date().toLocaleString()}</span>
@@ -941,69 +925,97 @@ const POSScreen: React.FC = () => {
           </div>
         </div>
         
-        <table class="items">
+        <table style="width: 100%; margin: 10px 0; border-collapse: collapse;">
           <thead>
             <tr>
-              <th>Item</th>
-              <th class="text-center">Qty</th>
-              <th class="text-right">Price</th>
-              <th class="text-right">Total</th>
+              <th style="border-bottom: 1px solid #000; padding: 5px 2px; text-align: left; font-size: 11px;">Item</th>
+              <th style="border-bottom: 1px solid #000; padding: 5px 2px; text-align: center; font-size: 11px;">Qty</th>
+              <th style="border-bottom: 1px solid #000; padding: 5px 2px; text-align: right; font-size: 11px;">Price</th>
+              <th style="border-bottom: 1px solid #000; padding: 5px 2px; text-align: right; font-size: 11px;">Total</th>
             </tr>
           </thead>
           <tbody>
             ${posItems.map(item => `
-              <tr>
-                <td>${item.name}</td>
-                <td class="text-center">${item.quantity}</td>
-                <td class="text-right">${Number(item.rate).toFixed(2)}</td>
-                <td class="text-right">${Number(item.amount).toFixed(2)}</td>
+              <tr style="border-bottom: 1px dashed #ccc;">
+                <td style="padding: 5px 2px; font-size: 11px;">${item.name}</td>
+                <td style="padding: 5px 2px; font-size: 11px; text-align: center;">${item.quantity}</td>
+                <td style="padding: 5px 2px; font-size: 11px; text-align: right;">${Number(item.rate).toFixed(2)}</td>
+                <td style="padding: 5px 2px; font-size: 11px; text-align: right;">${Number(item.amount).toFixed(2)}</td>
               </tr>
             `).join('')}
           </tbody>
         </table>
         
-        <div class="totals">
-          <div class="totals-row">
+        <div style="margin-top: 10px; padding-top: 10px; border-top: 2px dashed #000;">
+          <div style="display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px;">
             <span>Subtotal:</span>
             <span>${Number(subTotal).toFixed(2)}</span>
           </div>
           ${includeVAT ? `
-          <div class="totals-row">
+          <div style="display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px;">
             <span>VAT (16%):</span>
             <span>${Number(vatTotal).toFixed(2)}</span>
           </div>
           ` : ''}
           ${discountAmount > 0 ? `
-          <div class="totals-row" style="color: #d32f2f;">
+          <div style="display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px; color: #d32f2f;">
             <span>Discount:</span>
             <span>-${Number(discountAmount).toFixed(2)}</span>
           </div>
           ` : ''}
-          <div class="totals-row total-final">
+          <div style="display: flex; justify-content: space-between; padding: 3px 0; font-size: 14px; font-weight: bold; border-top: 1px solid #000; margin-top: 5px; padding-top: 5px;">
             <span>TOTAL:</span>
             <span>${Number(total).toFixed(2)}</span>
           </div>
         </div>
         
-        <div class="footer">
+        <div style="text-align: center; margin-top: 15px; padding-top: 10px; border-top: 2px dashed #000; font-size: 11px;">
           <p>Thank you for your business!</p>
           <p>Powered by Invoice App</p>
         </div>
-        
-        <script>
-          window.onload = function() {
-            window.print();
-            setTimeout(function() {
-              window.close();
-            }, 100);
-          };
-        </script>
-      </body>
-      </html>
-    `;
-    
-    printWindow.document.write(receiptHTML);
-    printWindow.document.close();
+      `;
+      
+      document.body.appendChild(tempDiv);
+      
+      // Wait for the element to be rendered
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Generate canvas from the receipt content
+      const canvas = await html2canvas(tempDiv, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        width: tempDiv.offsetWidth,
+        height: tempDiv.scrollHeight,
+      });
+      
+      // Remove the temporary div
+      document.body.removeChild(tempDiv);
+      
+      // Create PDF
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', [80, tempDiv.scrollHeight * 0.264583]); // 80mm width, dynamic height
+      
+      const imgWidth = 80; // 80mm width
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      
+      // Generate filename
+      const fileName = `Receipt_${new Date().toISOString().split('T')[0]}_${Date.now()}.pdf`;
+      
+      // Save the PDF
+      saveAs(pdf.output('blob'), fileName);
+      setSuccess('Receipt generated successfully!');
+      setTimeout(() => setSuccess(''), 3000);
+      
+    } catch (error: any) {
+      console.error('Error generating receipt PDF:', error);
+      setError('Failed to generate receipt: ' + (error.message || 'Unknown error'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Calculate totals using useMemo for performance
@@ -1727,6 +1739,7 @@ const POSScreen: React.FC = () => {
             }} sx={{ mb: 2 }}>
               <Tab label="Link to Customer" />
               <Tab label="Enter Confirmation Code" />
+              <Tab label="Enter M-Pesa Message" />
             </Tabs>
 
             {mpesaTabValue === 0 ? (
@@ -1794,7 +1807,7 @@ const POSScreen: React.FC = () => {
               </Typography>
                 )}
               </>
-            ) : (
+            ) : mpesaTabValue === 1 ? (
               // Tab 2: Enter Confirmation Code
               <Box sx={{ pt: 2 }}>
                 <TextField
@@ -1870,6 +1883,103 @@ const POSScreen: React.FC = () => {
                   )}
                 </Box>
               </Box>
+            ) : (
+              // Tab 3: Enter M-Pesa Message
+              <Box sx={{ pt: 2 }}>
+                <TextField
+                  fullWidth
+                  label="Paste M-Pesa SMS Message"
+                  multiline
+                  rows={6}
+                  value={mpesaMessage}
+                  onChange={(e) => {
+                    const message = e.target.value;
+                    setMpesaMessage(message);
+                    // Auto-parse when message is pasted or typed (only if message is substantial)
+                    if (message.length > 20) {
+                      const parsed = parseMpesaMessage(message);
+                      if (parsed.code) {
+                        setMpesaCode(parsed.code);
+                      }
+                      if (parsed.amount > 0) {
+                        setAmountPaid(parsed.amount);
+                      }
+                    }
+                  }}
+                  placeholder="Paste the full M-Pesa SMS message here, e.g., TLE6T0YZIX Confirmed. You have received Ksh1,000.00 from IM BANK LIMITED- APP on 14/12/25 at 4:45 PM..."
+                  sx={{ mb: 2 }}
+                />
+                
+                {mpesaCode && (
+                  <Alert severity="info" sx={{ mb: 2 }}>
+                    <Typography variant="body2" fontWeight="bold">
+                      Extracted Information:
+                    </Typography>
+                    <Typography variant="body2">
+                      Transaction Code: <strong>{mpesaCode}</strong>
+                    </Typography>
+                    {amountPaid > 0 && (
+                      <Typography variant="body2">
+                        Amount: <strong>KES {amountPaid.toFixed(0)}</strong> (rounded to nearest whole number)
+                      </Typography>
+                    )}
+                  </Alert>
+                )}
+
+                <Box sx={{ mb: 2 }}>
+                  <TextField
+                    fullWidth
+                    label="Transaction Code"
+                    value={mpesaCode}
+                    onChange={(e) => setMpesaCode(e.target.value)}
+                    size="small"
+                    sx={{ mb: 1 }}
+                    helperText="You can edit the extracted code if needed"
+                  />
+                  <TextField
+                    fullWidth
+                    label="Amount Paid (KES)"
+                    type="number"
+                    value={amountPaid}
+                    onChange={(e) => setAmountPaid(Math.round(parseFloat(e.target.value) || 0))}
+                    size="small"
+                    inputProps={{ 
+                      min: 0,
+                      step: 1
+                    }}
+                    helperText="You can edit the extracted amount if needed (will be rounded to whole number)"
+                  />
+                </Box>
+
+                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                  <Button
+                    variant="outlined"
+                    onClick={() => {
+                      setMpesaMessage('');
+                      setMpesaCode('');
+                      setAmountPaid(0);
+                    }}
+                  >
+                    Clear
+                  </Button>
+                  <Button
+                    variant="contained"
+                    onClick={() => {
+                      if (mpesaCode && amountPaid > 0) {
+                        setSuccess('M-Pesa information extracted and populated!');
+                        setMpesaModalOpen(false);
+                        setTimeout(() => setSuccess(''), 3000);
+                      } else {
+                        setError('Please ensure both transaction code and amount are extracted from the message.');
+                      }
+                    }}
+                    disabled={!mpesaCode || amountPaid <= 0}
+                    sx={{ backgroundColor: '#00A859', '&:hover': { backgroundColor: '#008547' } }}
+                  >
+                    Use This Information
+                  </Button>
+                </Box>
+              </Box>
             )}
           </DialogContent>
           <DialogActions>
@@ -1878,6 +1988,7 @@ const POSScreen: React.FC = () => {
               setMpesaTabValue(0);
               setManualMpesaCode('');
               setCodeSearchResult(null);
+              setMpesaMessage('');
             }}>Close</Button>
             {mpesaTabValue === 0 && (
             <Button 

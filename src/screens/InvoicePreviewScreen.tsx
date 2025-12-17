@@ -35,6 +35,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { saveAs } from 'file-saver';
 import type { InvoiceLine } from '../types';
+import ApiService from '../services/api';
 
 interface BusinessSettings {
   businessName: string;
@@ -77,6 +78,7 @@ const InvoicePreviewScreen: React.FC = () => {
   const [customerPin, setCustomerPin] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [paymentTerms, setPaymentTerms] = useState('Net 30 Days');
+  const [amountPaid, setAmountPaid] = useState<number>(0);
   const [businessSettings, setBusinessSettings] = useState<BusinessSettings>({
     businessName: 'Your Business Name',
     street: 'Business Address Line 1',
@@ -106,49 +108,55 @@ const InvoicePreviewScreen: React.FC = () => {
   const loadDocumentFromDatabase = async (docId: number) => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
       
       // Determine if we're loading a quotation or invoice based on current route
       const isQuotationRoute = window.location.pathname.includes('/quotations/');
-      const endpoint = isQuotationRoute ? '/quotations' : '/invoices';
       
-      const response = await fetch(`https://erp-backend-beryl.vercel.app/api${endpoint}/${docId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      // Use ApiService instead of hardcoded URL
+      const response = isQuotationRoute 
+        ? await ApiService.getQuotation(docId)
+        : await ApiService.getInvoice(docId);
 
-      if (!response.ok) {
+      // Handle different response structures
+      // Response can be: { success: true, data: {...} } or just { data: {...} } or just {...}
+      let doc: any = null;
+      if (response.success && response.data) {
+        doc = response.data;
+      } else if (response.data) {
+        doc = response.data;
+      } else {
+        doc = response;
+      }
+      
+      if (!doc) {
         throw new Error(`Failed to load ${isQuotationRoute ? 'quotation' : 'invoice'}`);
       }
-
-      const data = await response.json();
-      if (data.success && data.data) {
-        const doc = data.data;
-        setCustomerName(doc.customer_name || '');
-        setCustomerAddress(doc.customer_address || '');
-        setCustomerPin(doc.customer_pin || '');
-        
-        if (isQuotationRoute) {
-          setInvoiceNumber(doc.quotation_number || '');
-          setDueDate(doc.valid_until || '');
-        } else {
-          setInvoiceNumber(doc.invoice_number || '');
-          setDueDate(doc.due_date || '');
-        }
-        
-        setPaymentTerms(doc.payment_terms || 'Net 30 Days');
-        
-        // Convert line items and ensure numeric fields are numbers
-        const convertedLines = (doc.lines || []).map((line: any) => ({
-          ...line,
-          quantity: parseFloat(line.quantity) || 0,
-          unit_price: parseFloat(line.unit_price) || 0,
-          total: parseFloat(line.total) || 0,
-        }));
-        setLines(convertedLines);
+      
+      setCustomerName(doc.customer_name || '');
+      setCustomerAddress(doc.customer_address || '');
+      setCustomerPin(doc.customer_pin || '');
+      
+      if (isQuotationRoute) {
+        setInvoiceNumber(doc.quotation_number || '');
+        setDueDate(doc.valid_until || '');
+      } else {
+        setInvoiceNumber(doc.invoice_number || '');
+        setDueDate(doc.due_date || '');
       }
+      
+      setPaymentTerms(doc.payment_terms || 'Net 30 Days');
+      
+      // Set amount paid if available
+      setAmountPaid(parseFloat(doc.amount_paid || doc.amountPaid || 0) || 0);
+      
+      // Convert line items and ensure numeric fields are numbers
+      const convertedLines = (doc.lines || []).map((line: any) => ({
+        ...line,
+        quantity: parseFloat(line.quantity) || 0,
+        unit_price: parseFloat(line.unit_price) || 0,
+        total: parseFloat(line.total) || 0,
+      }));
+      setLines(convertedLines);
     } catch (err) {
       console.error('Error loading document:', err);
       setError('Failed to load document details. Please try again.');
@@ -179,20 +187,12 @@ const InvoicePreviewScreen: React.FC = () => {
 
   const loadBusinessSettings = async () => {
     try {
-      const response = await fetch(`https://erp-backend-beryl.vercel.app/api/business-settings`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      // Use ApiService instead of hardcoded URL
+      const response = await ApiService.getBusinessSettings();
       
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
-          setBusinessSettings(data.data);
-          return;
-        }
+      if (response && response.success && response.data) {
+        setBusinessSettings(response.data);
+        return;
       }
     } catch (error) {
       console.error('Error loading business settings:', error);
@@ -519,11 +519,6 @@ Your Business Name`;
                     <strong>Valid Until:</strong> {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB')}
                   </Typography>
                 )}
-                {isInvoice && dueDate && (
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    <strong>Due Date:</strong> {new Date(dueDate).toLocaleDateString('en-GB')}
-                  </Typography>
-                )}
                 <Typography variant="body2" sx={{ mb: 1 }}>
                   <strong>Payment Terms:</strong> {paymentTerms}
                 </Typography>
@@ -611,7 +606,7 @@ Your Business Name`;
                 • All prices are in Kenyan Shillings (KSH)
               </Typography>
               <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
-                • This quotation is valid for 30 days
+                • This quotation is valid for 15 days
               </Typography>
             </Box>
           </Box>
@@ -645,6 +640,21 @@ Your Business Name`;
                   KSH {total.toFixed(2)}
                 </Typography>
               </Box>
+              {amountPaid > 0 && (
+                <Box sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  p: 2, 
+                  borderTop: '1px solid rgba(255,255,255,0.3)',
+                  backgroundColor: '#1976d2',
+                  color: 'white'
+                }}>
+                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>AMOUNT PAID:</Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                    KSH {amountPaid.toFixed(2)}
+                  </Typography>
+                </Box>
+              )}
             </Box>
           </Box>
         </Box>

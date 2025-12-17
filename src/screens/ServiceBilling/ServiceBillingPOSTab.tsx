@@ -83,6 +83,7 @@ const ServiceBillingPOSTab: React.FC = () => {
   const [manualMpesaCode, setManualMpesaCode] = useState('');
   const [searchingCode, setSearchingCode] = useState(false);
   const [codeSearchResult, setCodeSearchResult] = useState<{ found: boolean; confirmation: any } | null>(null);
+  const [mpesaMessage, setMpesaMessage] = useState('');
   const [amountPaid, setAmountPaid] = useState<number>(0);
   const [selectedAccount, setSelectedAccount] = useState<string>('');
   const [accounts, setAccounts] = useState<any[]>([]);
@@ -1591,6 +1592,7 @@ const ServiceBillingPOSTab: React.FC = () => {
           }} sx={{ mb: 2 }}>
             <Tab label="Link to Customer" />
             <Tab label="Enter Confirmation Code" />
+            <Tab label="Enter M-Pesa Message" />
           </Tabs>
 
           {mpesaTabValue === 0 ? (
@@ -1653,7 +1655,7 @@ const ServiceBillingPOSTab: React.FC = () => {
                 </Typography>
               )}
             </>
-          ) : (
+          ) : mpesaTabValue === 1 ? (
             // Tab 2: Enter Confirmation Code
             <Box sx={{ pt: 2 }}>
               <TextField
@@ -1729,6 +1731,103 @@ const ServiceBillingPOSTab: React.FC = () => {
                 )}
               </Box>
             </Box>
+          ) : (
+            // Tab 3: Enter M-Pesa Message
+            <Box sx={{ pt: 2 }}>
+              <TextField
+                fullWidth
+                label="Paste M-Pesa SMS Message"
+                multiline
+                rows={6}
+                value={mpesaMessage}
+                onChange={(e) => {
+                  const message = e.target.value;
+                  setMpesaMessage(message);
+                  // Auto-parse when message is pasted or typed (only if message is substantial)
+                  if (message.length > 20) {
+                    const parsed = parseMpesaMessage(message);
+                    if (parsed.code) {
+                      setMpesaCode(parsed.code);
+                    }
+                    if (parsed.amount > 0) {
+                      setAmountPaid(parsed.amount);
+                    }
+                  }
+                }}
+                placeholder="Paste the full M-Pesa SMS message here, e.g., TLE6T0YZIX Confirmed. You have received Ksh1,000.00 from IM BANK LIMITED- APP on 14/12/25 at 4:45 PM..."
+                sx={{ mb: 2 }}
+              />
+              
+              {mpesaCode && (
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  <Typography variant="body2" fontWeight="bold">
+                    Extracted Information:
+                  </Typography>
+                  <Typography variant="body2">
+                    Transaction Code: <strong>{mpesaCode}</strong>
+                  </Typography>
+                  {amountPaid > 0 && (
+                    <Typography variant="body2">
+                      Amount: <strong>KES {amountPaid.toFixed(0)}</strong> (rounded to nearest whole number)
+                    </Typography>
+                  )}
+                </Alert>
+              )}
+
+              <Box sx={{ mb: 2 }}>
+                <TextField
+                  fullWidth
+                  label="Transaction Code"
+                  value={mpesaCode}
+                  onChange={(e) => setMpesaCode(e.target.value)}
+                  size="small"
+                  sx={{ mb: 1 }}
+                  helperText="You can edit the extracted code if needed"
+                />
+                <TextField
+                  fullWidth
+                  label="Amount Paid (KES)"
+                  type="number"
+                  value={amountPaid}
+                  onChange={(e) => setAmountPaid(Math.round(parseFloat(e.target.value) || 0))}
+                  size="small"
+                  inputProps={{ 
+                    min: 0,
+                    step: 1
+                  }}
+                  helperText="You can edit the extracted amount if needed (will be rounded to whole number)"
+                />
+              </Box>
+
+              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    setMpesaMessage('');
+                    setMpesaCode('');
+                    setAmountPaid(0);
+                  }}
+                >
+                  Clear
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={() => {
+                    if (mpesaCode && amountPaid > 0) {
+                      setSuccess('M-Pesa information extracted and populated!');
+                      setMpesaModalOpen(false);
+                      setTimeout(() => setSuccess(''), 3000);
+                    } else {
+                      setError('Please ensure both transaction code and amount are extracted from the message.');
+                    }
+                  }}
+                  disabled={!mpesaCode || amountPaid <= 0}
+                  sx={{ backgroundColor: '#00A859', '&:hover': { backgroundColor: '#008547' } }}
+                >
+                  Use This Information
+                </Button>
+              </Box>
+            </Box>
           )}
         </DialogContent>
         <DialogActions>
@@ -1737,6 +1836,7 @@ const ServiceBillingPOSTab: React.FC = () => {
             setMpesaTabValue(0);
             setManualMpesaCode('');
             setCodeSearchResult(null);
+            setMpesaMessage('');
           }}>Close</Button>
           {mpesaTabValue === 0 && (
             <Button 

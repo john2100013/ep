@@ -49,7 +49,9 @@ interface Invoice {
   subtotal: number;
   vat_amount: number;
   total_amount: number;
-  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+  status: 'draft' | 'sent' | 'paid' | 'partially_paid' | 'overdue' | 'cancelled';
+  payment_status?: 'unpaid' | 'partial' | 'paid' | 'overpaid';
+  amount_paid?: number;
   due_date: string;
   payment_terms?: string;
   quotation_id?: number;
@@ -275,15 +277,29 @@ const InvoiceListScreen: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string, paymentStatus?: string) => {
+    // If status is 'partially_paid' or payment_status is 'partial', show as warning (yellow/orange)
+    if (status === 'partially_paid' || paymentStatus === 'partial') {
+      return 'warning';
+    }
     switch (status) {
       case 'draft': return 'default';
       case 'sent': return 'info';
       case 'paid': return 'success';
+      case 'partially_paid': return 'warning';
       case 'overdue': return 'error';
       case 'cancelled': return 'warning';
       default: return 'default';
     }
+  };
+
+  const getStatusLabel = (invoice: Invoice) => {
+    // If status is 'partially_paid' or payment_status is 'partial', show "Partially Paid"
+    if (invoice.status === 'partially_paid' || invoice.payment_status === 'partial') {
+      return 'Partially Paid';
+    }
+    // Otherwise use the status field
+    return invoice.status.toUpperCase();
   };
 
   const formatCurrency = (amount: number) => {
@@ -318,6 +334,7 @@ const InvoiceListScreen: React.FC = () => {
     { value: 'draft', label: 'Draft' },
     { value: 'sent', label: 'Sent' },
     { value: 'paid', label: 'Paid' },
+    { value: 'partially_paid', label: 'Partially Paid' },
     { value: 'overdue', label: 'Overdue' },
     { value: 'cancelled', label: 'Cancelled' },
   ];
@@ -422,8 +439,8 @@ const InvoiceListScreen: React.FC = () => {
                         {invoice.invoice_number}
                       </Typography>
                       <Chip 
-                        label={invoice.status.toUpperCase()} 
-                        color={getStatusColor(invoice.status) as any}
+                        label={getStatusLabel(invoice)} 
+                        color={getStatusColor(invoice.status, invoice.payment_status) as any}
                         size="small"
                       />
                     </Box>
@@ -527,6 +544,7 @@ const InvoiceListScreen: React.FC = () => {
               <MenuItem value="draft">Draft</MenuItem>
               <MenuItem value="sent">Sent</MenuItem>
               <MenuItem value="paid">Paid</MenuItem>
+              <MenuItem value="partially_paid">Partially Paid</MenuItem>
               <MenuItem value="overdue">Overdue</MenuItem>
               <MenuItem value="cancelled">Cancelled</MenuItem>
             </Select>
