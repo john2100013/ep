@@ -100,6 +100,21 @@ export class ApiService {
     return response.data;
   }
 
+  static async requestPasswordReset(email: string) {
+    const response = await api.post('/auth/forgot-password', { email });
+    return response.data;
+  }
+
+  static async verifyPasswordResetOTP(email: string, otp: string) {
+    const response = await api.post('/auth/verify-otp', { email, otp });
+    return response.data;
+  }
+
+  static async resetPassword(email: string, otp: string, new_password: string, token?: string) {
+    const response = await api.post('/auth/reset-password', { email, otp, new_password, token });
+    return response.data;
+  }
+
   // Item endpoints
   static async getItems(params?: {
     page?: number;
