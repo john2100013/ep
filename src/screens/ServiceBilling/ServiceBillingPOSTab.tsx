@@ -214,6 +214,54 @@ const ServiceBillingPOSTab: React.FC = () => {
     }
   };
 
+  // Parse M-Pesa message to extract transaction code and amount
+  const parseMpesaMessage = (message: string) => {
+    try {
+      // Extract transaction code - usually alphanumeric code before "Confirmed"
+      // Pattern: alphanumeric code (usually uppercase, 8-12 characters) followed by "Confirmed"
+      // Also try pattern without space: "CODEConfirmed"
+      let codeMatch = message.match(/([A-Z0-9]{8,12})\s+Confirmed/i);
+      if (!codeMatch) {
+        // Try pattern without space
+        codeMatch = message.match(/([A-Z0-9]{8,12})Confirmed/i);
+      }
+      const extractedCode = codeMatch ? codeMatch[1].trim() : null;
+
+      // Extract amount - look for "Ksh" or "KES" followed by number
+      // Pattern: "Ksh" or "KES" followed by number with optional commas and decimals
+      // Try multiple patterns to handle variations
+      let amountMatch = message.match(/(?:Ksh|KES)\s*([\d,]+\.?\d*)/i);
+      if (!amountMatch) {
+        // Try pattern with "received" keyword: "received Ksh1,000.00"
+        amountMatch = message.match(/received\s+(?:Ksh|KES)\s*([\d,]+\.?\d*)/i);
+      }
+      if (!amountMatch) {
+        // Try pattern: "Ksh1,000.00" (no space)
+        amountMatch = message.match(/(?:Ksh|KES)([\d,]+\.?\d*)/i);
+      }
+      
+      let extractedAmount = 0;
+      if (amountMatch) {
+        // Remove commas and parse the number
+        const amountStr = amountMatch[1].replace(/,/g, '');
+        extractedAmount = parseFloat(amountStr) || 0;
+        // Round to nearest whole number
+        extractedAmount = Math.round(extractedAmount);
+      }
+
+      return {
+        code: extractedCode,
+        amount: extractedAmount
+      };
+    } catch (err) {
+      console.error('Error parsing M-Pesa message:', err);
+      return {
+        code: null,
+        amount: 0
+      };
+    }
+  };
+
   const loadData = async () => {
     try {
       setError('');
