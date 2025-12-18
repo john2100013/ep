@@ -134,7 +134,9 @@ const CreateInvoiceScreen: React.FC = () => {
   
   // Payment fields
   const [amountPaid, setAmountPaid] = useState<number>(0);
-  const [discount, setDiscount] = useState<number>(0); // Discount amount
+  const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage'); // Default to percentage
+  const [discountPercentage, setDiscountPercentage] = useState<number>(0); // Discount percentage
+  const [discount, setDiscount] = useState<number>(0); // Discount amount (fixed or calculated)
   const [financialAccounts, setFinancialAccounts] = useState<any[]>([]);
   const [mpesaConfirmations, setMpesaConfirmations] = useState<any[]>([]);
   const [mpesaModalOpen, setMpesaModalOpen] = useState(false);
@@ -385,7 +387,10 @@ const CreateInvoiceScreen: React.FC = () => {
         setCustomerPin(quotation.customer_pin || '');
         setNotes(quotation.notes || '');
         setSelectedQuotationId(quotation.id);
-        setDiscount(quotation.discount_amount || 0);
+        const loadedDiscount = quotation.discount_amount || 0;
+        setDiscount(loadedDiscount);
+        setDiscountType('fixed'); // Default to fixed when loading quotation
+        setDiscountPercentage(0);
         
         // Convert quotation lines to invoice lines
         if (quotation.lines) {
@@ -424,7 +429,11 @@ const CreateInvoiceScreen: React.FC = () => {
         setPaymentTerms(invoice.payment_terms || 'Cash');
         setDueDate(invoice.due_date ? new Date(invoice.due_date) : null);
         setSelectedQuotationId(invoice.quotation_id || null);
-        setDiscount(invoice.discount_amount || 0);
+        // Load discount - if it's a percentage, we'll need to calculate it, otherwise use fixed
+        const loadedDiscount = invoice.discount_amount || 0;
+        setDiscount(loadedDiscount);
+        setDiscountType('fixed'); // Default to fixed when loading existing invoice
+        setDiscountPercentage(0);
         
         // Set the invoice number from database
         if (invoice.invoice_number) {
@@ -547,8 +556,18 @@ const CreateInvoiceScreen: React.FC = () => {
       return sum + (isNaN(lineTotal) ? 0 : lineTotal);
     }, 0);
     const vatAmount = subtotal * 0.16;
-    const discountAmount = Number(discount) || 0;
     const totalBeforeDiscount = subtotal + vatAmount;
+    
+    // Calculate discount based on type
+    let discountAmount = 0;
+    if (discountType === 'percentage') {
+      // Calculate discount from percentage
+      discountAmount = (totalBeforeDiscount * discountPercentage) / 100;
+    } else {
+      // Use fixed discount amount
+      discountAmount = Number(discount) || 0;
+    }
+    
     const totalBeforeRounding = Math.max(0, totalBeforeDiscount - discountAmount); // Ensure total doesn't go negative
     const totalAmount = Math.round(totalBeforeRounding); // Round to nearest whole number
     
@@ -591,6 +610,7 @@ const CreateInvoiceScreen: React.FC = () => {
     setError(null);
 
     try {
+      const totals = calculateTotals();
       const invoiceData = {
         customer_id: customerId,
         customer_name: customerName,
@@ -604,7 +624,7 @@ const CreateInvoiceScreen: React.FC = () => {
         quotation_id: selectedQuotationId,
         amountPaid: calculatedAmountPaid,
         paymentMethod: paymentMethod || null,
-        discount_amount: discount,
+        discount_amount: totals.discountAmount, // Use calculated discount amount
         lines: lines.map(line => ({
           item_id: line.item_id ? parseInt(line.item_id.toString()) : undefined,
           quantity: parseFloat(line.quantity.toString()),
@@ -968,75 +988,138 @@ const CreateInvoiceScreen: React.FC = () => {
                 Summary
               </Typography>
               <Box sx={{ maxWidth: { xs: '100%', md: 400 }, ml: { xs: 0, md: 'auto' } }}>
+                {/* Discount Type Toggle */}
                 <Box sx={{ mb: 2 }}>
-                  <TextField
-                    fullWidth
-                    label="Discount Amount (KES)"
-                    type="number"
-                    size="small"
-                    value={discount}
-                    onChange={(e) => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
-                    inputProps={{ 
-                      min: 0,
-                      step: 0.01
-                    }}
-                    helperText="Enter discount amount to apply to total"
-                  />
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, gap: 2 }}>
-                  <Typography variant="body2">Subtotal:</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{formatCurrency(subtotal)}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, gap: 2 }}>
-                  <Typography variant="body2">VAT (16%):</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{formatCurrency(vatAmount)}</Typography>
-                </Box>
-                {discount > 0 && (
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, gap: 2 }}>
-                    <Typography variant="body2" sx={{ color: 'error.main' }}>Discount:</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'error.main' }}>
-                      -{formatCurrency(discountAmount)}
-                    </Typography>
+                  <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                    <Button
+                      variant={discountType === 'percentage' ? 'contained' : 'outlined'}
+                      size="small"
+                      onClick={() => {
+                        setDiscountType('percentage');
+                        setDiscountPercentage(0);
+                        setDiscount(0);
+                      }}
+                      sx={{ flex: 1 }}
+                    >
+                      Percentage
+                    </Button>
+                    <Button
+                      variant={discountType === 'fixed' ? 'contained' : 'outlined'}
+                      size="small"
+                      onClick={() => {
+                        setDiscountType('fixed');
+                        setDiscountPercentage(0);
+                        setDiscount(0);
+                      }}
+                      sx={{ flex: 1 }}
+                    >
+                      Fixed Amount
+                    </Button>
                   </Box>
-                )}
-                <Divider sx={{ my: 1 }} />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, gap: 2 }}>
-                  <Typography sx={{ fontSize: { xs: '1rem', md: '1.5rem' }, fontWeight: 'bold' }}>Total:</Typography>
-                  <Typography sx={{ fontSize: { xs: '1rem', md: '1.5rem' }, fontWeight: 'bold' }}>{formatCurrency(totalAmount)}</Typography>
+                  {discountType === 'percentage' ? (
+                    <TextField
+                      fullWidth
+                      label="Discount Percentage (%)"
+                      type="number"
+                      size="small"
+                      value={discountPercentage}
+                      onChange={(e) => {
+                        const value = Math.max(0, Math.min(100, parseFloat(e.target.value) || 0));
+                        setDiscountPercentage(value);
+                      }}
+                      inputProps={{ 
+                        min: 0,
+                        max: 100,
+                        step: 0.01
+                      }}
+                      helperText={`Discount: ${formatCurrency(calculateTotals().discountAmount)}`}
+                    />
+                  ) : (
+                    <TextField
+                      fullWidth
+                      label="Discount Amount (KES)"
+                      type="number"
+                      size="small"
+                      value={discount}
+                      onChange={(e) => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
+                      inputProps={{ 
+                        min: 0,
+                        step: 0.01
+                      }}
+                      helperText="Enter discount amount to apply to total"
+                    />
+                  )}
                 </Box>
+                {(() => {
+                  const totals = calculateTotals();
+                  return (
+                    <>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, gap: 2 }}>
+                        <Typography variant="body2">Subtotal:</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{formatCurrency(totals.subtotal)}</Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, gap: 2 }}>
+                        <Typography variant="body2">VAT (16%):</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{formatCurrency(totals.vatAmount)}</Typography>
+                      </Box>
+                      {totals.discountAmount > 0 && (
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, gap: 2 }}>
+                          <Typography variant="body2" sx={{ color: 'error.main' }}>
+                            Discount{discountType === 'percentage' ? ` (${discountPercentage}%)` : ''}:
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'error.main' }}>
+                            -{formatCurrency(totals.discountAmount)}
+                          </Typography>
+                        </Box>
+                      )}
+                      <Divider sx={{ my: 1 }} />
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, gap: 2 }}>
+                        <Typography sx={{ fontSize: { xs: '1rem', md: '1.5rem' }, fontWeight: 'bold' }}>Total:</Typography>
+                        <Typography sx={{ fontSize: { xs: '1rem', md: '1.5rem' }, fontWeight: 'bold' }}>{formatCurrency(totals.totalAmount)}</Typography>
+                      </Box>
+                    </>
+                  );
+                })()}
                 
                 {/* Payment Information */}
                 <Divider sx={{ my: 2 }} />
                 <Typography variant="subtitle1" gutterBottom>
                   Payment Information
                 </Typography>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, color: 'primary.main' }}>
-                  <Typography>Amount Paid:</Typography>
-                  <Typography fontWeight="medium">{formatCurrency(amountPaid)}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography>Balance Due:</Typography>
-                  <Typography 
-                    fontWeight="medium"
-                    color={totalAmount - amountPaid > 0 ? 'error.main' : 'success.main'}
-                  >
-                    {formatCurrency(totalAmount - amountPaid)}
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2">Status:</Typography>
-                  <Chip 
-                    label={
-                      amountPaid === 0 ? 'Unpaid' :
-                      amountPaid >= totalAmount ? 'Paid' : 'Partially Paid'
-                    }
-                    color={
-                      amountPaid === 0 ? 'error' :
-                      amountPaid >= totalAmount ? 'success' : 'warning'
-                    }
-                    size="small"
-                  />
-                </Box>
+                {(() => {
+                  const totals = calculateTotals();
+                  return (
+                    <>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, color: 'primary.main' }}>
+                        <Typography>Amount Paid:</Typography>
+                        <Typography fontWeight="medium">{formatCurrency(amountPaid)}</Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Typography>Balance Due:</Typography>
+                        <Typography 
+                          fontWeight="medium"
+                          color={totals.totalAmount - amountPaid > 0 ? 'error.main' : 'success.main'}
+                        >
+                          {formatCurrency(totals.totalAmount - amountPaid)}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography variant="body2">Status:</Typography>
+                        <Chip 
+                          label={
+                            amountPaid === 0 ? 'Unpaid' :
+                            amountPaid >= totals.totalAmount ? 'Paid' : 'Partially Paid'
+                          }
+                          color={
+                            amountPaid === 0 ? 'error' :
+                            amountPaid >= totals.totalAmount ? 'success' : 'warning'
+                          }
+                          size="small"
+                        />
+                      </Box>
+                    </>
+                  );
+                })()}
               </Box>
             </CardContent>
           </Card>
@@ -1237,11 +1320,23 @@ const CreateInvoiceScreen: React.FC = () => {
           <DialogTitle sx={{ backgroundColor: '#00A859', color: 'white', fontWeight: 'bold' }}>
             📱 M-Pesa Confirmation
           </DialogTitle>
-          <DialogContent sx={{ pt: 2 }}>
-            <Tabs value={mpesaTabValue} onChange={(_, newValue) => {
-              setMpesaTabValue(newValue);
-              setCodeSearchResult(null);
-            }} sx={{ mb: 2 }}>
+          <DialogContent sx={{ pt: 2, px: { xs: 1, sm: 3 }, pb: { xs: 1, sm: 3 } }}>
+            <Tabs 
+              value={mpesaTabValue} 
+              onChange={(_, newValue) => {
+                setMpesaTabValue(newValue);
+                setCodeSearchResult(null);
+              }} 
+              variant="scrollable"
+              scrollButtons="auto"
+              allowScrollButtonsMobile
+              sx={{ 
+                mb: 2,
+                '& .MuiTabs-scrollButtons': {
+                  display: { xs: 'flex', sm: 'none' }
+                }
+              }}
+            >
               <Tab label="Link to Customer" />
               <Tab label="Enter Confirmation Code" />
               <Tab label="Enter M-Pesa Message" />
@@ -1253,8 +1348,14 @@ const CreateInvoiceScreen: React.FC = () => {
                 {loading ? (
                   <Typography>Loading confirmations...</Typography>
                 ) : mpesaConfirmations.length > 0 ? (
-                  <TableContainer sx={{ maxHeight: 400 }}>
-                    <Table stickyHeader>
+                  <TableContainer 
+                    sx={{ 
+                      maxHeight: { xs: '50vh', sm: 400 },
+                      overflowX: 'auto',
+                      overflowY: 'auto'
+                    }}
+                  >
+                    <Table stickyHeader size="small">
                       <TableHead>
                         <TableRow>
                           <TableCell>Transaction ID</TableCell>
@@ -1358,13 +1459,15 @@ const CreateInvoiceScreen: React.FC = () => {
                   </Alert>
                 )}
 
-                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, justifyContent: 'flex-end' }}>
                   <Button
                     variant="outlined"
                     onClick={() => {
                       setManualMpesaCode('');
                       setCodeSearchResult(null);
                     }}
+                    fullWidth={false}
+                    sx={{ width: { xs: '100%', sm: 'auto' } }}
                   >
                     Clear
                   </Button>
@@ -1372,7 +1475,11 @@ const CreateInvoiceScreen: React.FC = () => {
                     variant="contained"
                     onClick={handleSearchMpesaCode}
                     disabled={!manualMpesaCode.trim() || searchingCode}
-                    sx={{ backgroundColor: '#00A859', '&:hover': { backgroundColor: '#008547' } }}
+                    sx={{ 
+                      backgroundColor: '#00A859', 
+                      '&:hover': { backgroundColor: '#008547' },
+                      width: { xs: '100%', sm: 'auto' }
+                    }}
                   >
                     {searchingCode ? 'Searching...' : 'Search'}
                   </Button>
@@ -1381,7 +1488,10 @@ const CreateInvoiceScreen: React.FC = () => {
                       variant="contained"
                       onClick={handleSaveManualMpesaCode}
                       disabled={loading}
-                      sx={{ backgroundColor: '#1976d2' }}
+                      sx={{ 
+                        backgroundColor: '#1976d2',
+                        width: { xs: '100%', sm: 'auto' }
+                      }}
                     >
                       {loading ? 'Saving...' : 'Save Code'}
                     </Button>
@@ -1456,7 +1566,7 @@ const CreateInvoiceScreen: React.FC = () => {
                   />
                 </Box>
 
-                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, justifyContent: 'flex-end' }}>
                   <Button
                     variant="outlined"
                     onClick={() => {
@@ -1464,6 +1574,8 @@ const CreateInvoiceScreen: React.FC = () => {
                       setMpesaCode('');
                       setAmountPaid(0);
                     }}
+                    fullWidth={false}
+                    sx={{ width: { xs: '100%', sm: 'auto' } }}
                   >
                     Clear
                   </Button>
@@ -1479,7 +1591,11 @@ const CreateInvoiceScreen: React.FC = () => {
                       }
                     }}
                     disabled={!mpesaCode || amountPaid <= 0}
-                    sx={{ backgroundColor: '#00A859', '&:hover': { backgroundColor: '#008547' } }}
+                    sx={{ 
+                      backgroundColor: '#00A859', 
+                      '&:hover': { backgroundColor: '#008547' },
+                      width: { xs: '100%', sm: 'auto' }
+                    }}
                   >
                     Use This Information
                   </Button>

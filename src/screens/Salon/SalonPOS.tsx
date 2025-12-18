@@ -723,7 +723,7 @@ const SalonPOS: React.FC = () => {
   };
 
   // Generate receipt
-  const generateReceipt = () => {
+  const generateReceipt = async () => {
     if (billItems.length === 0 && !lastTransactionData) {
       setError('No items to generate receipt for. Please complete a bill first.');
       return;
@@ -735,8 +735,28 @@ const SalonPOS: React.FC = () => {
       return;
     }
 
-    const business = JSON.parse(localStorage.getItem('business') || '{}');
+    // Fetch business settings from API
+    let businessSettings: any = {};
+    try {
+      const response = await ApiService.getBusinessSettings();
+      if (response.success && response.data) {
+        businessSettings = response.data;
+      }
+    } catch (err) {
+      console.error('Error fetching business settings:', err);
+      // Fallback to localStorage
+      const savedSettings = localStorage.getItem('businessSettings');
+      if (savedSettings) {
+        businessSettings = JSON.parse(savedSettings);
+      }
+    }
+    
     const user = JSON.parse(localStorage.getItem('user') || '{}');
+    
+    // Build full address from street and city
+    const fullAddress = [businessSettings.street, businessSettings.city]
+      .filter(Boolean)
+      .join(', ') || 'Business Address';
     const { subtotal, vat, discountAmount, total } = billItems.length > 0 
       ? calculateBillTotals() 
       : (() => {
@@ -855,20 +875,21 @@ const SalonPOS: React.FC = () => {
       </head>
       <body>
         <div class="header">
-          <h2>${business.business_name || 'Invoice App'}</h2>
-          <p>${business.address || 'Business Address'}</p>
-          <p>Tel: ${business.phone || 'N/A'} | Email: ${business.email || user.email || 'N/A'}</p>
-          <p>PIN: ${business.pin || 'N/A'}</p>
+          <h2>${businessSettings.businessName || 'Invoice App'}</h2>
+          <p>${fullAddress}</p>
+          <p>Phone Number: ${businessSettings.telephone || 'N/A'}</p>
+          <p>Email: ${businessSettings.email || user.email || 'N/A'}</p>
+          <p>PIN: ${businessSettings.pin || 'N/A'}</p>
         </div>
         
         <div class="info">
-          <div style="display: flex; justify-content: space-between;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
             <span>Date:</span>
             <span>${new Date().toLocaleString()}</span>
           </div>
           <div style="display: flex; justify-content: space-between;">
             <span>Cashier:</span>
-            <span>${user.first_name || 'N/A'} ${user.last_name || ''}</span>
+            <span>${businessSettings.createdBy || `${user.first_name || 'N/A'} ${user.last_name || ''}`}</span>
           </div>
           ${employeeToPrint ? `<div style="display: flex; justify-content: space-between;"><span>Employee:</span><span>${employeeToPrint.name || 'N/A'}</span></div>` : ''}
           ${customerNameToPrint ? `<div style="display: flex; justify-content: space-between;"><span>Customer:</span><span>${customerNameToPrint}</span></div>` : ''}
@@ -926,7 +947,7 @@ const SalonPOS: React.FC = () => {
         
         <div class="footer">
           <p>Thank you for your business!</p>
-          <p>Powered by Invoice App</p>
+          <p>Powered by ${businessSettings.businessName || 'Invoice App'}</p>
         </div>
         
         <script>
@@ -1819,13 +1840,26 @@ const SalonPOS: React.FC = () => {
         <DialogTitle sx={{ backgroundColor: '#00A859', color: 'white', fontWeight: 'bold' }}>
           📱 M-Pesa Confirmation
         </DialogTitle>
-        <DialogContent sx={{ pt: 2 }}>
-          <Tabs value={mpesaTabValue} onChange={(_, newValue) => {
-            setMpesaTabValue(newValue);
-            setCodeSearchResult(null);
-          }} sx={{ mb: 2 }}>
+        <DialogContent sx={{ pt: 2, px: { xs: 1, sm: 3 }, pb: { xs: 1, sm: 3 } }}>
+          <Tabs 
+            value={mpesaTabValue} 
+            onChange={(_, newValue) => {
+              setMpesaTabValue(newValue);
+              setCodeSearchResult(null);
+            }} 
+            variant="scrollable"
+            scrollButtons="auto"
+            allowScrollButtonsMobile
+            sx={{ 
+              mb: 2,
+              '& .MuiTabs-scrollButtons': {
+                display: { xs: 'flex', sm: 'none' }
+              }
+            }}
+          >
             <Tab label="Link to Customer" />
             <Tab label="Enter Confirmation Code" />
+            <Tab label="Enter M-Pesa Message" />
           </Tabs>
 
           {mpesaTabValue === 0 ? (
@@ -1834,8 +1868,14 @@ const SalonPOS: React.FC = () => {
           {loading ? (
             <Typography>Loading confirmations...</Typography>
           ) : mpesaConfirmations.length > 0 ? (
-            <TableContainer sx={{ maxHeight: 400 }}>
-              <Table stickyHeader>
+            <TableContainer 
+              sx={{ 
+                maxHeight: { xs: '50vh', sm: 400 },
+                overflowX: 'auto',
+                overflowY: 'auto'
+              }}
+            >
+              <Table stickyHeader size="small">
                 <TableHead>
                   <TableRow>
                     <TableCell>Transaction ID</TableCell>
@@ -2032,7 +2072,7 @@ const SalonPOS: React.FC = () => {
                 />
               </Box>
 
-              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, justifyContent: 'flex-end' }}>
                 <Button
                   variant="outlined"
                   onClick={() => {
@@ -2040,6 +2080,8 @@ const SalonPOS: React.FC = () => {
                     setMpesaCode('');
                     setAmountPaid(0);
                   }}
+                  fullWidth={false}
+                  sx={{ width: { xs: '100%', sm: 'auto' } }}
                 >
                   Clear
                 </Button>
@@ -2055,7 +2097,11 @@ const SalonPOS: React.FC = () => {
                     }
                   }}
                   disabled={!mpesaCode || amountPaid <= 0}
-                  sx={{ backgroundColor: '#00A859', '&:hover': { backgroundColor: '#008547' } }}
+                  sx={{ 
+                    backgroundColor: '#00A859', 
+                    '&:hover': { backgroundColor: '#008547' },
+                    width: { xs: '100%', sm: 'auto' }
+                  }}
                 >
                   Use This Information
                 </Button>

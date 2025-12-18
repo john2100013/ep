@@ -141,7 +141,9 @@ const POSScreen: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [categories, setCategories] = useState<any[]>([]);
   const [includeVAT, setIncludeVAT] = useState(true); // VAT checkbox state
-  const [discount, setDiscount] = useState<number>(0); // Discount amount
+  const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage'); // Default to percentage
+  const [discountPercentage, setDiscountPercentage] = useState<number>(0); // Discount percentage
+  const [discount, setDiscount] = useState<number>(0); // Discount amount (fixed or calculated)
 
 
   // Fetch financial accounts
@@ -509,7 +511,17 @@ const POSScreen: React.FC = () => {
       ? subTotal * 0.16  // 16% VAT if enabled
       : posItems.reduce((sum, item) => sum + Number(item.vat || 0), 0);
     const totalBeforeDiscount = subTotal + vatTotal;
-    const discountAmount = Number(discount) || 0;
+    
+    // Calculate discount based on type
+    let discountAmount = 0;
+    if (discountType === 'percentage') {
+      // Calculate discount from percentage
+      discountAmount = (totalBeforeDiscount * discountPercentage) / 100;
+    } else {
+      // Use fixed discount amount
+      discountAmount = Number(discount) || 0;
+    }
+    
     const totalAfterDiscount = Math.max(0, totalBeforeDiscount - discountAmount); // Ensure total doesn't go negative
     const total = Math.round(totalAfterDiscount); // Round to nearest whole number
     return { subTotal, vatTotal, discountAmount, total };
@@ -543,6 +555,8 @@ const POSScreen: React.FC = () => {
         setSelectedAccount('');
         setCurrentDraftId(null);
         setDiscount(0);
+        setDiscountPercentage(0);
+        setDiscountType('percentage');
         setError('');
         alert('Invoice saved as draft successfully!');
       }
@@ -653,6 +667,10 @@ const POSScreen: React.FC = () => {
         setMpesaCode('');
         setPosPaymentMethod('Cash');
         setDiscount(0);
+        setDiscountPercentage(0);
+        setDiscountType('percentage');
+        setDiscountPercentage(0);
+        setDiscountType('percentage');
         
         // Refresh financial accounts to show updated balance
         await fetchFinancialAccounts();
@@ -686,6 +704,8 @@ const POSScreen: React.FC = () => {
           setMpesaCode('');
           setPosPaymentMethod('Cash');
           setDiscount(0);
+          setDiscountPercentage(0);
+          setDiscountType('percentage');
           
           // Refresh financial accounts
           await fetchFinancialAccounts();
@@ -763,6 +783,8 @@ const POSScreen: React.FC = () => {
         setMpesaCode('');
         setPosPaymentMethod('Cash');
         setDiscount(0);
+        setDiscountPercentage(0);
+        setDiscountType('percentage');
         
         // Refresh financial accounts to show updated balance
         await fetchFinancialAccounts();
@@ -789,6 +811,8 @@ const POSScreen: React.FC = () => {
     setMpesaCode('');
     setPosPaymentMethod('Cash');
     setDiscount(0);
+    setDiscountPercentage(0);
+    setDiscountType('percentage');
   };
 
   // Retrieve draft
@@ -892,36 +916,67 @@ const POSScreen: React.FC = () => {
       setError('');
       const receiptTotals = calculateTotals();
       const { subTotal, vatTotal, discountAmount, total } = receiptTotals;
-      const business = JSON.parse(localStorage.getItem('business') || '{}');
+      
+      // Fetch business settings from API
+      let businessSettings: any = {};
+      try {
+        const response = await ApiService.getBusinessSettings();
+        if (response.success && response.data) {
+          businessSettings = response.data;
+        }
+      } catch (err) {
+        console.error('Error fetching business settings:', err);
+        // Fallback to localStorage
+        const savedSettings = localStorage.getItem('businessSettings');
+        if (savedSettings) {
+          businessSettings = JSON.parse(savedSettings);
+        }
+      }
+      
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       
-      // Create a temporary hidden div to render the receipt
+      // Build full address from street and city
+      const fullAddress = [businessSettings.street, businessSettings.city]
+        .filter(Boolean)
+        .join(', ') || 'Business Address';
+      
+      // Create a temporary div to render the receipt
+      // Position at (0,0) so html2canvas captures content starting from top-left
       const tempDiv = document.createElement('div');
-      tempDiv.style.position = 'absolute';
-      tempDiv.style.left = '-9999px';
+      tempDiv.style.position = 'fixed';
+      tempDiv.style.left = '0';
+      tempDiv.style.top = '0';
       tempDiv.style.width = '80mm';
       tempDiv.style.padding = '10px';
+      tempDiv.style.paddingTop = '10px';
+      tempDiv.style.margin = '0';
+      tempDiv.style.marginTop = '0';
       tempDiv.style.fontFamily = "'Courier New', monospace";
       tempDiv.style.fontSize = '12px';
       tempDiv.style.backgroundColor = '#ffffff';
       tempDiv.style.color = '#000000';
+      tempDiv.style.zIndex = '-9999';
+      tempDiv.style.pointerEvents = 'none';
+      tempDiv.style.overflow = 'visible';
+      tempDiv.style.boxSizing = 'border-box';
       
       tempDiv.innerHTML = `
-        <div style="text-align: center; border-bottom: 2px dashed #000; padding-bottom: 10px; margin-bottom: 10px;">
-          <h2 style="margin: 5px 0; font-size: 18px;">${business.business_name || 'Invoice App'}</h2>
-          <p style="margin: 3px 0; font-size: 11px;">${business.address || 'Business Address'}</p>
-          <p style="margin: 3px 0; font-size: 11px;">Tel: ${business.phone || 'N/A'} | Email: ${business.email || user.email || 'N/A'}</p>
-          <p style="margin: 3px 0; font-size: 11px;">PIN: ${business.pin || 'N/A'}</p>
+        <div style="text-align: center; border-bottom: 2px dashed #000; padding-bottom: 10px; margin-top: 0; margin-bottom: 10px; width: 100%; box-sizing: border-box;">
+          <h2 style="margin: 0; margin-bottom: 5px; font-size: 18px; text-align: center;">${businessSettings.businessName || 'Invoice App'}</h2>
+          <p style="margin: 0; margin-bottom: 3px; font-size: 11px; text-align: center;">${fullAddress}</p>
+          <p style="margin: 0; margin-bottom: 3px; font-size: 11px; text-align: center;">Phone Number: ${businessSettings.telephone || 'N/A'}</p>
+          <p style="margin: 0; margin-bottom: 3px; font-size: 11px; text-align: center;">Email: ${businessSettings.email || user.email || 'N/A'}</p>
+          <p style="margin: 0; font-size: 11px; text-align: center;">PIN: ${businessSettings.pin || 'N/A'}</p>
         </div>
         
         <div style="margin: 10px 0; font-size: 11px;">
-          <div style="display: flex; justify-content: space-between;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
             <span>Date:</span>
             <span>${new Date().toLocaleString()}</span>
           </div>
           <div style="display: flex; justify-content: space-between;">
             <span>Cashier:</span>
-            <span>${user.first_name || 'N/A'} ${user.last_name || ''}</span>
+            <span>${businessSettings.createdBy || `${user.first_name || 'N/A'} ${user.last_name || ''}`}</span>
           </div>
         </div>
         
@@ -971,7 +1026,7 @@ const POSScreen: React.FC = () => {
         
         <div style="text-align: center; margin-top: 15px; padding-top: 10px; border-top: 2px dashed #000; font-size: 11px;">
           <p>Thank you for your business!</p>
-          <p>Powered by Invoice App</p>
+          <p>Powered by ${businessSettings.businessName || 'Invoice App'}</p>
         </div>
       `;
       
@@ -981,6 +1036,7 @@ const POSScreen: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 100));
       
       // Generate canvas from the receipt content
+      // Since div is at (0,0), html2canvas will capture it correctly without offset
       const canvas = await html2canvas(tempDiv, {
         scale: 2,
         useCORS: true,
@@ -993,14 +1049,14 @@ const POSScreen: React.FC = () => {
       // Remove the temporary div
       document.body.removeChild(tempDiv);
       
-      // Create PDF
+      // Create PDF - calculate height based on actual content
       const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', [80, tempDiv.scrollHeight * 0.264583]); // 80mm width, dynamic height
+      const pdfWidth = 80; // 80mm width
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pdf = new jsPDF('p', 'mm', [pdfWidth, pdfHeight]);
       
-      const imgWidth = 80; // 80mm width
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      // Add image starting at top-left (0, 0) - content will be at top since canvas starts at (0,0)
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       
       // Generate filename
       const fileName = `Receipt_${new Date().toISOString().split('T')[0]}_${Date.now()}.pdf`;
@@ -1162,19 +1218,65 @@ const POSScreen: React.FC = () => {
 
               {/* Discount Field */}
               <Box sx={{ mb: 2 }}>
-                <TextField
-                  fullWidth
-                  label="Discount Amount (KES)"
-                  type="number"
-                  size="small"
-                  value={discount}
-                  onChange={(e) => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
-                  inputProps={{ 
-                    min: 0,
-                    step: 0.01
-                  }}
-                  helperText="Enter discount amount to apply to total"
-                />
+                <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                  <Button
+                    variant={discountType === 'percentage' ? 'contained' : 'outlined'}
+                    size="small"
+                    onClick={() => {
+                      setDiscountType('percentage');
+                      setDiscountPercentage(0);
+                      setDiscount(0);
+                    }}
+                    sx={{ flex: 1 }}
+                  >
+                    Percentage
+                  </Button>
+                  <Button
+                    variant={discountType === 'fixed' ? 'contained' : 'outlined'}
+                    size="small"
+                    onClick={() => {
+                      setDiscountType('fixed');
+                      setDiscountPercentage(0);
+                      setDiscount(0);
+                    }}
+                    sx={{ flex: 1 }}
+                  >
+                    Fixed Amount
+                  </Button>
+                </Box>
+                {discountType === 'percentage' ? (
+                  <TextField
+                    fullWidth
+                    label="Discount Percentage (%)"
+                    type="number"
+                    size="small"
+                    value={discountPercentage}
+                    onChange={(e) => {
+                      const value = Math.max(0, Math.min(100, parseFloat(e.target.value) || 0));
+                      setDiscountPercentage(value);
+                    }}
+                    inputProps={{ 
+                      min: 0,
+                      max: 100,
+                      step: 0.01
+                    }}
+                    helperText={`Discount: ${Number(calculateTotals().discountAmount).toFixed(2)}`}
+                  />
+                ) : (
+                  <TextField
+                    fullWidth
+                    label="Discount Amount (KES)"
+                    type="number"
+                    size="small"
+                    value={discount}
+                    onChange={(e) => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
+                    inputProps={{ 
+                      min: 0,
+                      step: 0.01
+                    }}
+                    helperText="Enter discount amount to apply to total"
+                  />
+                )}
               </Box>
               
               <Box sx={{ mb: 2, p: 1.5, backgroundColor: '#fff', borderRadius: 1 }}>
@@ -1188,13 +1290,13 @@ const POSScreen: React.FC = () => {
                     <Typography variant="body2" fontWeight="bold">{Number(vatTotal).toFixed(2)}</Typography>
                   </Box>
                 )}
-                {discount > 0 && (
+                {calculateTotals().discountAmount > 0 && (
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                     <Typography variant="body2" color="text.secondary" sx={{ color: 'error.main' }}>
-                      Discount:
+                      Discount{discountType === 'percentage' ? ` (${discountPercentage}%)` : ''}:
                     </Typography>
                     <Typography variant="body2" fontWeight="bold" sx={{ color: 'error.main' }}>
-                      -{Number(discountAmount).toFixed(2)}
+                      -{Number(calculateTotals().discountAmount).toFixed(2)}
                     </Typography>
                   </Box>
                 )}
@@ -1389,6 +1491,8 @@ const POSScreen: React.FC = () => {
                     setMpesaCode('');
                     setPosPaymentMethod('Cash');
                     setDiscount(0);
+                    setDiscountPercentage(0);
+                    setDiscountType('percentage');
                   }}
                   disabled={posItems.length === 0}
                   sx={{ color: '#d32f2f', borderColor: '#d32f2f' }}
@@ -1732,11 +1836,23 @@ const POSScreen: React.FC = () => {
           <DialogTitle sx={{ backgroundColor: '#00A859', color: 'white', fontWeight: 'bold' }}>
             📱 M-Pesa Confirmation
           </DialogTitle>
-          <DialogContent sx={{ pt: 2 }}>
-            <Tabs value={mpesaTabValue} onChange={(_, newValue) => {
-              setMpesaTabValue(newValue);
-              setCodeSearchResult(null);
-            }} sx={{ mb: 2 }}>
+          <DialogContent sx={{ pt: 2, px: { xs: 1, sm: 3 }, pb: { xs: 1, sm: 3 } }}>
+            <Tabs 
+              value={mpesaTabValue} 
+              onChange={(_, newValue) => {
+                setMpesaTabValue(newValue);
+                setCodeSearchResult(null);
+              }} 
+              variant="scrollable"
+              scrollButtons="auto"
+              allowScrollButtonsMobile
+              sx={{ 
+                mb: 2,
+                '& .MuiTabs-scrollButtons': {
+                  display: { xs: 'flex', sm: 'none' }
+                }
+              }}
+            >
               <Tab label="Link to Customer" />
               <Tab label="Enter Confirmation Code" />
               <Tab label="Enter M-Pesa Message" />
@@ -1748,8 +1864,14 @@ const POSScreen: React.FC = () => {
             {loading ? (
               <Typography>Loading confirmations...</Typography>
             ) : mpesaConfirmations.length > 0 ? (
-              <TableContainer sx={{ maxHeight: 400 }}>
-                <Table stickyHeader>
+              <TableContainer 
+                sx={{ 
+                  maxHeight: { xs: '50vh', sm: 400 },
+                  overflowX: 'auto',
+                  overflowY: 'auto'
+                }}
+              >
+                <Table stickyHeader size="small">
                   <TableHead>
                     <TableRow>
                       <TableCell>Transaction ID</TableCell>
@@ -1853,13 +1975,15 @@ const POSScreen: React.FC = () => {
                   </Alert>
                 )}
 
-                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, justifyContent: 'flex-end' }}>
                   <Button
                     variant="outlined"
                     onClick={() => {
                       setManualMpesaCode('');
                       setCodeSearchResult(null);
                     }}
+                    fullWidth={false}
+                    sx={{ width: { xs: '100%', sm: 'auto' } }}
                   >
                     Clear
                   </Button>
@@ -1867,7 +1991,11 @@ const POSScreen: React.FC = () => {
                     variant="contained"
                     onClick={handleSearchMpesaCode}
                     disabled={!manualMpesaCode.trim() || searchingCode}
-                    sx={{ backgroundColor: '#00A859', '&:hover': { backgroundColor: '#008547' } }}
+                    sx={{ 
+                      backgroundColor: '#00A859', 
+                      '&:hover': { backgroundColor: '#008547' },
+                      width: { xs: '100%', sm: 'auto' }
+                    }}
                   >
                     {searchingCode ? 'Searching...' : 'Search'}
                   </Button>
@@ -1876,7 +2004,10 @@ const POSScreen: React.FC = () => {
                       variant="contained"
                       onClick={handleSaveManualMpesaCode}
                       disabled={loading}
-                      sx={{ backgroundColor: '#1976d2' }}
+                      sx={{ 
+                        backgroundColor: '#1976d2',
+                        width: { xs: '100%', sm: 'auto' }
+                      }}
                     >
                       {loading ? 'Saving...' : 'Save Code'}
                     </Button>
@@ -1951,7 +2082,7 @@ const POSScreen: React.FC = () => {
                   />
                 </Box>
 
-                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, justifyContent: 'flex-end' }}>
                   <Button
                     variant="outlined"
                     onClick={() => {
@@ -1959,6 +2090,8 @@ const POSScreen: React.FC = () => {
                       setMpesaCode('');
                       setAmountPaid(0);
                     }}
+                    fullWidth={false}
+                    sx={{ width: { xs: '100%', sm: 'auto' } }}
                   >
                     Clear
                   </Button>
@@ -1974,7 +2107,11 @@ const POSScreen: React.FC = () => {
                       }
                     }}
                     disabled={!mpesaCode || amountPaid <= 0}
-                    sx={{ backgroundColor: '#00A859', '&:hover': { backgroundColor: '#008547' } }}
+                    sx={{ 
+                      backgroundColor: '#00A859', 
+                      '&:hover': { backgroundColor: '#008547' },
+                      width: { xs: '100%', sm: 'auto' }
+                    }}
                   >
                     Use This Information
                   </Button>

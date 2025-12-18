@@ -410,12 +410,13 @@ const Header: React.FC<HeaderProps> = ({ title = 'Invoice App' }) => {
         onClose={() => setMobileDrawerOpen(false)}
         PaperProps={{
           sx: {
-            width: '80%',
+            width: { xs: '85%', sm: '300px' },
+            minWidth: 250,
             maxWidth: 300,
           },
         }}
       >
-        <Box sx={{ width: '100%', py: 2 }}>
+        <Box sx={{ width: '100%', py: 2, overflowX: 'hidden' }}>
           {/* Drawer Header */}
           <Box sx={{ px: 2, py: 2, borderBottom: '1px solid #eee' }}>
             <Typography variant="h6" sx={{ fontWeight: 700, color: '#0066ff' }}>
@@ -424,7 +425,7 @@ const Header: React.FC<HeaderProps> = ({ title = 'Invoice App' }) => {
           </Box>
 
           {/* Navigation List */}
-          <List>
+          <List sx={{ width: '100%', overflowX: 'hidden' }}>
             {navigationItems.map((item) => (
               <ListItem
                 key={item.path}
@@ -439,13 +440,16 @@ const Header: React.FC<HeaderProps> = ({ title = 'Invoice App' }) => {
                   border: 'none',
                   width: '100%',
                   textAlign: 'left',
+                  display: 'flex',
+                  alignItems: 'center',
+                  overflow: 'visible',
                   '&:hover': {
                     bgcolor: 'rgba(0, 102, 255, 0.05)',
                     borderLeftColor: '#0066ff',
                   },
                 }}
               >
-                <ListItemIcon sx={{ color: '#0066ff', minWidth: 40 }}>
+                <ListItemIcon sx={{ color: '#0066ff', minWidth: 40, flexShrink: 0 }}>
                   {item.icon}
                 </ListItemIcon>
                 <ListItemText
@@ -453,6 +457,18 @@ const Header: React.FC<HeaderProps> = ({ title = 'Invoice App' }) => {
                   primaryTypographyProps={{
                     fontSize: '0.95rem',
                     fontWeight: 500,
+                    noWrap: false,
+                  }}
+                  sx={{
+                    flex: '1 1 auto',
+                    minWidth: 0,
+                    overflow: 'visible',
+                    '& .MuiListItemText-primary': {
+                      overflow: 'visible',
+                      textOverflow: 'clip',
+                      whiteSpace: 'normal',
+                      wordBreak: 'break-word',
+                    },
                   }}
                 />
               </ListItem>
@@ -471,13 +487,16 @@ const Header: React.FC<HeaderProps> = ({ title = 'Invoice App' }) => {
                   border: 'none',
                   width: '100%',
                   textAlign: 'left',
+                  display: 'flex',
+                  alignItems: 'center',
+                  overflow: 'visible',
                   '&:hover': {
                     bgcolor: 'rgba(0, 102, 255, 0.05)',
                     borderLeftColor: '#0066ff',
                   },
                 }}
               >
-                <ListItemIcon sx={{ color: '#0066ff', minWidth: 40 }}>
+                <ListItemIcon sx={{ color: '#0066ff', minWidth: 40, flexShrink: 0 }}>
                   <DatabaseIcon />
                 </ListItemIcon>
                 <ListItemText
@@ -485,6 +504,18 @@ const Header: React.FC<HeaderProps> = ({ title = 'Invoice App' }) => {
                   primaryTypographyProps={{
                     fontSize: '0.95rem',
                     fontWeight: 500,
+                    noWrap: false,
+                  }}
+                  sx={{
+                    flex: '1 1 auto',
+                    minWidth: 0,
+                    overflow: 'visible',
+                    '& .MuiListItemText-primary': {
+                      overflow: 'visible',
+                      textOverflow: 'clip',
+                      whiteSpace: 'normal',
+                      wordBreak: 'break-word',
+                    },
                   }}
                 />
               </ListItem>

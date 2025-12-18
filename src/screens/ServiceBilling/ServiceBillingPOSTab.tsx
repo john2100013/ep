@@ -879,8 +879,23 @@ const ServiceBillingPOSTab: React.FC = () => {
     }
   };
 
-  const printReceipt = (invoice: any, customerData: any, totals: any) => {
-    const business = JSON.parse(localStorage.getItem('business') || '{}');
+  const printReceipt = async (invoice: any, customerData: any, totals: any) => {
+    // Fetch business settings from API
+    let businessSettings: any = {};
+    try {
+      const response = await ApiService.getBusinessSettings();
+      if (response.success && response.data) {
+        businessSettings = response.data;
+      }
+    } catch (err) {
+      console.error('Error fetching business settings:', err);
+      // Fallback to localStorage
+      const savedSettings = localStorage.getItem('businessSettings');
+      if (savedSettings) {
+        businessSettings = JSON.parse(savedSettings);
+      }
+    }
+    
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
@@ -889,6 +904,11 @@ const ServiceBillingPOSTab: React.FC = () => {
     
     // Get current selected products for receipt
     const productsForReceipt = Array.from(selectedProducts.values());
+    
+    // Build full address from street and city
+    const fullAddress = [businessSettings.street, businessSettings.city]
+      .filter(Boolean)
+      .join(', ') || 'Business Address';
 
     const receiptHTML = `
       <!DOCTYPE html>
@@ -900,6 +920,7 @@ const ServiceBillingPOSTab: React.FC = () => {
           body { font-family: 'Courier New', monospace; width: 80mm; margin: 0 auto; padding: 10px; font-size: 12px; }
           .header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
           .header h2 { margin: 5px 0; font-size: 18px; }
+          .header p { margin: 3px 0; font-size: 11px; }
           .info { margin: 10px 0; font-size: 11px; }
           table { width: 100%; margin: 10px 0; border-collapse: collapse; }
           th { border-bottom: 1px solid #000; padding: 5px 2px; text-align: left; font-size: 11px; }
@@ -913,15 +934,33 @@ const ServiceBillingPOSTab: React.FC = () => {
       </head>
       <body>
         <div class="header">
-          <h2>${business.business_name || 'Service Business'}</h2>
-          <p>${business.address || 'Business Address'}</p>
-          <p>Tel: ${business.phone || 'N/A'} | Email: ${business.email || user.email || 'N/A'}</p>
+          <h2>${businessSettings.businessName || 'Service Business'}</h2>
+          <p>${fullAddress}</p>
+          <p>Phone Number: ${businessSettings.telephone || 'N/A'}</p>
+          <p>Email: ${businessSettings.email || user.email || 'N/A'}</p>
+          <p>PIN: ${businessSettings.pin || 'N/A'}</p>
         </div>
         <div class="info">
-          <div><strong>Invoice:</strong> ${invoice.invoice_number}</div>
-          <div><strong>Date:</strong> ${new Date(invoice.created_at || Date.now()).toLocaleString()}</div>
-          <div><strong>Customer:</strong> ${customerData.name}</div>
-          <div><strong>Phone:</strong> ${customerData.phone}</div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span><strong>Invoice:</strong></span>
+            <span>${invoice.invoice_number}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span><strong>Date:</strong></span>
+            <span>${new Date(invoice.created_at || Date.now()).toLocaleString()}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span><strong>Cashier:</strong></span>
+            <span>${businessSettings.createdBy || `${user.first_name || 'N/A'} ${user.last_name || ''}`}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span><strong>Customer:</strong></span>
+            <span>${customerData.name}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span><strong>Phone:</strong></span>
+            <span>${customerData.phone}</span>
+          </div>
         </div>
         <table>
           <thead>
@@ -965,7 +1004,7 @@ const ServiceBillingPOSTab: React.FC = () => {
         </div>
         <div class="footer">
           <p>Thank you for choosing us!</p>
-          <p>We look forward to serving you again</p>
+          <p>Powered by ${businessSettings.businessName || 'Invoice App'}</p>
         </div>
         <script>
           window.onload = function() {

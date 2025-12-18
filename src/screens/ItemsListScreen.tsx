@@ -19,11 +19,19 @@ import {
   InputAdornment,
   Chip,
   CircularProgress,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Search as SearchIcon,
   Refresh as RefreshIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { ApiService } from '../services/api';
@@ -36,6 +44,7 @@ const ItemsListScreen: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [businessCategoryNames, setBusinessCategoryNames] = useState({
     category_1_name: 'Category 1',
     category_2_name: 'Category 2'
@@ -45,6 +54,9 @@ const ItemsListScreen: React.FC = () => {
     totalValue: 0,
     lowStockItems: 0,
   });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<Item | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const navigate = useNavigate();
 
@@ -137,6 +149,51 @@ const ItemsListScreen: React.FC = () => {
     loadStats();
   };
 
+  const handleEdit = (item: Item, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent row click
+    navigate(`/add-item?edit=${item.id}`);
+  };
+
+  const handleDeleteClick = (item: Item, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent row click
+    setItemToDelete(item);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!itemToDelete) return;
+
+    try {
+      setDeleting(true);
+      setError('');
+      const response = await ApiService.deleteItem(itemToDelete.id);
+      
+      if (response.success) {
+        setSuccess('Item deleted successfully!');
+        setDeleteDialogOpen(false);
+        setItemToDelete(null);
+        // Reload items and stats
+        await loadItems();
+        await loadStats();
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        throw new Error(response.message || 'Failed to delete item');
+      }
+    } catch (error: any) {
+      console.error('Error deleting item:', error);
+      setError(error.response?.data?.message || error.message || 'Failed to delete item. It may be used in invoices.');
+      setDeleteDialogOpen(false);
+      setItemToDelete(null);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setItemToDelete(null);
+  };
+
   const formatPrice = (price: any) => {
     const numPrice = parseFloat(price);
     if (isNaN(numPrice)) {
@@ -221,6 +278,12 @@ const ItemsListScreen: React.FC = () => {
           </Alert>
         )}
 
+        {success && (
+          <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccess('')}>
+            {success}
+          </Alert>
+        )}
+
       {/* Items Table */}
       <Card sx={{ elevation: 4, overflowX: { xs: 'auto', md: 'visible' } }}>
         <CardContent sx={{ p: { xs: 1.5, md: 2 } }}>
@@ -249,6 +312,7 @@ const ItemsListScreen: React.FC = () => {
                   <TableCell sx={{ bgcolor: 'grey.100', minWidth: 80 }}><strong>UOM</strong></TableCell>
                   <TableCell sx={{ bgcolor: 'grey.100', minWidth: 120 }}><strong>UNIT PRICE</strong></TableCell>
                   <TableCell sx={{ bgcolor: 'grey.100', minWidth: 120 }}><strong>TOTAL AMOUNT</strong></TableCell>
+                  <TableCell sx={{ bgcolor: 'grey.100', minWidth: 100 }} align="center"><strong>ACTIONS</strong></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -256,10 +320,8 @@ const ItemsListScreen: React.FC = () => {
                   <TableRow 
                     key={item.id}
                     hover
-                    onClick={() => navigate(`/add-item?edit=${item.id}`)}
                     sx={{ 
                       '&:hover': { bgcolor: 'rgba(0, 102, 255, 0.04)' },
-                      cursor: 'pointer'
                     }}
                   >
                     <TableCell>{index + 1}</TableCell>
@@ -302,12 +364,36 @@ const ItemsListScreen: React.FC = () => {
                     <TableCell align="center">{item.unit || item.uom || 'PCS'}</TableCell>
                     <TableCell align="right">{formatPrice(item.rate || item.unit_price || 0)}</TableCell>
                     <TableCell align="right">{formatPrice(item.amount || (item.quantity || item.stock_quantity || 0) * (item.rate || item.unit_price || 0))}</TableCell>
+                    <TableCell align="center">
+                      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={(e) => handleEdit(item, e)}
+                          sx={{ 
+                            '&:hover': { bgcolor: 'rgba(0, 102, 255, 0.1)' }
+                          }}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={(e) => handleDeleteClick(item, e)}
+                          sx={{ 
+                            '&:hover': { bgcolor: 'rgba(211, 47, 47, 0.1)' }
+                          }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    </TableCell>
                   </TableRow>
                 ))}
 
                 {filteredItems.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
+                    <TableCell colSpan={11} align="center" sx={{ py: 4 }}>
                       <Typography variant="body2" color="text.secondary">
                         {searchQuery ? 'No items found matching your search' : 'No items available'}
                       </Typography>
@@ -342,6 +428,42 @@ const ItemsListScreen: React.FC = () => {
       >
         <AddIcon />
       </Fab>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title">
+          Delete Item
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Are you sure you want to delete "{itemToDelete?.item_name || itemToDelete?.description || 'this item'}"? 
+            This action cannot be undone.
+            {itemToDelete && (
+              <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+                Note: Items used in invoices cannot be deleted.
+              </Typography>
+            )}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} disabled={deleting}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleDeleteConfirm} 
+            color="error" 
+            variant="contained"
+            disabled={deleting}
+          >
+            {deleting ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
       </Box>
     </Box>
   );

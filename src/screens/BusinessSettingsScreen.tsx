@@ -29,6 +29,7 @@ interface BusinessSettings {
   city: string;
   email: string;
   telephone: string;
+  pin: string;
   createdBy: string;
   approvedBy: string;
   createdBySignature: string;
@@ -44,6 +45,7 @@ const BusinessSettingsScreen: React.FC = () => {
     city: '',
     email: '',
     telephone: '',
+    pin: '',
     createdBy: '',
     approvedBy: '',
     createdBySignature: '',
@@ -358,7 +360,14 @@ const BusinessSettingsScreen: React.FC = () => {
                 onChange={handleInputChange('telephone')}
                 variant="outlined"
               />
-              <Box sx={{ flex: 1 }} /> {/* Spacer */}
+              <TextField
+                fullWidth
+                label="PIN Number"
+                value={settings.pin}
+                onChange={handleInputChange('pin')}
+                variant="outlined"
+                helperText="Business tax identification PIN"
+              />
             </Box>
           </Box>
         </CardContent>
