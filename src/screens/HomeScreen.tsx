@@ -24,7 +24,6 @@ import {
   Chip,
   Alert,
   TextField,
-  Grid,
   CircularProgress,
 } from '@mui/material';
 import {
@@ -204,7 +203,7 @@ const HomeScreen: React.FC = () => {
 
   const prepareChartData = () => {
     // Group by date and account - show total transaction amounts per day
-    const dateMap = new Map<string, { [accountName: string]: number; rawDate: string }>();
+    const dateMap = new Map<string, { [key: string]: number | string }>();
     
     transactionHistory.forEach(item => {
       if (!dateMap.has(item.date)) {
@@ -212,16 +211,23 @@ const HomeScreen: React.FC = () => {
       }
       const dateData = dateMap.get(item.date)!;
       // Use total_inflow as the value for the graph (money coming in)
-      dateData[item.account_name] = (dateData[item.account_name] || 0) + item.total_inflow;
+      const currentValue = dateData[item.account_name];
+      dateData[item.account_name] = ((typeof currentValue === 'number' ? currentValue : 0) + item.total_inflow);
     });
 
     // Convert to array format for chart
     const chartData: any[] = [];
     dateMap.forEach((accounts, date) => {
+      const accountEntries: { [key: string]: number } = {};
+      Object.entries(accounts).forEach(([key, value]) => {
+        if (key !== 'rawDate' && typeof value === 'number') {
+          accountEntries[key] = value;
+        }
+      });
       chartData.push({
         date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        rawDate: accounts.rawDate,
-        ...Object.fromEntries(Object.entries(accounts).filter(([key]) => key !== 'rawDate'))
+        rawDate: accounts.rawDate as string,
+        ...accountEntries
       });
     });
 
@@ -672,25 +678,27 @@ const HomeScreen: React.FC = () => {
             {financialAccounts.length > 0 && (
               <Box sx={{ mt: 3 }}>
                 <Typography variant="h6" gutterBottom>Account Balances</Typography>
-                <Grid container spacing={2}>
+                <Box sx={{ 
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
+                  gap: 2
+                }}>
                   {financialAccounts.map((account) => (
-                    <Grid item xs={12} sm={6} md={4} key={account.id}>
-                      <Card variant="outlined">
-                        <CardContent>
-                          <Typography variant="subtitle1" fontWeight="bold">
-                            {account.account_name}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {account.account_type}
-                          </Typography>
-                          <Typography variant="h6" color="primary" sx={{ mt: 1 }}>
-                            KES {Number(account.current_balance).toFixed(2)}
-                          </Typography>
-                        </CardContent>
-                      </Card>
-                    </Grid>
+                    <Card variant="outlined" key={account.id}>
+                      <CardContent>
+                        <Typography variant="subtitle1" fontWeight="bold">
+                          {account.account_name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {account.account_type}
+                        </Typography>
+                        <Typography variant="h6" color="primary" sx={{ mt: 1 }}>
+                          KES {Number(account.current_balance).toFixed(2)}
+                        </Typography>
+                      </CardContent>
+                    </Card>
                   ))}
-                </Grid>
+                </Box>
               </Box>
             )}
           </CardContent>
