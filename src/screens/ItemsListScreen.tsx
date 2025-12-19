@@ -46,6 +46,7 @@ const ItemsListScreen: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [businessCategoryNames, setBusinessCategoryNames] = useState({
+    category_name: 'Category',
     category_1_name: 'Category 1',
     category_2_name: 'Category 2'
   });
@@ -71,6 +72,7 @@ const ItemsListScreen: React.FC = () => {
       const response = await ApiService.getBusinessCategoryNames();
       if (response.success && response.data) {
         setBusinessCategoryNames({
+          category_name: response.data.category_name || 'Category',
           category_1_name: response.data.category_1_name || 'Category 1',
           category_2_name: response.data.category_2_name || 'Category 2'
         });
@@ -305,7 +307,7 @@ const ItemsListScreen: React.FC = () => {
                   <TableCell sx={{ bgcolor: 'grey.100', minWidth: 60 }}><strong>ITEM NO</strong></TableCell>
                   <TableCell sx={{ bgcolor: 'grey.100', minWidth: 120 }}><strong>ITEM NAME</strong></TableCell>
                   <TableCell sx={{ bgcolor: 'grey.100', minWidth: 200 }}><strong>DESCRIPTION</strong></TableCell>
-                  <TableCell sx={{ bgcolor: 'grey.100', minWidth: 100 }}><strong>CATEGORY</strong></TableCell>
+                  <TableCell sx={{ bgcolor: 'grey.100', minWidth: 100 }}><strong>{businessCategoryNames.category_name.toUpperCase()}</strong></TableCell>
                   <TableCell sx={{ bgcolor: 'grey.100', minWidth: 100 }}><strong>{businessCategoryNames.category_1_name.toUpperCase()}</strong></TableCell>
                   <TableCell sx={{ bgcolor: 'grey.100', minWidth: 100 }}><strong>{businessCategoryNames.category_2_name.toUpperCase()}</strong></TableCell>
                   <TableCell sx={{ bgcolor: 'grey.100', minWidth: 80 }}><strong>QTY</strong></TableCell>
@@ -337,28 +339,40 @@ const ItemsListScreen: React.FC = () => {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Chip 
-                        label={(item as any).category_name || 'N/A'} 
-                        size="small" 
-                        color="primary" 
-                        variant="outlined"
-                      />
+                      {(item as any).category_name ? (
+                        <Chip 
+                          label={(item as any).category_name} 
+                          size="small" 
+                          color="primary" 
+                          variant="outlined"
+                        />
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">-</Typography>
+                      )}
                     </TableCell>
                     <TableCell>
-                      <Chip 
-                        label={(item as any).category_1_name || 'N/A'} 
-                        size="small" 
-                        color="info" 
-                        variant="outlined"
-                      />
+                      {(item as any).category_1_name ? (
+                        <Chip 
+                          label={(item as any).category_1_name} 
+                          size="small" 
+                          color="info" 
+                          variant="outlined"
+                        />
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">-</Typography>
+                      )}
                     </TableCell>
                     <TableCell>
-                      <Chip 
-                        label={(item as any).category_2_name || 'N/A'} 
-                        size="small" 
-                        color="success" 
-                        variant="outlined"
-                      />
+                      {(item as any).category_2_name ? (
+                        <Chip 
+                          label={(item as any).category_2_name} 
+                          size="small" 
+                          color="success" 
+                          variant="outlined"
+                        />
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">-</Typography>
+                      )}
                     </TableCell>
                     <TableCell align="center">{item.quantity || item.stock_quantity || 0}</TableCell>
                     <TableCell align="center">{item.unit || item.uom || 'PCS'}</TableCell>

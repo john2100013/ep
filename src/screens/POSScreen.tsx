@@ -135,6 +135,7 @@ const POSScreen: React.FC = () => {
   const [codeSearchResult, setCodeSearchResult] = useState<{ found: boolean; confirmation: any } | null>(null);
   const [mpesaMessage, setMpesaMessage] = useState('');
   const [businessCategoryNames, setBusinessCategoryNames] = useState({
+    category_name: 'Category',
     category_1_name: 'Category 1',
     category_2_name: 'Category 2'
   });
@@ -385,6 +386,7 @@ const POSScreen: React.FC = () => {
       const response = await ApiService.getBusinessCategoryNames();
       if (response.success && response.data) {
         setBusinessCategoryNames({
+          category_name: response.data.category_name || 'Category',
           category_1_name: response.data.category_1_name || 'Category 1',
           category_2_name: response.data.category_2_name || 'Category 2'
         });
@@ -923,6 +925,8 @@ const POSScreen: React.FC = () => {
         const response = await ApiService.getBusinessSettings();
         if (response.success && response.data) {
           businessSettings = response.data;
+          console.log('Business settings fetched:', businessSettings);
+          console.log('PIN value:', businessSettings.pin);
         }
       } catch (err) {
         console.error('Error fetching business settings:', err);
@@ -1545,7 +1549,7 @@ const POSScreen: React.FC = () => {
                   <TableRow>
                     <TableCell>Name</TableCell>
                     <TableCell>Code</TableCell>
-                    <TableCell>Category</TableCell>
+                    <TableCell>{businessCategoryNames.category_name}</TableCell>
                     <TableCell>{businessCategoryNames.category_1_name}</TableCell>
                     <TableCell>{businessCategoryNames.category_2_name}</TableCell>
                     <TableCell align="right">Stock</TableCell>
@@ -1562,21 +1566,21 @@ const POSScreen: React.FC = () => {
                         {item.category_name ? (
                           <Chip label={item.category_name} size="small" color="primary" variant="outlined" />
                         ) : (
-                          <Typography variant="caption" color="text.secondary">N/A</Typography>
+                          <Typography variant="caption" color="text.secondary">-</Typography>
                         )}
                       </TableCell>
                       <TableCell>
                         {item.category_1_name ? (
                           <Chip label={item.category_1_name} size="small" color="info" variant="outlined" />
                         ) : (
-                          <Typography variant="caption" color="text.secondary">N/A</Typography>
+                          <Typography variant="caption" color="text.secondary">-</Typography>
                         )}
                       </TableCell>
                       <TableCell>
                         {item.category_2_name ? (
                           <Chip label={item.category_2_name} size="small" color="success" variant="outlined" />
                         ) : (
-                          <Typography variant="caption" color="text.secondary">N/A</Typography>
+                          <Typography variant="caption" color="text.secondary">-</Typography>
                         )}
                       </TableCell>
                       <TableCell align="right">{item.quantity || 0}</TableCell>

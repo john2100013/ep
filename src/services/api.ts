@@ -157,9 +157,9 @@ export class ApiService {
     rate?: number;
     unit?: string;
     description?: string;
-    category_id?: number;
-    category_1_id?: number;
-    category_2_id?: number;
+    category_id?: number | null;
+    category_1_id?: number | null;
+    category_2_id?: number | null;
   }) {
     const response = await api.put(`/items/${id}`, itemData);
     return response.data;
@@ -172,6 +172,15 @@ export class ApiService {
 
   static async getItemStats() {
     const response = await api.get('/items/stats');
+    return response.data;
+  }
+
+  static async getItemsByExpiry(params: {
+    filter?: 'expired' | 'today' | 'week' | 'month' | 'custom';
+    startDate?: string;
+    endDate?: string;
+  }) {
+    const response = await api.get('/items/expiry', { params });
     return response.data;
   }
 
@@ -389,6 +398,16 @@ export class ApiService {
     return response.data;
   }
 
+  static async getAccountTransactionHistory(params: {
+    accountId?: number;
+    filter?: 'today' | 'week' | 'month' | 'custom';
+    startDate?: string;
+    endDate?: string;
+  }) {
+    const response = await api.get('/financial-accounts/transactions/history', { params });
+    return response.data;
+  }
+
   // Customer endpoints
   static async getCustomers(search?: string) {
     const response = await api.get('/customers', { params: { search } });
@@ -458,6 +477,7 @@ export class ApiService {
     city?: string;
     email: string;
     telephone: string;
+    pin?: string;
     createdBy?: string;
     approvedBy?: string;
     createdBySignature?: string;
@@ -474,7 +494,7 @@ export class ApiService {
     return response.data;
   }
 
-  static async updateBusinessCategoryNames(data: { category_1_name?: string; category_2_name?: string }) {
+  static async updateBusinessCategoryNames(data: { category_name?: string; category_1_name?: string; category_2_name?: string }) {
     const response = await api.put('/item-categories/business/names', data);
     return response.data;
   }

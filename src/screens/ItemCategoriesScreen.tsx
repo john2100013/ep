@@ -49,11 +49,13 @@ const ItemCategoriesScreen: React.FC = () => {
   
   // Business custom category names
   const [businessCategoryNames, setBusinessCategoryNames] = useState({
+    category_name: 'Category',
     category_1_name: 'Category 1',
     category_2_name: 'Category 2'
   });
   const [categoryNamesDialogOpen, setCategoryNamesDialogOpen] = useState(false);
   const [categoryNamesFormData, setCategoryNamesFormData] = useState({
+    category_name: 'Category',
     category_1_name: 'Category 1',
     category_2_name: 'Category 2'
   });
@@ -98,10 +100,12 @@ const ItemCategoriesScreen: React.FC = () => {
       const response = await ApiService.getBusinessCategoryNames();
       if (response.success && response.data) {
         setBusinessCategoryNames({
+          category_name: response.data.category_name || 'Category',
           category_1_name: response.data.category_1_name || 'Category 1',
           category_2_name: response.data.category_2_name || 'Category 2'
         });
         setCategoryNamesFormData({
+          category_name: response.data.category_name || 'Category',
           category_1_name: response.data.category_1_name || 'Category 1',
           category_2_name: response.data.category_2_name || 'Category 2'
         });
@@ -291,7 +295,7 @@ const ItemCategoriesScreen: React.FC = () => {
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
               <Paper sx={{ p: 2, flex: '1 1 200px', bgcolor: 'primary.light', color: 'white' }}>
                 <Typography variant="subtitle2">Main Category</Typography>
-                <Typography variant="body1" fontWeight="bold">Category</Typography>
+                <Typography variant="body1" fontWeight="bold">{businessCategoryNames.category_name}</Typography>
               </Paper>
               <Paper sx={{ p: 2, flex: '1 1 200px', bgcolor: 'info.light', color: 'white' }}>
                 <Typography variant="subtitle2">First Additional Category</Typography>
@@ -432,6 +436,13 @@ const ItemCategoriesScreen: React.FC = () => {
           <DialogTitle>Edit Category Labels</DialogTitle>
           <DialogContent>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+              <TextField
+                label="Main Category Label"
+                fullWidth
+                value={categoryNamesFormData.category_name}
+                onChange={(e) => setCategoryNamesFormData({ ...categoryNamesFormData, category_name: e.target.value })}
+                helperText="This label will be used for the main Category in items"
+              />
               <TextField
                 label={`${businessCategoryNames.category_1_name} Label`}
                 fullWidth
