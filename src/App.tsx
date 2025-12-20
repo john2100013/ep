@@ -38,6 +38,7 @@ import ItemCategoriesScreen from './screens/ItemCategoriesScreen';
 import CustomerInvoicesListScreen from './screens/CustomerInvoicesListScreen';
 import DatabaseSettingsScreen from './screens/DatabaseSettingsScreen';
 import UsersManagementScreen from './screens/UsersManagementScreen';
+import ChangePasswordScreen from './screens/ChangePasswordScreen';
 import EmployeeInvoices from './components/analytics/EmployeeInvoices';
 import EmployeeQuotations from './components/analytics/EmployeeQuotations';
 
@@ -319,6 +320,17 @@ function App() {
               <AdminRoute>
                 <UsersManagementScreen />
               </AdminRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/change-password" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <ChangePasswordScreen />
+              </ProtectedRoute>
             </Box>
           } 
         />

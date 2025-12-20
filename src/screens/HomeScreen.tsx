@@ -609,7 +609,8 @@ const HomeScreen: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Financial Accounts Graph Section */}
+        {/* Financial Accounts Graph Section - Protected by permission */}
+        {user?.can_access_financial_accounts && (
         <Card sx={{ elevation: 4 }}>
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -727,6 +728,7 @@ const HomeScreen: React.FC = () => {
             )}
           </CardContent>
         </Card>
+        )}
 
         {/* Advance Package Modal */}
         <Dialog open={advanceOpen} onClose={() => setAdvanceOpen(false)} fullWidth maxWidth="sm">

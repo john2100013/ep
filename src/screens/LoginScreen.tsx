@@ -31,18 +31,9 @@ const LoginScreen: React.FC = () => {
 
   // Password visibility states
   const [showPassword, setShowPassword] = useState(false);
-  const [showOldPassword, setShowOldPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [showResetConfirmPassword, setShowResetConfirmPassword] = useState(false);
 
-  // Change Password Dialog states
-  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
-  const [oldPassword, setOldPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [changePasswordLoading, setChangePasswordLoading] = useState(false);
 
   // Forgot Password Dialog states
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
@@ -84,49 +75,6 @@ const LoginScreen: React.FC = () => {
     }
   };
 
-  const handleChangePassword = async () => {
-    setError('');
-    setSuccess('');
-
-    // Validation
-    if (!oldPassword || !newPassword || !confirmPassword) {
-      setError('All fields are required');
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      setError('New password must be at least 6 characters long');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setError('New passwords do not match');
-      return;
-    }
-
-    if (oldPassword === newPassword) {
-      setError('New password must be different from old password');
-      return;
-    }
-
-    setChangePasswordLoading(true);
-
-    try {
-      await ApiService.updatePassword(oldPassword, newPassword);
-      setSuccess('Password changed successfully!');
-      setTimeout(() => {
-        setChangePasswordOpen(false);
-        setOldPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
-        setSuccess('');
-      }, 2000);
-    } catch (error: any) {
-      setError(error.response?.data?.message || 'Failed to change password');
-    } finally {
-      setChangePasswordLoading(false);
-    }
-  };
 
   const handleRequestPasswordReset = async () => {
     setError('');
@@ -252,7 +200,7 @@ const LoginScreen: React.FC = () => {
         </Container>
       </Box>
 
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1, px: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1, px: 2, minHeight: 'calc(100vh - 80px)' }}>
         <Box
           sx={{
             display: 'flex',
@@ -371,10 +319,9 @@ const LoginScreen: React.FC = () => {
                 </Link>
                 {user && (
                   <Link
-                    component="button"
-                    type="button"
+                    component={RouterLink}
+                    to="/change-password"
                     variant="body2"
-                    onClick={() => setChangePasswordOpen(true)}
                     sx={{ color: '#6b7280', '&:hover': { color: '#1976d2' }, cursor: 'pointer', textDecoration: 'none' }}
                   >
                     Change Password
@@ -400,112 +347,6 @@ const LoginScreen: React.FC = () => {
           </Paper>
         </Box>
       </Box>
-
-      {/* Change Password Dialog */}
-      <Dialog open={changePasswordOpen} onClose={() => setChangePasswordOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ backgroundColor: '#1976d2', color: 'white', fontWeight: 'bold' }}>
-          Change Password
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
-              {error}
-            </Alert>
-          )}
-          {success && (
-            <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>
-              {success}
-            </Alert>
-          )}
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            label="Current Password"
-            type={showOldPassword ? 'text' : 'password'}
-            value={oldPassword}
-            onChange={(e) => setOldPassword(e.target.value)}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label="toggle password visibility"
-                    onClick={() => setShowOldPassword(!showOldPassword)}
-                    edge="end"
-                  >
-                    {showOldPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            label="New Password"
-            type={showNewPassword ? 'text' : 'password'}
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            helperText="Must be at least 6 characters long"
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label="toggle password visibility"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                    edge="end"
-                  >
-                    {showNewPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            label="Confirm New Password"
-            type={showConfirmPassword ? 'text' : 'password'}
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label="toggle password visibility"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    edge="end"
-                  >
-                    {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => {
-            setChangePasswordOpen(false);
-            setOldPassword('');
-            setNewPassword('');
-            setConfirmPassword('');
-            setError('');
-            setSuccess('');
-          }}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleChangePassword}
-            variant="contained"
-            disabled={changePasswordLoading || !oldPassword || !newPassword || !confirmPassword}
-            sx={{ backgroundColor: '#1976d2' }}
-          >
-            {changePasswordLoading ? 'Changing...' : 'Change Password'}
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Forgot Password Dialog */}
       <Dialog open={forgotPasswordOpen} onClose={handleCloseForgotPassword} maxWidth="sm" fullWidth>

@@ -684,7 +684,17 @@ const UsersManagementScreen: React.FC = () => {
                     control={
                       <Checkbox
                         checked={permissions.can_access_advanced_package}
-                        onChange={(e) => setPermissions({ ...permissions, can_access_advanced_package: e.target.checked })}
+                        onChange={(e) => {
+                          const isChecked = e.target.checked;
+                          setPermissions({
+                            ...permissions,
+                            can_access_advanced_package: isChecked,
+                            // When "Advanced Package (All)" is checked, automatically check all sub-modules
+                            can_access_salon: isChecked ? true : permissions.can_access_salon,
+                            can_access_service_billing: isChecked ? true : permissions.can_access_service_billing,
+                            can_access_hospital: isChecked ? true : permissions.can_access_hospital,
+                          });
+                        }}
                       />
                     }
                     label="Advanced Package (All)"
@@ -693,8 +703,19 @@ const UsersManagementScreen: React.FC = () => {
                     control={
                       <Checkbox
                         checked={permissions.can_access_salon}
-                        onChange={(e) => setPermissions({ ...permissions, can_access_salon: e.target.checked })}
-                        disabled={!permissions.can_access_advanced_package}
+                        onChange={(e) => {
+                          const isChecked = e.target.checked;
+                          const newSalon = isChecked;
+                          const newServiceBilling = permissions.can_access_service_billing;
+                          const newHospital = permissions.can_access_hospital;
+                          // If all individual modules are unchecked, uncheck "Advanced Package (All)"
+                          const allUnchecked = !newSalon && !newServiceBilling && !newHospital;
+                          setPermissions({
+                            ...permissions,
+                            can_access_salon: newSalon,
+                            can_access_advanced_package: allUnchecked ? false : permissions.can_access_advanced_package,
+                          });
+                        }}
                       />
                     }
                     label="Salon / Barber"
@@ -703,8 +724,19 @@ const UsersManagementScreen: React.FC = () => {
                     control={
                       <Checkbox
                         checked={permissions.can_access_service_billing}
-                        onChange={(e) => setPermissions({ ...permissions, can_access_service_billing: e.target.checked })}
-                        disabled={!permissions.can_access_advanced_package}
+                        onChange={(e) => {
+                          const isChecked = e.target.checked;
+                          const newSalon = permissions.can_access_salon;
+                          const newServiceBilling = isChecked;
+                          const newHospital = permissions.can_access_hospital;
+                          // If all individual modules are unchecked, uncheck "Advanced Package (All)"
+                          const allUnchecked = !newSalon && !newServiceBilling && !newHospital;
+                          setPermissions({
+                            ...permissions,
+                            can_access_service_billing: newServiceBilling,
+                            can_access_advanced_package: allUnchecked ? false : permissions.can_access_advanced_package,
+                          });
+                        }}
                       />
                     }
                     label="Service Billing"
@@ -713,8 +745,19 @@ const UsersManagementScreen: React.FC = () => {
                     control={
                       <Checkbox
                         checked={permissions.can_access_hospital}
-                        onChange={(e) => setPermissions({ ...permissions, can_access_hospital: e.target.checked })}
-                        disabled={!permissions.can_access_advanced_package}
+                        onChange={(e) => {
+                          const isChecked = e.target.checked;
+                          const newSalon = permissions.can_access_salon;
+                          const newServiceBilling = permissions.can_access_service_billing;
+                          const newHospital = isChecked;
+                          // If all individual modules are unchecked, uncheck "Advanced Package (All)"
+                          const allUnchecked = !newSalon && !newServiceBilling && !newHospital;
+                          setPermissions({
+                            ...permissions,
+                            can_access_hospital: newHospital,
+                            can_access_advanced_package: allUnchecked ? false : permissions.can_access_advanced_package,
+                          });
+                        }}
                       />
                     }
                     label="Hospital Management"

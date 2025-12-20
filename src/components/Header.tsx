@@ -36,6 +36,7 @@ import {
   StorefrontOutlined as ShopIcon,
   Storage as DatabaseIcon,
   People as PeopleIcon,
+  Lock as LockIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -395,6 +396,25 @@ const Header: React.FC<HeaderProps> = ({ title = 'Invoice App' }) => {
             <ListItemText>Database Settings</ListItemText>
           </MenuItem>
         )}
+
+        {/* Change Password Option */}
+        <MenuItem
+          onClick={() => {
+            navigate('/change-password');
+            handleClose();
+          }}
+          sx={{
+            py: 1,
+            '&:hover': {
+              bgcolor: '#f5f5f5',
+            },
+          }}
+        >
+          <ListItemIcon>
+            <LockIcon fontSize="small" sx={{ color: '#0066ff' }} />
+          </ListItemIcon>
+          <ListItemText>Change Password</ListItemText>
+        </MenuItem>
 
         <Divider sx={{ my: 1 }} />
 
