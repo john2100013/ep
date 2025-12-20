@@ -71,6 +71,7 @@ interface AvailableItem {
   quantity: number;
   unit: string;
   selling_price: number;
+  description?: string;
 }
 
 interface FinancialAccount {
@@ -474,7 +475,7 @@ const POSScreen: React.FC = () => {
         rate: sellingPrice,
         vat: itemVat,
         amount: itemAmount,
-        description: (item as any).description || item.item_name, // Use description if available, fallback to item_name
+        description: item.description || item.item_name, // Use description if available, fallback to item_name
       };
       setPosItems([...posItems, newItem]);
     }
@@ -1413,10 +1414,10 @@ const POSScreen: React.FC = () => {
                     variant="body2" 
                     fontWeight="bold"
                     sx={{ 
-                      color: (total - amountPaid) > 0 ? 'error.main' : 'success.main'
+                      color: (total - amountPaid) > 0 ? 'error.main' : (total - amountPaid) < 0 ? 'success.main' : 'text.primary'
                     }}
                   >
-                    {Number(Math.max(0, total - amountPaid)).toFixed(2)}
+                    {Number(total - amountPaid).toFixed(2)}
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1.5 }}>
