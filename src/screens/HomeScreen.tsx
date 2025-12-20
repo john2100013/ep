@@ -42,6 +42,7 @@ import {
   Storage as DatabaseIcon,
   Warning as WarningIcon,
   TrendingUp as TrendingUpIcon,
+  People as PeopleIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -457,6 +458,16 @@ const HomeScreen: React.FC = () => {
                 sx={{ py: 2, borderColor: '#9C27B0', color: '#9C27B0' }}
               >
                 Analytics
+              </Button>
+              
+              <Button
+                fullWidth
+                variant="outlined"
+                startIcon={<PeopleIcon />}
+                onClick={() => navigate('/users-management')}
+                sx={{ py: 2, borderColor: '#1976d2', color: '#1976d2' }}
+              >
+                👥 Users Management
               </Button>
               
               <Button

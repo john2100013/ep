@@ -346,6 +346,7 @@ const AnalyticsScreen: React.FC = () => {
           >
             <Tab label="All Invoices" />
             <Tab label="All Quotations" />
+            <Tab label="Employee Activity" />
             <Tab label="Top Selling Items" />
             <Tab label="Sales Performance" />
             <Tab label="Profitability" />
