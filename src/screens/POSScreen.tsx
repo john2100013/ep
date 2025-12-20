@@ -630,7 +630,7 @@ const POSScreen: React.FC = () => {
             item_id: parseInt(item.id),
             quantity: item.quantity,
             unit_price: Number(item.rate),
-            description: item.name,
+            description: item.description || item.name,
             code: item.code,
             uom: item.unit,
           })),
@@ -726,7 +726,7 @@ const POSScreen: React.FC = () => {
             item_id: parseInt(item.id),
             quantity: item.quantity,
             unit_price: Number(item.rate),
-            description: item.name,
+            description: item.description || item.name,
             code: item.code,
             uom: item.unit,
           })),
@@ -1158,7 +1158,7 @@ const POSScreen: React.FC = () => {
                   <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
                     <TableRow>
                       <TableCell>#</TableCell>
-                      <TableCell>Name</TableCell>
+                      <TableCell>Item Description</TableCell>
                       <TableCell align="right">Qty</TableCell>
                       <TableCell>Unit</TableCell>
                       <TableCell align="right">Rate</TableCell>
@@ -1178,7 +1178,7 @@ const POSScreen: React.FC = () => {
                       posItems.map((item, index) => (
                         <TableRow key={item.id} sx={{ '&:hover': { backgroundColor: '#f9f9f9' } }}>
                           <TableCell>{index + 1}</TableCell>
-                          <TableCell>{item.name || 'N/A'}</TableCell>
+                          <TableCell>{item.description || item.name || 'N/A'}</TableCell>
                           <TableCell align="right">
                             <TextField
                               type="number"
@@ -1559,7 +1559,7 @@ const POSScreen: React.FC = () => {
               <Table>
                 <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
                   <TableRow>
-                    <TableCell>Name</TableCell>
+                    <TableCell>Item Description</TableCell>
                     <TableCell>Code</TableCell>
                     <TableCell>{businessCategoryNames.category_name}</TableCell>
                     <TableCell>{businessCategoryNames.category_1_name}</TableCell>
@@ -1572,7 +1572,7 @@ const POSScreen: React.FC = () => {
                 <TableBody>
                   {availableItems.map((item: any) => (
                     <TableRow key={item.id}>
-                      <TableCell>{item.item_name || 'Unknown'}</TableCell>
+                      <TableCell>{item.description || item.item_name || 'Unknown'}</TableCell>
                       <TableCell>{item.code || '-'}</TableCell>
                       <TableCell>
                         {item.category_name ? (
