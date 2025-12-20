@@ -43,6 +43,7 @@ import {
   Warning as WarningIcon,
   TrendingUp as TrendingUpIcon,
   People as PeopleIcon,
+  AccountBalance as AccountBalanceIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -469,6 +470,18 @@ const HomeScreen: React.FC = () => {
               >
                 👥 Users Management
               </Button>
+              
+              {user?.can_access_financial_accounts && (
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  startIcon={<AccountBalanceIcon />}
+                  onClick={() => navigate('/financial-accounts')}
+                  sx={{ py: 2, borderColor: '#00C853', color: '#00C853' }}
+                >
+                  💰 Financial Accounts
+                </Button>
+              )}
               
               <Button
                 fullWidth

@@ -105,17 +105,25 @@ const Header: React.FC<HeaderProps> = ({ title = 'Invoice App' }) => {
   const isAdmin = user?.role === 'Admin' || user?.role === 'admin' || user?.role === 'owner';
   
   const navigationItems = [
-    { label: 'Dashboard', icon: <DashboardIcon />, path: '/', adminOnly: false },
-    { label: 'Invoices', icon: <InvoiceIcon />, path: '/invoices', adminOnly: false },
-    { label: 'Quotations', icon: <QuotationIcon />, path: '/quotations', adminOnly: false },
-    { label: 'Items', icon: <ItemsIcon />, path: '/items-list', adminOnly: false },
-    { label: 'Accounts', icon: <AccountBalanceIcon />, path: '/financial-accounts', adminOnly: true },
-    { label: 'Goods Return', icon: <GoodsReturnIcon />, path: '/goods-return', adminOnly: false },
-    { label: 'Damage Tracking', icon: <DamageIcon />, path: '/damage-tracking', adminOnly: false },
-    { label: 'Analytics', icon: <AnalyticsIcon />, path: '/analytics', adminOnly: true },
-    { label: 'Settings', icon: <SettingsIcon />, path: '/business-settings', adminOnly: true },
-    { label: 'Users', icon: <PeopleIcon />, path: '/users-management', adminOnly: true },
-  ].filter(item => !item.adminOnly || isAdmin);
+    { label: 'Dashboard', icon: <DashboardIcon />, path: '/', adminOnly: false, requiredPermission: undefined },
+    { label: 'Invoices', icon: <InvoiceIcon />, path: '/invoices', adminOnly: false, requiredPermission: 'can_access_invoices' },
+    { label: 'Quotations', icon: <QuotationIcon />, path: '/quotations', adminOnly: false, requiredPermission: 'can_access_quotations' },
+    { label: 'Items', icon: <ItemsIcon />, path: '/items-list', adminOnly: false, requiredPermission: 'can_access_items' },
+    { label: 'Accounts', icon: <AccountBalanceIcon />, path: '/financial-accounts', adminOnly: false, requiredPermission: 'can_access_financial_accounts' },
+    { label: 'Goods Return', icon: <GoodsReturnIcon />, path: '/goods-return', adminOnly: false, requiredPermission: 'can_access_goods_returns' },
+    { label: 'Damage Tracking', icon: <DamageIcon />, path: '/damage-tracking', adminOnly: false, requiredPermission: 'can_access_damage_tracking' },
+    { label: 'Analytics', icon: <AnalyticsIcon />, path: '/analytics', adminOnly: false, requiredPermission: 'can_access_analytics' },
+    { label: 'Settings', icon: <SettingsIcon />, path: '/business-settings', adminOnly: false, requiredPermission: 'can_access_business_settings' },
+    { label: 'Users', icon: <PeopleIcon />, path: '/users-management', adminOnly: true, requiredPermission: undefined },
+  ].filter(item => {
+    // If adminOnly is true, check admin role
+    if (item.adminOnly && !isAdmin) return false;
+    // If requiredPermission is set, check permission (admins bypass)
+    if (item.requiredPermission && !isAdmin) {
+      return (user as any)?.[item.requiredPermission] === true;
+    }
+    return true;
+  });
 
   if (!isAuthenticated) {
     return null;

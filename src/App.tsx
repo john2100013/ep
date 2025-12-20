@@ -173,9 +173,9 @@ function App() {
           element={
             <Box>
               <Header />
-              <ProtectedRoute>
+              <PermissionRoute requiredPermission="can_access_quotations">
                 <QuotationListScreen />
-              </ProtectedRoute>
+              </PermissionRoute>
             </Box>
           } 
         />
@@ -184,9 +184,9 @@ function App() {
           element={
             <Box>
               <Header />
-              <ProtectedRoute>
+              <PermissionRoute requiredPermission="can_access_quotations">
                 <InvoicePreviewScreen />
-              </ProtectedRoute>
+              </PermissionRoute>
             </Box>
           } 
         />
@@ -195,9 +195,9 @@ function App() {
           element={
             <Box>
               <Header />
-              <ProtectedRoute>
+              <PermissionRoute requiredPermission="can_access_quotations">
                 <CreateQuotationScreen />
-              </ProtectedRoute>
+              </PermissionRoute>
             </Box>
           } 
         />
@@ -272,9 +272,9 @@ function App() {
           element={
             <Box>
               <Header />
-              <AdminRoute>
+              <PermissionRoute requiredPermission="can_access_financial_accounts">
                 <FinancialAccountsScreen />
-              </AdminRoute>
+              </PermissionRoute>
             </Box>
           } 
         />
