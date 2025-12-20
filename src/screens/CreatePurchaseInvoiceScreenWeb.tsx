@@ -463,9 +463,69 @@ const CreatePurchaseInvoiceScreen: React.FC = () => {
     setLines(newLines);
   };
 
+  // Helper function to validate and normalize fractional quantities
+  // Only allows: whole numbers (1, 2, 3...) and fractional increments (0.25, 0.5, 0.75)
+  // Also allows combinations like 1.5, 2.25, 3.75, etc.
+  const validateFractionalQuantity = (value: number): number => {
+    if (value <= 0) return 0.25; // Minimum is 0.25
+    
+    // Get the whole number part and decimal part
+    const wholePart = Math.floor(value);
+    const decimalPart = value - wholePart;
+    
+    // If it's a whole number, return it
+    if (decimalPart === 0) {
+      return wholePart;
+    }
+    
+    // Check if decimal part is one of the allowed fractions
+    // Allowed: 0.25, 0.5, 0.75
+    const allowedDecimals = [0.25, 0.5, 0.75];
+    const tolerance = 0.001; // Small tolerance for floating point comparison
+    
+    // Find the closest allowed decimal
+    let closestDecimal = allowedDecimals[0];
+    let minDiff = Math.abs(decimalPart - allowedDecimals[0]);
+    
+    for (const allowed of allowedDecimals) {
+      const diff = Math.abs(decimalPart - allowed);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestDecimal = allowed;
+      }
+    }
+    
+    // If the decimal is close enough to an allowed value, use it
+    if (minDiff < tolerance) {
+      return wholePart + closestDecimal;
+    }
+    
+    // Otherwise, round to the nearest allowed value
+    // If decimal is between 0 and 0.25, round to 0.25
+    // If between 0.25 and 0.5, round to 0.5
+    // If between 0.5 and 0.75, round to 0.75
+    // If above 0.75, round up to next whole number
+    if (decimalPart < 0.125) {
+      return wholePart + 0.25;
+    } else if (decimalPart < 0.375) {
+      return wholePart + 0.5;
+    } else if (decimalPart < 0.625) {
+      return wholePart + 0.75;
+    } else {
+      return wholePart + 1;
+    }
+  };
+
   const handleLineChange = (index: number, field: keyof PurchaseInvoiceLine, value: any) => {
     const newLines = [...lines];
-    newLines[index] = { ...newLines[index], [field]: value };
+    
+    // If changing quantity, validate it
+    if (field === 'quantity') {
+      const validatedQty = validateFractionalQuantity(parseFloat(value) || 0);
+      newLines[index] = { ...newLines[index], [field]: validatedQty };
+    } else {
+      newLines[index] = { ...newLines[index], [field]: value };
+    }
     
     if (field === 'quantity' || field === 'unit_price') {
       newLines[index].total = newLines[index].quantity * newLines[index].unit_price;
@@ -878,8 +938,23 @@ const CreatePurchaseInvoiceScreen: React.FC = () => {
                             type="number"
                             size="small"
                             value={line.quantity}
-                            onChange={(e) => handleLineChange(index, 'quantity', parseFloat(e.target.value) || 0)}
-                            inputProps={{ min: 0.01, step: 0.01 }}
+                            onChange={(e) => {
+                              const inputValue = parseFloat(e.target.value) || 0;
+                              handleLineChange(index, 'quantity', inputValue);
+                            }}
+                            onBlur={(e) => {
+                              // Validate on blur to ensure correct value
+                              const inputValue = parseFloat(e.target.value) || 0;
+                              const validatedQty = validateFractionalQuantity(inputValue);
+                              if (Math.abs(validatedQty - inputValue) > 0.001) {
+                                handleLineChange(index, 'quantity', validatedQty);
+                              }
+                            }}
+                            inputProps={{ 
+                              min: 0.25, 
+                              step: 0.25,
+                              pattern: '[0-9]+(\\.(25|5|75|0))?'
+                            }}
                             sx={{ width: { xs: 80, md: 120 } }}
                           />
                         </TableCell>

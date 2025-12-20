@@ -482,16 +482,70 @@ const POSScreen: React.FC = () => {
     setSearchQuery('');
   };
 
+  // Helper function to validate and normalize fractional quantities
+  // Only allows: whole numbers (1, 2, 3...) and fractional increments (0.25, 0.5, 0.75)
+  // Also allows combinations like 1.5, 2.25, 3.75, etc.
+  const validateFractionalQuantity = (value: number): number => {
+    if (value <= 0) return 0.25; // Minimum is 0.25
+    
+    // Get the whole number part and decimal part
+    const wholePart = Math.floor(value);
+    const decimalPart = value - wholePart;
+    
+    // If it's a whole number, return it
+    if (decimalPart === 0) {
+      return wholePart;
+    }
+    
+    // Check if decimal part is one of the allowed fractions
+    // Allowed: 0.25, 0.5, 0.75
+    const allowedDecimals = [0.25, 0.5, 0.75];
+    const tolerance = 0.001; // Small tolerance for floating point comparison
+    
+    // Find the closest allowed decimal
+    let closestDecimal = allowedDecimals[0];
+    let minDiff = Math.abs(decimalPart - allowedDecimals[0]);
+    
+    for (const allowed of allowedDecimals) {
+      const diff = Math.abs(decimalPart - allowed);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestDecimal = allowed;
+      }
+    }
+    
+    // If the decimal is close enough to an allowed value, use it
+    if (minDiff < tolerance) {
+      return wholePart + closestDecimal;
+    }
+    
+    // Otherwise, round to the nearest allowed value
+    // If decimal is between 0 and 0.25, round to 0.25
+    // If between 0.25 and 0.5, round to 0.5
+    // If between 0.5 and 0.75, round to 0.75
+    // If above 0.75, round up to next whole number
+    if (decimalPart < 0.125) {
+      return wholePart + 0.25;
+    } else if (decimalPart < 0.375) {
+      return wholePart + 0.5;
+    } else if (decimalPart < 0.625) {
+      return wholePart + 0.75;
+    } else {
+      return wholePart + 1;
+    }
+  };
+
   // Update item quantity
   const updateItemQuantity = (itemId: string, quantity: number) => {
     setPosItems(
       posItems.map((item) => {
         if (item.id === itemId) {
-          const newQty = Math.max(1, quantity);
-          const itemAmount = Number(item.rate) * newQty;
+          // Validate and normalize the quantity
+          const validatedQty = validateFractionalQuantity(quantity);
+          const itemAmount = Number(item.rate) * validatedQty;
           return {
             ...item,
-            quantity: newQty,
+            quantity: validatedQty,
             amount: itemAmount,
             vat: 0, // VAT is calculated on subtotal only, not per item
           };
@@ -997,14 +1051,20 @@ const POSScreen: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            ${posItems.map(item => `
+            ${posItems.map(item => {
+              // Format quantity to show decimal values correctly (e.g., 1.5, 2.25, 0.75)
+              const formattedQty = item.quantity % 1 === 0 
+                ? item.quantity.toString() 
+                : item.quantity.toFixed(2).replace(/\.?0+$/, ''); // Remove trailing zeros
+              return `
               <tr style="border-bottom: 1px dashed #ccc;">
                 <td style="padding: 5px 2px; font-size: 11px;">${item.description || item.name}</td>
-                <td style="padding: 5px 2px; font-size: 11px; text-align: center;">${item.quantity}</td>
+                <td style="padding: 5px 2px; font-size: 11px; text-align: center;">${formattedQty}</td>
                 <td style="padding: 5px 2px; font-size: 11px; text-align: right;">${Number(item.rate).toFixed(2)}</td>
                 <td style="padding: 5px 2px; font-size: 11px; text-align: right;">${Number(item.amount).toFixed(2)}</td>
               </tr>
-            `).join('')}
+            `;
+            }).join('')}
           </tbody>
         </table>
         
@@ -1183,8 +1243,23 @@ const POSScreen: React.FC = () => {
                               type="number"
                               size="small"
                               value={item.quantity || 1}
-                              onChange={(e) => updateItemQuantity(item.id, parseInt(e.target.value) || 1)}
-                              sx={{ width: 60 }}
+                              onChange={(e) => {
+                                const inputValue = parseFloat(e.target.value) || 0;
+                                updateItemQuantity(item.id, inputValue);
+                              }}
+                              onBlur={(e) => {
+                                // Validate on blur to ensure correct value
+                                const inputValue = parseFloat(e.target.value) || 0;
+                                const validatedQty = validateFractionalQuantity(inputValue);
+                                if (Math.abs(validatedQty - inputValue) > 0.001) {
+                                  updateItemQuantity(item.id, validatedQty);
+                                }
+                              }}
+                              inputProps={{ 
+                                min: 0.25, 
+                                step: 0.25
+                              }}
+                              sx={{ width: 80 }}
                             />
                           </TableCell>
                           <TableCell>{item.unit || 'PCS'}</TableCell>

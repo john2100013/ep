@@ -340,9 +340,12 @@ Date: ${currentDate}
 Supplier: ${state?.supplierName || displaySupplierName}
 
 *Items:*
-${validItems.map((item, index) => 
-  `${index + 1}. ${item.description} - Qty: ${item.quantity} - KSH ${(item.quantity * item.unit_price).toFixed(2)}`
-).join('\n')}
+${validItems.map((item, index) => {
+  const formattedQty = item.quantity % 1 === 0 
+    ? item.quantity.toString() 
+    : item.quantity.toFixed(2).replace(/\.?0+$/, '');
+  return `${index + 1}. ${item.description} - Qty: ${formattedQty} - KSH ${(item.quantity * item.unit_price).toFixed(2)}`;
+}).join('\n')}
 
 Subtotal: KSH ${subtotal.toFixed(2)}${includeVAT && vat > 0 ? `\nVAT (16%): KSH ${vat.toFixed(2)}` : ''}${calculatedDiscount > 0 ? `\nDiscount: -KSH ${calculatedDiscount.toFixed(2)}` : ''}
 *Total: KSH ${total.toFixed(2)}*
@@ -376,9 +379,12 @@ ${docType} No: ${docNumber}
 Date: ${currentDate}
 
 Items:
-${validItems.map((item, index) => 
-  `${index + 1}. ${item.description} - Qty: ${item.quantity} - Unit Price: KSH ${item.unit_price.toFixed(2)} - Total: KSH ${(item.quantity * item.unit_price).toFixed(2)}`
-).join('\n')}
+${validItems.map((item, index) => {
+  const formattedQty = item.quantity % 1 === 0 
+    ? item.quantity.toString() 
+    : item.quantity.toFixed(2).replace(/\.?0+$/, '');
+  return `${index + 1}. ${item.description} - Qty: ${formattedQty} - Unit Price: KSH ${item.unit_price.toFixed(2)} - Total: KSH ${(item.quantity * item.unit_price).toFixed(2)}`;
+}).join('\n')}
 
 Subtotal: KSH ${subtotal.toFixed(2)}${includeVAT && vat > 0 ? `\nVAT (16%): KSH ${vat.toFixed(2)}` : ''}${calculatedDiscount > 0 ? `\nDiscount: -KSH ${calculatedDiscount.toFixed(2)}` : ''}
 Total: KSH ${total.toFixed(2)}
@@ -551,7 +557,9 @@ Your Business Name`;
                     {item.description}
                   </TableCell>
                   <TableCell align="center" sx={{ fontSize: '13px', py: 1.5, border: '1px solid #ddd' }}>
-                    {item.quantity}
+                    {item.quantity % 1 === 0 
+                      ? item.quantity.toString() 
+                      : item.quantity.toFixed(2).replace(/\.?0+$/, '')}
                   </TableCell>
                   <TableCell align="center" sx={{ fontSize: '13px', py: 1.5, border: '1px solid #ddd' }}>
                     {item.uom}
