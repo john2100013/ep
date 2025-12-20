@@ -43,6 +43,10 @@ const Sidebar: React.FC<SidebarProps> = ({
   statusOptions = []
 }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  // Check if user is Admin
+  const isAdmin = user?.role === 'Admin' || user?.role === 'admin' || user?.role === 'owner';
   const location = useLocation();
 
   const formatCurrency = (amount: number) => {
@@ -175,20 +179,22 @@ const Sidebar: React.FC<SidebarProps> = ({
           >
             Damage Tracking
           </Button>
-          <Button
-            variant={getButtonVariant('/analytics')}
-            color={getButtonColor('/analytics')}
-            startIcon={<DashboardIcon />}
-            onClick={() => navigate('/analytics')}
-            fullWidth
-            sx={{ 
-              color: isCurrentPath('/analytics') ? 'white' : '#9C27B0', 
-              borderColor: '#9C27B0',
-              '&:hover': { borderColor: '#9C27B0' }
-            }}
-          >
-            Analytics
-          </Button>
+          {isAdmin && (
+            <Button
+              variant={getButtonVariant('/analytics')}
+              color={getButtonColor('/analytics')}
+              startIcon={<DashboardIcon />}
+              onClick={() => navigate('/analytics')}
+              fullWidth
+              sx={{ 
+                color: isCurrentPath('/analytics') ? 'white' : '#9C27B0', 
+                borderColor: '#9C27B0',
+                '&:hover': { borderColor: '#9C27B0' }
+              }}
+            >
+              Analytics
+            </Button>
+          )}
         </Box>
       </Paper>
 

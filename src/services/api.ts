@@ -822,6 +822,45 @@ export class ApiService {
     const response = await api.get('/hospital/analytics', { params });
     return response.data;
   }
+
+  // User management endpoints
+  static async getUsers() {
+    const response = await api.get('/users');
+    return response.data;
+  }
+
+  static async createUser(userData: {
+    email: string;
+    password: string;
+    first_name: string;
+    last_name: string;
+    role: 'Admin' | 'User';
+  }) {
+    const response = await api.post('/users', userData);
+    return response.data;
+  }
+
+  static async updateUser(userId: number, userData: {
+    email?: string;
+    first_name?: string;
+    last_name?: string;
+    role?: 'Admin' | 'User';
+    status?: 'active' | 'inactive';
+    password?: string;
+  }) {
+    const response = await api.put(`/users/${userId}`, userData);
+    return response.data;
+  }
+
+  static async deleteUser(userId: number) {
+    const response = await api.delete(`/users/${userId}`);
+    return response.data;
+  }
+
+  static async getEmployeeActivity(params?: { dateRange?: string }) {
+    const response = await api.get('/users/analytics/activity', { params });
+    return response.data;
+  }
 }
 
 export default ApiService;

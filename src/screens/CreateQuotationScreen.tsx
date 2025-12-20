@@ -184,7 +184,7 @@ const CreateQuotationScreen: React.FC = () => {
       ...newLines[index],
       item_id: item?.id || null,
       item_name: item?.item_name || '',
-      description: item?.description || '',
+      description: item?.description || item?.item_name || '', // Use description, fallback to item_name
       unit_price: item?.unit_price || 0,
       code: item?.code || '',
       uom: item?.uom || '',
@@ -531,7 +531,7 @@ const CreateQuotationScreen: React.FC = () => {
                           quantity: 1,
                           unit_price: newValue.unit_price || 0,
                           total: 1 * (newValue.unit_price || 0),
-                          description: newValue.description || '',
+                          description: newValue.description || newValue.item_name || '', // Use description, fallback to item_name
                           code: newValue.code || '',
                           uom: newValue.uom || '',
                           item_name: newValue.item_name || ''

@@ -39,6 +39,7 @@ import StockMovement from '../components/analytics/StockMovement';
 import PendingActions from '../components/analytics/PendingActions';
 import AllInvoices from '../components/analytics/AllInvoices';
 import AllQuotations from '../components/analytics/AllQuotations';
+import EmployeeActivity from '../components/analytics/EmployeeActivity';
 
 
 interface TabPanelProps {
@@ -365,34 +366,38 @@ const AnalyticsScreen: React.FC = () => {
         </TabPanel>
 
         <TabPanel value={tabValue} index={2}>
-          <TopSellingItems dateRange={dateRange} />
+          <EmployeeActivity dateRange={dateRange} />
         </TabPanel>
 
         <TabPanel value={tabValue} index={3}>
-          <SalesPerformance dateRange={dateRange} />
+          <TopSellingItems dateRange={dateRange} />
         </TabPanel>
 
         <TabPanel value={tabValue} index={4}>
-          <ProfitabilityAnalysis dateRange={dateRange} />
+          <SalesPerformance dateRange={dateRange} />
         </TabPanel>
 
         <TabPanel value={tabValue} index={5}>
-          <InventoryOverview dateRange={dateRange} />
+          <ProfitabilityAnalysis dateRange={dateRange} />
         </TabPanel>
 
         <TabPanel value={tabValue} index={6}>
-          <CustomerInsights dateRange={dateRange} />
+          <InventoryOverview dateRange={dateRange} />
         </TabPanel>
 
         <TabPanel value={tabValue} index={7}>
-          <RevenueTrends dateRange={dateRange} />
+          <CustomerInsights dateRange={dateRange} />
         </TabPanel>
 
         <TabPanel value={tabValue} index={8}>
-          <StockMovement dateRange={dateRange} />
+          <RevenueTrends dateRange={dateRange} />
         </TabPanel>
 
         <TabPanel value={tabValue} index={9}>
+          <StockMovement dateRange={dateRange} />
+        </TabPanel>
+
+        <TabPanel value={tabValue} index={10}>
           <PendingActions dateRange={dateRange} />
         </TabPanel>
       </Paper>

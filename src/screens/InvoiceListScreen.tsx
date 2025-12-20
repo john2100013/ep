@@ -103,6 +103,7 @@ const InvoiceListScreen: React.FC = () => {
   const fetchInvoices = async () => {
     try {
       setLoading(true);
+      console.log('🔵 [InvoiceList] fetchInvoices called with params:', { page: pagination.page, limit: pagination.limit, searchTerm, statusFilter });
       
       const params: any = {
         page: pagination.page,
@@ -113,14 +114,17 @@ const InvoiceListScreen: React.FC = () => {
       if (statusFilter) params.status = statusFilter;
 
       const data: InvoiceListResponse = await ApiService.getInvoices(params);
+      console.log('🔵 [InvoiceList] fetchInvoices response:', data);
       
       if (data.success) {
         setInvoices(data.data.invoices);
         setPagination(data.data.pagination);
+        console.log('✅ [InvoiceList] Invoices updated, count:', data.data.invoices?.length);
       } else {
         throw new Error(data.message || 'Failed to fetch invoices');
       }
     } catch (err) {
+      console.error('❌ [InvoiceList] Error fetching invoices:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
@@ -130,6 +134,11 @@ const InvoiceListScreen: React.FC = () => {
   useEffect(() => {
     fetchInvoices();
   }, [pagination.page, searchTerm, statusFilter]);
+  
+  // Force refetch when component mounts or when invoices array changes
+  const forceRefresh = () => {
+    fetchInvoices();
+  };
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
@@ -199,12 +208,23 @@ const InvoiceListScreen: React.FC = () => {
       console.log('🔵 [FRONTEND] Status update API response:', response);
       
       if (response && response.success) {
-        console.log('✅ [FRONTEND] Invoice status updated successfully');
+        console.log('✅ [FRONTEND] Invoice status updated successfully, response:', response);
         setSuccess('Invoice status updated successfully');
-        await fetchInvoices();
         setStatusDialogOpen(false);
+        const invoiceIdToUpdate = selectedInvoice.id;
         setSelectedInvoice(null);
         setNewStatus('');
+        // Force refresh invoices list
+        console.log('🔵 [FRONTEND] Refreshing invoice list after status update');
+        await fetchInvoices();
+        // Also update local state if invoice is in current list
+        setInvoices(prevInvoices => 
+          prevInvoices.map(inv => 
+            inv.id === invoiceIdToUpdate 
+              ? { ...inv, status: newStatus as any }
+              : inv
+          )
+        );
         setTimeout(() => setSuccess(null), 3000);
       } else {
         throw new Error(response?.message || 'Failed to update invoice status');

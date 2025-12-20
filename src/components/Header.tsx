@@ -35,6 +35,7 @@ import {
   BarChart as AnalyticsIcon,
   StorefrontOutlined as ShopIcon,
   Storage as DatabaseIcon,
+  People as PeopleIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -100,17 +101,21 @@ const Header: React.FC<HeaderProps> = ({ title = 'Invoice App' }) => {
     setMobileDrawerOpen(false);
   };
 
+  // Check if user is Admin
+  const isAdmin = user?.role === 'Admin' || user?.role === 'admin' || user?.role === 'owner';
+  
   const navigationItems = [
-    { label: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-    { label: 'Invoices', icon: <InvoiceIcon />, path: '/invoices' },
-    { label: 'Quotations', icon: <QuotationIcon />, path: '/quotations' },
-    { label: 'Items', icon: <ItemsIcon />, path: '/items-list' },
-    { label: 'Accounts', icon: <AccountBalanceIcon />, path: '/financial-accounts' },
-    { label: 'Goods Return', icon: <GoodsReturnIcon />, path: '/goods-return' },
-    { label: 'Damage Tracking', icon: <DamageIcon />, path: '/damage-tracking' },
-    { label: 'Analytics', icon: <AnalyticsIcon />, path: '/analytics' },
-    { label: 'Settings', icon: <SettingsIcon />, path: '/business-settings' },
-  ];
+    { label: 'Dashboard', icon: <DashboardIcon />, path: '/', adminOnly: false },
+    { label: 'Invoices', icon: <InvoiceIcon />, path: '/invoices', adminOnly: false },
+    { label: 'Quotations', icon: <QuotationIcon />, path: '/quotations', adminOnly: false },
+    { label: 'Items', icon: <ItemsIcon />, path: '/items-list', adminOnly: false },
+    { label: 'Accounts', icon: <AccountBalanceIcon />, path: '/financial-accounts', adminOnly: true },
+    { label: 'Goods Return', icon: <GoodsReturnIcon />, path: '/goods-return', adminOnly: false },
+    { label: 'Damage Tracking', icon: <DamageIcon />, path: '/damage-tracking', adminOnly: false },
+    { label: 'Analytics', icon: <AnalyticsIcon />, path: '/analytics', adminOnly: true },
+    { label: 'Settings', icon: <SettingsIcon />, path: '/business-settings', adminOnly: true },
+    { label: 'Users', icon: <PeopleIcon />, path: '/users-management', adminOnly: true },
+  ].filter(item => !item.adminOnly || isAdmin);
 
   if (!isAuthenticated) {
     return null;

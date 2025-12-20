@@ -56,7 +56,7 @@ export interface User {
   email: string;
   first_name: string;
   last_name: string;
-  role: 'owner' | 'employee';
+  role: 'Admin' | 'User' | 'owner' | 'admin' | 'employee'; // Support both old and new role formats
   status: 'active' | 'inactive';
   created_at: string;
   updated_at: string;

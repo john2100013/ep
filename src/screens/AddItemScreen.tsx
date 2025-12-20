@@ -316,7 +316,7 @@ const AddItemScreen: React.FC = () => {
                         label={businessCategoryNames.category_name}
                       >
                         <MenuItem value="">
-                          <em>{formData.category_id ? 'Unselect' : `Select ${businessCategoryNames.category_name.toLowerCase()}`}</em>
+                          <em>Unselect</em>
                         </MenuItem>
                         {categories.map((category) => (
                           <MenuItem key={category.id} value={String(category.id)}>
@@ -338,7 +338,7 @@ const AddItemScreen: React.FC = () => {
                         label={businessCategoryNames.category_1_name}
                       >
                         <MenuItem value="">
-                          <em>{formData.category_1_id ? 'Unselect' : `Select ${businessCategoryNames.category_1_name}`}</em>
+                          <em>Unselect</em>
                         </MenuItem>
                         {categories.map((category) => (
                           <MenuItem key={category.id} value={String(category.id)}>
@@ -360,7 +360,7 @@ const AddItemScreen: React.FC = () => {
                         label={businessCategoryNames.category_2_name}
                       >
                         <MenuItem value="">
-                          <em>{formData.category_2_id ? 'Unselect' : `Select ${businessCategoryNames.category_2_name}`}</em>
+                          <em>Unselect</em>
                         </MenuItem>
                         {categories.map((category) => (
                           <MenuItem key={category.id} value={String(category.id)}>

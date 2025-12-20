@@ -8,6 +8,7 @@ import Header from './components/Header';
 import SalonHeader from './components/SalonHeader';
 import SalonSidebar from './components/SalonSidebar';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 
 // Screens
 import LandingPage from './screens/LandingPage';
@@ -35,6 +36,7 @@ import CustomerInvoicesScreen from './screens/CustomerInvoicesScreen';
 import ItemCategoriesScreen from './screens/ItemCategoriesScreen';
 import CustomerInvoicesListScreen from './screens/CustomerInvoicesListScreen';
 import DatabaseSettingsScreen from './screens/DatabaseSettingsScreen';
+import UsersManagementScreen from './screens/UsersManagementScreen';
 
 // Salon Module
 import { 
@@ -245,9 +247,9 @@ function App() {
           element={
             <Box>
               <Header />
-              <ProtectedRoute>
+              <AdminRoute>
                 <BusinessSettingsScreen />
-              </ProtectedRoute>
+              </AdminRoute>
             </Box>
           } 
         />
@@ -267,9 +269,9 @@ function App() {
           element={
             <Box>
               <Header />
-              <ProtectedRoute>
+              <AdminRoute>
                 <FinancialAccountsScreen />
-              </ProtectedRoute>
+              </AdminRoute>
             </Box>
           } 
         />
@@ -300,9 +302,20 @@ function App() {
           element={
             <Box>
               <Header />
-              <ProtectedRoute>
+              <AdminRoute>
                 <AnalyticsScreen />
-              </ProtectedRoute>
+              </AdminRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/users-management" 
+          element={
+            <Box>
+              <Header />
+              <AdminRoute>
+                <UsersManagementScreen />
+              </AdminRoute>
             </Box>
           } 
         />

@@ -33,6 +33,8 @@ import {
   InputAdornment,
   Tabs,
   Tab,
+  Checkbox,
+  FormControlLabel,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -134,6 +136,7 @@ const CreateInvoiceScreen: React.FC = () => {
   
   // Payment fields
   const [amountPaid, setAmountPaid] = useState<number>(0);
+  const [includeVAT, setIncludeVAT] = useState(true); // VAT checkbox state
   const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage'); // Default to percentage
   const [discountPercentage, setDiscountPercentage] = useState<number>(0); // Discount percentage
   const [discount, setDiscount] = useState<number>(0); // Discount amount (fixed or calculated)
@@ -488,12 +491,13 @@ const CreateInvoiceScreen: React.FC = () => {
       ...newLines[index],
       item_id: item?.id || null,
       item_name: item?.item_name || '',
-      description: item?.description || '',
+      description: item?.description || item?.item_name || '', // Use description, fallback to item_name
       unit_price: item?.unit_price || 0,
       code: item?.code || '',
       uom: item?.uom || '',
       total: newLines[index].quantity * (item?.unit_price || 0)
     };
+    console.log('🔵 [CreateInvoice] Item selected, using description:', newLines[index].description);
     setLines(newLines);
   };
 
@@ -555,7 +559,9 @@ const CreateInvoiceScreen: React.FC = () => {
       const lineTotal = isNaN(line.total) ? (line.quantity * line.unit_price) : line.total;
       return sum + (isNaN(lineTotal) ? 0 : lineTotal);
     }, 0);
-    const vatAmount = subtotal * 0.16;
+    // Calculate VAT based on includeVAT flag: if enabled, calculate 16% of subtotal, otherwise 0
+    const vatAmount = includeVAT ? subtotal * 0.16 : 0;
+    console.log('🔵 [CreateInvoice] calculateTotals - includeVAT:', includeVAT, 'subtotal:', subtotal, 'vatAmount:', vatAmount);
     const totalBeforeDiscount = subtotal + vatAmount;
     
     // Calculate discount based on type
@@ -611,6 +617,7 @@ const CreateInvoiceScreen: React.FC = () => {
 
     try {
       const totals = calculateTotals();
+      console.log('🔵 [CreateInvoice] handleSubmit - includeVAT:', includeVAT, 'totals:', totals);
       const invoiceData = {
         customer_id: customerId,
         customer_name: customerName,
@@ -624,16 +631,18 @@ const CreateInvoiceScreen: React.FC = () => {
         quotation_id: selectedQuotationId,
         amountPaid: calculatedAmountPaid,
         paymentMethod: paymentMethod || null,
+        vat_amount: totals.vatAmount, // Send calculated VAT amount (0 if VAT is unchecked)
         discount_amount: totals.discountAmount, // Use calculated discount amount
         lines: lines.map(line => ({
           item_id: line.item_id ? parseInt(line.item_id.toString()) : undefined,
           quantity: parseFloat(line.quantity.toString()),
           unit_price: parseFloat(line.unit_price.toString()),
-          description: line.description,
+          description: line.description, // Use description instead of item_name
           code: line.code,
           uom: line.uom
         }))
       };
+      console.log('🔵 [CreateInvoice] Invoice data being sent:', invoiceData);
 
       let response;
       if (isEditMode && invoiceId) {
@@ -888,11 +897,12 @@ const CreateInvoiceScreen: React.FC = () => {
                           quantity: 1,
                           unit_price: newValue.unit_price || 0,
                           total: 1 * (newValue.unit_price || 0),
-                          description: newValue.description || '',
+                          description: newValue.description || newValue.item_name || '', // Use description, fallback to item_name
                           code: newValue.code || '',
                           uom: newValue.uom || '',
                           item_name: newValue.item_name || ''
                         };
+                        console.log('🔵 [CreateInvoice] New item added from autocomplete, description:', newLine.description);
                         setLines([...lines, newLine]);
                         // Clear search query
                         setItemSearchQuery('');
@@ -947,7 +957,7 @@ const CreateInvoiceScreen: React.FC = () => {
                             value={line.quantity}
                             onChange={(e) => handleLineChange(index, 'quantity', parseFloat(e.target.value) || 0)}
                             inputProps={{ min: 0.01, step: 0.01 }}
-                            sx={{ width: { xs: 60, md: 100 } }}
+                            sx={{ width: { xs: 80, md: 120 } }}
                           />
                         </TableCell>
                         <TableCell align="right" sx={{ padding: { xs: '8px 4px', md: '16px' } }}>
@@ -988,6 +998,22 @@ const CreateInvoiceScreen: React.FC = () => {
                 Summary
               </Typography>
               <Box sx={{ maxWidth: { xs: '100%', md: 400 }, ml: { xs: 0, md: 'auto' } }}>
+                {/* VAT Toggle */}
+                <Box sx={{ mb: 2 }}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={includeVAT}
+                        onChange={(e) => {
+                          console.log('🔵 [CreateInvoice] VAT checkbox changed:', e.target.checked);
+                          setIncludeVAT(e.target.checked);
+                        }}
+                      />
+                    }
+                    label="Include VAT (16%)"
+                  />
+                </Box>
+                
                 {/* Discount Type Toggle */}
                 <Box sx={{ mb: 2 }}>
                   <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
@@ -1058,10 +1084,12 @@ const CreateInvoiceScreen: React.FC = () => {
                         <Typography variant="body2">Subtotal:</Typography>
                         <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{formatCurrency(totals.subtotal)}</Typography>
                       </Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, gap: 2 }}>
-                        <Typography variant="body2">VAT (16%):</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{formatCurrency(totals.vatAmount)}</Typography>
-                      </Box>
+                      {includeVAT && (
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, gap: 2 }}>
+                          <Typography variant="body2">VAT (16%):</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{formatCurrency(totals.vatAmount)}</Typography>
+                        </Box>
+                      )}
                       {totals.discountAmount > 0 && (
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, gap: 2 }}>
                           <Typography variant="body2" sx={{ color: 'error.main' }}>
