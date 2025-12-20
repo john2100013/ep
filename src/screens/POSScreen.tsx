@@ -639,6 +639,8 @@ const POSScreen: React.FC = () => {
           mpesa_code: posPaymentMethod === 'M-Pesa' ? mpesaCode : '',
           amountPaid: parseFloat(amountPaid.toString()) || 0,
           paymentMethod: selectedAccount || null,
+          vat_amount: vatTotal, // Send calculated VAT amount (0 if VAT is unchecked)
+          discount_amount: discountAmount, // Send calculated discount amount
         };
         
         // Update invoice using the API
@@ -735,6 +737,8 @@ const POSScreen: React.FC = () => {
           mpesa_code: posPaymentMethod === 'M-Pesa' ? mpesaCode : '',
           amountPaid: parseFloat(amountPaid.toString()) || 0,
           paymentMethod: selectedAccount || null,
+          vat_amount: vatTotal, // Send calculated VAT amount (0 if VAT is unchecked)
+          discount_amount: discountAmount, // Send calculated discount amount
         };
         
         // Create invoice using the API
