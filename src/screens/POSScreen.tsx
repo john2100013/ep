@@ -61,6 +61,7 @@ interface POSItem {
   rate: number;
   vat: number;
   amount: number;
+  description?: string;
 }
 
 interface AvailableItem {
@@ -473,6 +474,7 @@ const POSScreen: React.FC = () => {
         rate: sellingPrice,
         vat: itemVat,
         amount: itemAmount,
+        description: (item as any).description || item.item_name, // Use description if available, fallback to item_name
       };
       setPosItems([...posItems, newItem]);
     }
@@ -508,10 +510,8 @@ const POSScreen: React.FC = () => {
   // Calculate totals
   const calculateTotals = () => {
     const subTotal = posItems.reduce((sum, item) => sum + Number(item.amount || 0), 0);
-    // Calculate VAT based on includeVAT flag: if enabled, calculate 16% of subtotal, otherwise use item VAT
-    const vatTotal = includeVAT 
-      ? subTotal * 0.16  // 16% VAT if enabled
-      : posItems.reduce((sum, item) => sum + Number(item.vat || 0), 0);
+    // Calculate VAT based on includeVAT flag: if enabled, calculate 16% of subtotal, otherwise 0
+    const vatTotal = includeVAT ? subTotal * 0.16 : 0; // 16% VAT if enabled, 0 if disabled
     const totalBeforeDiscount = subTotal + vatTotal;
     
     // Calculate discount based on type
@@ -836,13 +836,14 @@ const POSScreen: React.FC = () => {
           
           return {
             id: String(line.item_id || line.id),
-            name: line.description || line.item_name || 'Item',
+            name: line.item_name || line.description || 'Item',
             code: line.code || '',
             quantity: quantity,
             unit: line.uom || 'PCS',
             rate: rate,
             vat: vat,
             amount: amount,
+            description: line.description || line.item_name || 'Item', // Preserve description
           };
         });
         
@@ -880,13 +881,14 @@ const POSScreen: React.FC = () => {
           
           return {
             id: String(line.item_id || line.id),
-            name: line.description || line.item_name || 'Item',
+            name: line.item_name || line.description || 'Item',
             code: line.code || '',
             quantity: quantity,
             unit: line.uom || 'PCS',
             rate: rate,
             vat: vat,
             amount: amount,
+            description: line.description || line.item_name || 'Item', // Preserve description
           };
         });
         
@@ -996,7 +998,7 @@ const POSScreen: React.FC = () => {
           <tbody>
             ${posItems.map(item => `
               <tr style="border-bottom: 1px dashed #ccc;">
-                <td style="padding: 5px 2px; font-size: 11px;">${item.name}</td>
+                <td style="padding: 5px 2px; font-size: 11px;">${item.description || item.name}</td>
                 <td style="padding: 5px 2px; font-size: 11px; text-align: center;">${item.quantity}</td>
                 <td style="padding: 5px 2px; font-size: 11px; text-align: right;">${Number(item.rate).toFixed(2)}</td>
                 <td style="padding: 5px 2px; font-size: 11px; text-align: right;">${Number(item.amount).toFixed(2)}</td>
@@ -1010,12 +1012,6 @@ const POSScreen: React.FC = () => {
             <span>Subtotal:</span>
             <span>${Number(subTotal).toFixed(2)}</span>
           </div>
-          ${includeVAT ? `
-          <div style="display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px;">
-            <span>VAT (16%):</span>
-            <span>${Number(vatTotal).toFixed(2)}</span>
-          </div>
-          ` : ''}
           ${discountAmount > 0 ? `
           <div style="display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px; color: #d32f2f;">
             <span>Discount:</span>
@@ -1026,6 +1022,21 @@ const POSScreen: React.FC = () => {
             <span>TOTAL:</span>
             <span>${Number(total).toFixed(2)}</span>
           </div>
+          <div style="display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px; margin-top: 8px;">
+            <span>Amount Received:</span>
+            <span>${Number(amountPaid).toFixed(2)}</span>
+          </div>
+          ${amountPaid < total ? `
+          <div style="display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px; color: #d32f2f;">
+            <span>Amount Due:</span>
+            <span>${Number(total - amountPaid).toFixed(2)}</span>
+          </div>
+          ` : amountPaid > total ? `
+          <div style="display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px; color: #4caf50;">
+            <span>Change Due:</span>
+            <span>${Number(amountPaid - total).toFixed(2)}</span>
+          </div>
+          ` : ''}
         </div>
         
         <div style="text-align: center; margin-top: 15px; padding-top: 10px; border-top: 2px dashed #000; font-size: 11px;">
@@ -1079,7 +1090,7 @@ const POSScreen: React.FC = () => {
   };
 
   // Calculate totals using useMemo for performance
-  const totals = useMemo(() => calculateTotals(), [posItems, includeVAT, discount]);
+  const totals = useMemo(() => calculateTotals(), [posItems, includeVAT, discountType, discountPercentage, discount]);
   const { subTotal, vatTotal, discountAmount, total } = totals;
 
   return (
