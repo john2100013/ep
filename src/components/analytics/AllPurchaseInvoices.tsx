@@ -27,7 +27,7 @@ import {
   Receipt as ReceiptIcon,
 } from '@mui/icons-material';
 
-interface InvoiceProduct {
+interface PurchaseInvoiceProduct {
   id: number;
   item_id?: number;
   description: string;
@@ -38,54 +38,54 @@ interface InvoiceProduct {
   uom?: string;
 }
 
-interface Invoice {
+interface PurchaseInvoice {
   id: number;
-  invoiceNumber: string;
-  customerName: string;
+  purchaseInvoiceNumber: string;
+  supplierName: string;
   createdAt: string;
   issueDate: string | null;
   totalAmount: number;
   amountPaid: number;
-  actualAmountReceived: number;
-  changeGiven: number;
+  actualAmountPaid: number;
+  changeReceived: number;
   amountDue: number;
   status: string;
   paymentStatus: string;
-  products: InvoiceProduct[];
+  products: PurchaseInvoiceProduct[];
 }
 
-interface AllInvoicesProps {
+interface AllPurchaseInvoicesProps {
   dateRange: string;
 }
 
-const AllInvoices: React.FC<AllInvoicesProps> = ({ dateRange }) => {
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
+const AllPurchaseInvoices: React.FC<AllPurchaseInvoicesProps> = ({ dateRange }) => {
+  const [purchaseInvoices, setPurchaseInvoices] = useState<PurchaseInvoice[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [expandedInvoices, setExpandedInvoices] = useState<Set<number>>(new Set());
+  const [expandedPurchaseInvoices, setExpandedPurchaseInvoices] = useState<Set<number>>(new Set());
 
   useEffect(() => {
-    fetchInvoices();
+    fetchPurchaseInvoices();
   }, [dateRange]);
 
-  const fetchInvoices = async () => {
+  const fetchPurchaseInvoices = async () => {
     setLoading(true);
     setError(null);
     try {
       const { api } = await import('../../services/api');
-      const response = await api.get('/analytics/all-invoices', {
+      const response = await api.get('/analytics/all-purchase-invoices', {
         params: { dateRange }
       });
       
       if (response.data) {
-        setInvoices(response.data.invoices || []);
+        setPurchaseInvoices(response.data.purchaseInvoices || []);
       } else {
-        setInvoices([]);
+        setPurchaseInvoices([]);
       }
     } catch (err: any) {
-      console.error('Error fetching invoices:', err);
-      setError(err?.response?.data?.error || 'Failed to fetch invoices');
-      setInvoices([]);
+      console.error('Error fetching purchase invoices:', err);
+      setError(err?.response?.data?.error || 'Failed to fetch purchase invoices');
+      setPurchaseInvoices([]);
     } finally {
       setLoading(false);
     }
@@ -108,14 +108,14 @@ const AllInvoices: React.FC<AllInvoicesProps> = ({ dateRange }) => {
     });
   };
 
-  const toggleInvoice = (invoiceId: number) => {
-    const newExpanded = new Set(expandedInvoices);
-    if (newExpanded.has(invoiceId)) {
-      newExpanded.delete(invoiceId);
+  const togglePurchaseInvoice = (purchaseInvoiceId: number) => {
+    const newExpanded = new Set(expandedPurchaseInvoices);
+    if (newExpanded.has(purchaseInvoiceId)) {
+      newExpanded.delete(purchaseInvoiceId);
     } else {
-      newExpanded.add(invoiceId);
+      newExpanded.add(purchaseInvoiceId);
     }
-    setExpandedInvoices(newExpanded);
+    setExpandedPurchaseInvoices(newExpanded);
   };
 
   const getStatusColor = (status: string) => {
@@ -148,15 +148,15 @@ const AllInvoices: React.FC<AllInvoicesProps> = ({ dateRange }) => {
     }
   };
 
-  const totalAmount = invoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
-  const totalPaid = invoices.reduce((sum, inv) => sum + (inv.actualAmountReceived || 0), 0);
-  const totalDue = invoices.reduce((sum, inv) => sum + inv.amountDue, 0);
+  const totalAmount = purchaseInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
+  const totalPaid = purchaseInvoices.reduce((sum, inv) => sum + (inv.actualAmountPaid || 0), 0);
+  const totalDue = purchaseInvoices.reduce((sum, inv) => sum + inv.amountDue, 0);
 
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h5" fontWeight="bold">
-          All Invoices
+          All Purchase Invoices
         </Typography>
       </Box>
 
@@ -168,10 +168,10 @@ const AllInvoices: React.FC<AllInvoicesProps> = ({ dateRange }) => {
         <Card sx={{ flex: 1, minWidth: '200px' }}>
           <CardContent>
             <Typography variant="h6" color="primary" gutterBottom>
-              Total Invoices
+              Total Purchase Invoices
             </Typography>
             <Typography variant="h4" fontWeight="bold">
-              {invoices.length}
+              {purchaseInvoices.length}
             </Typography>
           </CardContent>
         </Card>
@@ -188,7 +188,7 @@ const AllInvoices: React.FC<AllInvoicesProps> = ({ dateRange }) => {
         <Card sx={{ flex: 1, minWidth: '200px' }}>
           <CardContent>
             <Typography variant="h6" color="info.main" gutterBottom>
-              Actual Amount Received
+              Actual Amount Paid
             </Typography>
             <Typography variant="h4" fontWeight="bold" color="info.main">
               {formatCurrency(totalPaid)}
@@ -207,18 +207,18 @@ const AllInvoices: React.FC<AllInvoicesProps> = ({ dateRange }) => {
         </Card>
       </Box>
 
-      {/* Invoices Table */}
+      {/* Purchase Invoices Table */}
       <TableContainer component={Paper} variant="outlined">
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Invoice #</TableCell>
-              <TableCell>Customer</TableCell>
+              <TableCell>Purchase Invoice #</TableCell>
+              <TableCell>Supplier</TableCell>
               <TableCell>Date</TableCell>
               <TableCell align="right">Total Amount</TableCell>
               <TableCell align="right">Amount Paid</TableCell>
-              <TableCell align="right">Actual Received</TableCell>
-              <TableCell align="right">Change Given</TableCell>
+              <TableCell align="right">Actual Paid</TableCell>
+              <TableCell align="right">Change Received</TableCell>
               <TableCell align="right">Amount Due</TableCell>
               <TableCell>Status</TableCell>
               <TableCell>Payment Status</TableCell>
@@ -226,64 +226,64 @@ const AllInvoices: React.FC<AllInvoicesProps> = ({ dateRange }) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {invoices.map((invoice) => (
-              <React.Fragment key={invoice.id}>
+            {purchaseInvoices.map((purchaseInvoice) => (
+              <React.Fragment key={purchaseInvoice.id}>
                 <TableRow hover>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <ReceiptIcon fontSize="small" color="primary" />
                       <Typography variant="body2" fontWeight="medium">
-                        {invoice.invoiceNumber}
+                        {purchaseInvoice.purchaseInvoiceNumber}
                       </Typography>
                     </Box>
                   </TableCell>
-                  <TableCell>{invoice.customerName}</TableCell>
-                  <TableCell>{formatDate(invoice.createdAt)}</TableCell>
+                  <TableCell>{purchaseInvoice.supplierName}</TableCell>
+                  <TableCell>{formatDate(purchaseInvoice.createdAt)}</TableCell>
                   <TableCell align="right">
                     <Typography variant="body2" fontWeight="bold">
-                      {formatCurrency(invoice.totalAmount)}
+                      {formatCurrency(purchaseInvoice.totalAmount)}
                     </Typography>
                   </TableCell>
                   <TableCell align="right">
                     <Typography variant="body2" color="text.secondary">
-                      {formatCurrency(invoice.amountPaid)}
+                      {formatCurrency(purchaseInvoice.amountPaid)}
                     </Typography>
                   </TableCell>
                   <TableCell align="right">
                     <Typography variant="body2" color="success.main" fontWeight="bold">
-                      {formatCurrency(invoice.actualAmountReceived || 0)}
+                      {formatCurrency(purchaseInvoice.actualAmountPaid || 0)}
                     </Typography>
                   </TableCell>
                   <TableCell align="right">
-                    <Typography variant="body2" color={invoice.changeGiven > 0 ? "info.main" : "text.secondary"}>
-                      {formatCurrency(invoice.changeGiven || 0)}
+                    <Typography variant="body2" color={purchaseInvoice.changeReceived > 0 ? "info.main" : "text.secondary"}>
+                      {formatCurrency(purchaseInvoice.changeReceived || 0)}
                     </Typography>
                   </TableCell>
                   <TableCell align="right">
                     <Typography variant="body2" color="warning.main">
-                      {formatCurrency(invoice.amountDue)}
+                      {formatCurrency(purchaseInvoice.amountDue)}
                     </Typography>
                   </TableCell>
                   <TableCell>
                     <Chip
-                      label={invoice.status || 'N/A'}
-                      color={getStatusColor(invoice.status) as any}
+                      label={purchaseInvoice.status || 'N/A'}
+                      color={getStatusColor(purchaseInvoice.status) as any}
                       size="small"
                     />
                   </TableCell>
                   <TableCell>
                     <Chip
-                      label={invoice.paymentStatus || 'N/A'}
-                      color={getPaymentStatusColor(invoice.paymentStatus) as any}
+                      label={purchaseInvoice.paymentStatus || 'N/A'}
+                      color={getPaymentStatusColor(purchaseInvoice.paymentStatus) as any}
                       size="small"
                     />
                   </TableCell>
                   <TableCell>
                     <IconButton
                       size="small"
-                      onClick={() => toggleInvoice(invoice.id)}
+                      onClick={() => togglePurchaseInvoice(purchaseInvoice.id)}
                     >
-                      {expandedInvoices.has(invoice.id) ? (
+                      {expandedPurchaseInvoices.has(purchaseInvoice.id) ? (
                         <ExpandLessIcon />
                       ) : (
                         <ExpandMoreIcon />
@@ -293,10 +293,10 @@ const AllInvoices: React.FC<AllInvoicesProps> = ({ dateRange }) => {
                 </TableRow>
                 <TableRow>
                   <TableCell colSpan={11} sx={{ py: 0, border: 0 }}>
-                    <Collapse in={expandedInvoices.has(invoice.id)} timeout="auto" unmountOnExit>
+                    <Collapse in={expandedPurchaseInvoices.has(purchaseInvoice.id)} timeout="auto" unmountOnExit>
                       <Box sx={{ p: 2, bgcolor: 'grey.50' }}>
                         <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                          Products ({invoice.products.length})
+                          Products ({purchaseInvoice.products.length})
                         </Typography>
                         <Table size="small">
                           <TableHead>
@@ -309,7 +309,7 @@ const AllInvoices: React.FC<AllInvoicesProps> = ({ dateRange }) => {
                             </TableRow>
                           </TableHead>
                           <TableBody>
-                            {invoice.products.map((product) => (
+                            {purchaseInvoice.products.map((product) => (
                               <TableRow key={product.id}>
                                 <TableCell>{product.code}</TableCell>
                                 <TableCell>{product.description}</TableCell>
@@ -338,14 +338,14 @@ const AllInvoices: React.FC<AllInvoicesProps> = ({ dateRange }) => {
         </Table>
       </TableContainer>
 
-      {invoices.length === 0 && !loading && (
+      {purchaseInvoices.length === 0 && !loading && (
         <Alert severity="info" sx={{ mt: 2 }}>
-          No invoices found for the selected period.
+          No purchase invoices found for the selected period.
         </Alert>
       )}
     </Box>
   );
 };
 
-export default AllInvoices;
+export default AllPurchaseInvoices;
 

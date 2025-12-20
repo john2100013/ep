@@ -33,9 +33,13 @@ import POSScreen from './screens/POSScreen';
 import ServiceBillingScreen from './screens/ServiceBilling/ServiceBillingScreen';
 import ServiceBillingAnalyticsScreen from './screens/ServiceBilling/ServiceBillingAnalyticsScreen';
 import CustomersScreen from './screens/CustomersScreen';
+import SuppliersScreen from './screens/SuppliersScreen';
 import CustomerInvoicesScreen from './screens/CustomerInvoicesScreen';
 import ItemCategoriesScreen from './screens/ItemCategoriesScreen';
 import CustomerInvoicesListScreen from './screens/CustomerInvoicesListScreen';
+import PurchaseInvoiceListScreen from './screens/PurchaseInvoiceListScreen';
+import CreatePurchaseInvoiceScreenWeb from './screens/CreatePurchaseInvoiceScreenWeb';
+import PurchaseInvoicePreviewScreen from './screens/PurchaseInvoicePreviewScreen';
 import DatabaseSettingsScreen from './screens/DatabaseSettingsScreen';
 import UsersManagementScreen from './screens/UsersManagementScreen';
 import ChangePasswordScreen from './screens/ChangePasswordScreen';
@@ -429,6 +433,72 @@ function App() {
               <Header />
               <ProtectedRoute>
                 <CustomerInvoicesListScreen />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/suppliers" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <SuppliersScreen />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/purchase-invoices" 
+          element={
+            <Box>
+              <Header />
+              <PermissionRoute requiredPermission="can_access_invoices">
+                <PurchaseInvoiceListScreen />
+              </PermissionRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/create-purchase-invoice" 
+          element={
+            <Box>
+              <Header />
+              <PermissionRoute requiredPermission="can_access_invoices">
+                <CreatePurchaseInvoiceScreenWeb />
+              </PermissionRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/purchase-invoices/:purchaseInvoiceId/edit" 
+          element={
+            <Box>
+              <Header />
+              <PermissionRoute requiredPermission="can_access_invoices">
+                <CreatePurchaseInvoiceScreenWeb />
+              </PermissionRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/purchase-invoice-preview" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <PurchaseInvoicePreviewScreen />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/purchase-invoices/:id/preview" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <PurchaseInvoicePreviewScreen />
               </ProtectedRoute>
             </Box>
           } 

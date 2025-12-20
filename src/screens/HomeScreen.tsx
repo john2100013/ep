@@ -371,11 +371,21 @@ const HomeScreen: React.FC = () => {
               <Button
                 fullWidth
                 variant="outlined"
-                startIcon={<ItemIcon />}
+                startIcon={<PeopleIcon />}
                 onClick={() => navigate('/customers')}
                 sx={{ py: 2, borderColor: '#9c27b0', color: '#9c27b0' }}
               >
                 👥 Customers
+              </Button>
+              
+              <Button
+                fullWidth
+                variant="outlined"
+                startIcon={<PeopleIcon />}
+                onClick={() => navigate('/suppliers')}
+                sx={{ py: 2, borderColor: '#ff6f00', color: '#ff6f00' }}
+              >
+                🏭 Suppliers
               </Button>
               
               <Button
@@ -387,6 +397,30 @@ const HomeScreen: React.FC = () => {
               >
                 📊 Customer Invoices
               </Button>
+              
+              {user?.can_access_invoices && (
+                <>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    startIcon={<InvoiceIcon />}
+                    onClick={() => navigate('/purchase-invoices')}
+                    sx={{ py: 2, borderColor: '#d32f2f', color: '#d32f2f' }}
+                  >
+                    📥 Purchase Invoices
+                  </Button>
+                  
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    startIcon={<InvoiceIcon />}
+                    onClick={() => navigate('/create-purchase-invoice')}
+                    sx={{ py: 2, borderColor: '#d32f2f', color: '#d32f2f' }}
+                  >
+                    Create Purchase Invoice
+                  </Button>
+                </>
+              )}
               
               {/* Item Management */}
               <Button

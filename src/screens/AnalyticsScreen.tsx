@@ -39,6 +39,7 @@ import StockMovement from '../components/analytics/StockMovement';
 import PendingActions from '../components/analytics/PendingActions';
 import AllInvoices from '../components/analytics/AllInvoices';
 import AllQuotations from '../components/analytics/AllQuotations';
+import AllPurchaseInvoices from '../components/analytics/AllPurchaseInvoices';
 import EmployeeActivity from '../components/analytics/EmployeeActivity';
 
 
@@ -346,6 +347,7 @@ const AnalyticsScreen: React.FC = () => {
           >
             <Tab label="All Invoices" />
             <Tab label="All Quotations" />
+            <Tab label="All Purchase Invoices" />
             <Tab label="Employee Activity" />
             <Tab label="Top Selling Items" />
             <Tab label="Sales Performance" />
@@ -367,38 +369,42 @@ const AnalyticsScreen: React.FC = () => {
         </TabPanel>
 
         <TabPanel value={tabValue} index={2}>
-          <EmployeeActivity dateRange={dateRange} />
+          <AllPurchaseInvoices dateRange={dateRange} />
         </TabPanel>
 
         <TabPanel value={tabValue} index={3}>
-          <TopSellingItems dateRange={dateRange} />
+          <EmployeeActivity dateRange={dateRange} />
         </TabPanel>
 
         <TabPanel value={tabValue} index={4}>
-          <SalesPerformance dateRange={dateRange} />
+          <TopSellingItems dateRange={dateRange} />
         </TabPanel>
 
         <TabPanel value={tabValue} index={5}>
-          <ProfitabilityAnalysis dateRange={dateRange} />
+          <SalesPerformance dateRange={dateRange} />
         </TabPanel>
 
         <TabPanel value={tabValue} index={6}>
-          <InventoryOverview dateRange={dateRange} />
+          <ProfitabilityAnalysis dateRange={dateRange} />
         </TabPanel>
 
         <TabPanel value={tabValue} index={7}>
-          <CustomerInsights dateRange={dateRange} />
+          <InventoryOverview dateRange={dateRange} />
         </TabPanel>
 
         <TabPanel value={tabValue} index={8}>
-          <RevenueTrends dateRange={dateRange} />
+          <CustomerInsights dateRange={dateRange} />
         </TabPanel>
 
         <TabPanel value={tabValue} index={9}>
-          <StockMovement dateRange={dateRange} />
+          <RevenueTrends dateRange={dateRange} />
         </TabPanel>
 
         <TabPanel value={tabValue} index={10}>
+          <StockMovement dateRange={dateRange} />
+        </TabPanel>
+
+        <TabPanel value={tabValue} index={11}>
           <PendingActions dateRange={dateRange} />
         </TabPanel>
       </Paper>

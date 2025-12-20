@@ -439,6 +439,109 @@ export class ApiService {
     return response.data;
   }
 
+  // Supplier endpoints
+  static async getSuppliers(search?: string) {
+    const response = await api.get('/suppliers', { params: { search } });
+    return response.data;
+  }
+
+  static async getSupplier(id: number) {
+    const response = await api.get(`/suppliers/${id}`);
+    return response.data;
+  }
+
+  static async createSupplier(supplierData: any) {
+    const response = await api.post('/suppliers', supplierData);
+    return response.data;
+  }
+
+  static async updateSupplier(id: number, supplierData: any) {
+    const response = await api.put(`/suppliers/${id}`, supplierData);
+    return response.data;
+  }
+
+  static async deleteSupplier(id: number) {
+    const response = await api.delete(`/suppliers/${id}`);
+    return response.data;
+  }
+
+  static async getSupplierPurchaseInvoices(id: number) {
+    const response = await api.get(`/suppliers/${id}/purchase-invoices`);
+    return response.data;
+  }
+
+  // Purchase Invoice endpoints
+  static async getPurchaseInvoices(params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+  }) {
+    const response = await api.get('/purchase-invoices', { params });
+    return response.data;
+  }
+
+  static async getNextPurchaseInvoiceNumber() {
+    const response = await api.get('/purchase-invoices/next-purchase-invoice-number');
+    return response.data;
+  }
+
+  static async createPurchaseInvoice(purchaseInvoiceData: {
+    supplier_name: string;
+    supplier_address?: string;
+    supplier_pin?: string;
+    lines: Array<{
+      item_id?: number;
+      quantity: number;
+      unit_price: number;
+      description: string;
+      code?: string;
+      uom?: string;
+    }>;
+    notes?: string;
+    due_date: string;
+    payment_terms?: string;
+    discount_amount?: number;
+    vat_amount?: number;
+    amountPaid?: number;
+    paymentMethod?: number | string;
+  }) {
+    const response = await api.post('/purchase-invoices', purchaseInvoiceData);
+    return response.data;
+  }
+
+  static async getPurchaseInvoice(id: number) {
+    const response = await api.get(`/purchase-invoices/${id}`);
+    return response.data;
+  }
+
+  static async updatePurchaseInvoice(id: number, purchaseInvoiceData: {
+    supplier_name: string;
+    supplier_address?: string;
+    supplier_pin?: string;
+    lines: Array<{
+      item_id?: number;
+      quantity: number;
+      unit_price: number;
+      description: string;
+      code?: string;
+      uom?: string;
+    }>;
+    notes?: string;
+    due_date: string;
+    payment_terms?: string;
+    discount_amount?: number;
+    vat_amount?: number;
+  }) {
+    const response = await api.put(`/purchase-invoices/${id}`, purchaseInvoiceData);
+    return response.data;
+  }
+
+  static async deletePurchaseInvoice(id: number) {
+    const response = await api.delete(`/purchase-invoices/${id}`);
+    return response.data;
+  }
+
   // Item Categories
   static async getItemCategories() {
     const response = await api.get('/item-categories');
