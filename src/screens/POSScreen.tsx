@@ -465,7 +465,6 @@ const POSScreen: React.FC = () => {
     } else {
       const sellingPrice = Number(item.selling_price) || 0;
       const itemAmount = sellingPrice * 1; // quantity = 1
-      const itemVat = itemAmount * 0.16; // 16% VAT
       const newItem: POSItem = {
         id: item.id,
         name: item.item_name,
@@ -473,7 +472,7 @@ const POSScreen: React.FC = () => {
         quantity: 1,
         unit: item.unit,
         rate: sellingPrice,
-        vat: itemVat,
+        vat: 0, // VAT is calculated on subtotal only, not per item
         amount: itemAmount,
         description: item.description || item.item_name, // Use description if available, fallback to item_name
       };
@@ -490,12 +489,11 @@ const POSScreen: React.FC = () => {
         if (item.id === itemId) {
           const newQty = Math.max(1, quantity);
           const itemAmount = Number(item.rate) * newQty;
-          const itemVat = itemAmount * 0.16; // 16% VAT
           return {
             ...item,
             quantity: newQty,
             amount: itemAmount,
-            vat: itemVat,
+            vat: 0, // VAT is calculated on subtotal only, not per item
           };
         }
         return item;
@@ -833,7 +831,6 @@ const POSScreen: React.FC = () => {
           const quantity = parseFloat(line.quantity) || 0;
           const rate = parseFloat(line.unit_price) || 0;
           const amount = parseFloat(line.total) || (quantity * rate);
-          const vat = amount * 0.16; // 16% VAT on amount
           
           return {
             id: String(line.item_id || line.id),
@@ -842,7 +839,7 @@ const POSScreen: React.FC = () => {
             quantity: quantity,
             unit: line.uom || 'PCS',
             rate: rate,
-            vat: vat,
+            vat: 0, // VAT is calculated on subtotal only, not per item
             amount: amount,
             description: line.description || line.item_name || 'Item', // Preserve description
           };
@@ -878,7 +875,6 @@ const POSScreen: React.FC = () => {
           const quantity = parseFloat(line.quantity) || 0;
           const rate = parseFloat(line.unit_price) || 0;
           const amount = parseFloat(line.total) || (quantity * rate);
-          const vat = amount * 0.16; // 16% VAT on amount
           
           return {
             id: String(line.item_id || line.id),
@@ -887,7 +883,7 @@ const POSScreen: React.FC = () => {
             quantity: quantity,
             unit: line.uom || 'PCS',
             rate: rate,
-            vat: vat,
+            vat: 0, // VAT is calculated on subtotal only, not per item
             amount: amount,
             description: line.description || line.item_name || 'Item', // Preserve description
           };
@@ -1162,7 +1158,6 @@ const POSScreen: React.FC = () => {
                       <TableCell align="right">Qty</TableCell>
                       <TableCell>Unit</TableCell>
                       <TableCell align="right">Rate</TableCell>
-                      <TableCell align="right">VAT</TableCell>
                       <TableCell align="right">Amount</TableCell>
                       <TableCell align="center">Action</TableCell>
                     </TableRow>
@@ -1170,7 +1165,7 @@ const POSScreen: React.FC = () => {
                   <TableBody>
                     {posItems.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} align="center" sx={{ py: 4, color: '#999' }}>
+                        <TableCell colSpan={7} align="center" sx={{ py: 4, color: '#999' }}>
                           No items added yet
                         </TableCell>
                       </TableRow>
@@ -1190,7 +1185,6 @@ const POSScreen: React.FC = () => {
                           </TableCell>
                           <TableCell>{item.unit || 'PCS'}</TableCell>
                           <TableCell align="right">{Number(item.rate || 0).toFixed(2)}</TableCell>
-                          <TableCell align="right">{Number(item.vat || 0).toFixed(2)}</TableCell>
                           <TableCell align="right" sx={{ fontWeight: 'bold' }}>
                             {Number(item.amount || 0).toFixed(2)}
                           </TableCell>
@@ -1559,6 +1553,7 @@ const POSScreen: React.FC = () => {
               <Table>
                 <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
                   <TableRow>
+                    <TableCell>Item Name</TableCell>
                     <TableCell>Item Description</TableCell>
                     <TableCell>Code</TableCell>
                     <TableCell>{businessCategoryNames.category_name}</TableCell>
@@ -1572,6 +1567,7 @@ const POSScreen: React.FC = () => {
                 <TableBody>
                   {availableItems.map((item: any) => (
                     <TableRow key={item.id}>
+                      <TableCell>{item.item_name || 'Unknown'}</TableCell>
                       <TableCell>{item.description || item.item_name || 'Unknown'}</TableCell>
                       <TableCell>{item.code || '-'}</TableCell>
                       <TableCell>
