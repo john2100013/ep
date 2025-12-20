@@ -9,6 +9,7 @@ import SalonHeader from './components/SalonHeader';
 import SalonSidebar from './components/SalonSidebar';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
+import PermissionRoute from './components/PermissionRoute';
 
 // Screens
 import LandingPage from './screens/LandingPage';
@@ -37,6 +38,8 @@ import ItemCategoriesScreen from './screens/ItemCategoriesScreen';
 import CustomerInvoicesListScreen from './screens/CustomerInvoicesListScreen';
 import DatabaseSettingsScreen from './screens/DatabaseSettingsScreen';
 import UsersManagementScreen from './screens/UsersManagementScreen';
+import EmployeeInvoices from './components/analytics/EmployeeInvoices';
+import EmployeeQuotations from './components/analytics/EmployeeQuotations';
 
 // Salon Module
 import { 
@@ -137,9 +140,9 @@ function App() {
           element={
             <Box>
               <Header />
-              <ProtectedRoute>
+              <PermissionRoute requiredPermission="can_access_invoices">
                 <InvoiceListScreen />
-              </ProtectedRoute>
+              </PermissionRoute>
             </Box>
           } 
         />
@@ -148,9 +151,9 @@ function App() {
           element={
             <Box>
               <Header />
-              <ProtectedRoute>
+              <PermissionRoute requiredPermission="can_access_invoices">
                 <InvoicePreviewScreen />
-              </ProtectedRoute>
+              </PermissionRoute>
             </Box>
           } 
         />
@@ -159,9 +162,9 @@ function App() {
           element={
             <Box>
               <Header />
-              <ProtectedRoute>
+              <PermissionRoute requiredPermission="can_access_invoices">
                 <CreateInvoiceScreenWeb />
-              </ProtectedRoute>
+              </PermissionRoute>
             </Box>
           } 
         />
@@ -203,9 +206,9 @@ function App() {
           element={
             <Box>
               <Header />
-              <ProtectedRoute>
+              <PermissionRoute requiredPermission="can_access_invoices">
                 <CreateInvoiceScreenWeb />
-              </ProtectedRoute>
+              </PermissionRoute>
             </Box>
           } 
         />
@@ -302,7 +305,7 @@ function App() {
           element={
             <Box>
               <Header />
-              <AdminRoute>
+              <AdminRoute requiredPermission="can_access_analytics">
                 <AnalyticsScreen />
               </AdminRoute>
             </Box>
@@ -315,6 +318,28 @@ function App() {
               <Header />
               <AdminRoute>
                 <UsersManagementScreen />
+              </AdminRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/employee-invoices/:userId" 
+          element={
+            <Box>
+              <Header />
+              <AdminRoute>
+                <EmployeeInvoices />
+              </AdminRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/employee-quotations/:userId" 
+          element={
+            <Box>
+              <Header />
+              <AdminRoute>
+                <EmployeeQuotations />
               </AdminRoute>
             </Box>
           } 

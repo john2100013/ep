@@ -15,12 +15,15 @@ import {
   Alert,
   Chip,
 } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import { ApiService } from '../../services/api';
 
 interface EmployeeActivity {
   user_id: number;
   invoice_count: number;
   quotation_count: number;
+  invoice_total: number;
+  quotation_total: number;
   total_amount: number;
   user?: {
     id: number;
@@ -36,6 +39,7 @@ interface EmployeeActivityProps {
 }
 
 const EmployeeActivity: React.FC<EmployeeActivityProps> = ({ dateRange }) => {
+  const navigate = useNavigate();
   const [activities, setActivities] = useState<EmployeeActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -107,8 +111,10 @@ const EmployeeActivity: React.FC<EmployeeActivityProps> = ({ dateRange }) => {
                   <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
                     <TableCell><strong>Employee</strong></TableCell>
                     <TableCell align="right"><strong>Invoices Created</strong></TableCell>
+                    <TableCell align="right"><strong>Invoice Total</strong></TableCell>
                     <TableCell align="right"><strong>Quotations Created</strong></TableCell>
-                    <TableCell align="right"><strong>Total Amount</strong></TableCell>
+                    <TableCell align="right"><strong>Quotation Total</strong></TableCell>
+                    <TableCell align="right"><strong>Grand Total</strong></TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -129,14 +135,28 @@ const EmployeeActivity: React.FC<EmployeeActivityProps> = ({ dateRange }) => {
                           label={activity.invoice_count} 
                           color="primary" 
                           variant="outlined"
+                          onClick={() => navigate(`/employee-invoices/${activity.user_id}?dateRange=${dateRange}`)}
+                          sx={{ cursor: 'pointer', '&:hover': { backgroundColor: 'primary.light', color: 'white' } }}
                         />
+                      </TableCell>
+                      <TableCell align="right">
+                        <Typography variant="body1" fontWeight="bold" color="primary.main">
+                          {formatCurrency(activity.invoice_total || 0)}
+                        </Typography>
                       </TableCell>
                       <TableCell align="right">
                         <Chip 
                           label={activity.quotation_count} 
                           color="secondary" 
                           variant="outlined"
+                          onClick={() => navigate(`/employee-quotations/${activity.user_id}?dateRange=${dateRange}`)}
+                          sx={{ cursor: 'pointer', '&:hover': { backgroundColor: 'secondary.light', color: 'white' } }}
                         />
+                      </TableCell>
+                      <TableCell align="right">
+                        <Typography variant="body1" fontWeight="bold" color="secondary.main">
+                          {formatCurrency(activity.quotation_total || 0)}
+                        </Typography>
                       </TableCell>
                       <TableCell align="right">
                         <Typography variant="body1" fontWeight="bold" color="success.main">

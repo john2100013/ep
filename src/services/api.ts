@@ -847,6 +847,25 @@ export class ApiService {
     role?: 'Admin' | 'User';
     status?: 'active' | 'inactive';
     password?: string;
+    permissions?: {
+      can_access_analytics?: boolean;
+      can_access_business_settings?: boolean;
+      can_access_financial_accounts?: boolean;
+      can_access_pos?: boolean;
+      can_access_advanced_package?: boolean;
+      can_access_salon?: boolean;
+      can_access_service_billing?: boolean;
+      can_access_hospital?: boolean;
+      can_access_invoices?: boolean;
+      can_access_quotations?: boolean;
+      can_access_items?: boolean;
+      can_access_customers?: boolean;
+      can_access_goods_returns?: boolean;
+      can_access_damage_tracking?: boolean;
+      can_access_signatures?: boolean;
+      can_access_database_settings?: boolean;
+    };
+    [key: string]: any; // Allow other permission fields directly
   }) {
     const response = await api.put(`/users/${userId}`, userData);
     return response.data;

@@ -17,6 +17,7 @@ interface AuthContextType {
     business_name: string;
   }) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
   loading: boolean;
 }
 
@@ -99,6 +100,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const refreshUser = async () => {
+    try {
+      console.log('🔄 [AuthContext] Refreshing user data...');
+      const response = await ApiService.get('/auth/profile');
+      if (response.success && response.data.user) {
+        const updatedUser = response.data.user;
+        console.log('🔄 [AuthContext] User data refreshed:', {
+          userId: updatedUser.id,
+          permissions: {
+            can_access_analytics: updatedUser.can_access_analytics,
+            can_access_invoices: updatedUser.can_access_invoices,
+            can_access_business_settings: updatedUser.can_access_business_settings,
+            can_access_financial_accounts: updatedUser.can_access_financial_accounts
+          }
+        });
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      }
+    } catch (error: any) {
+      console.error('❌ [AuthContext] Error refreshing user:', error);
+    }
+  };
+
   const logout = () => {
     setUser(null);
     setBusiness(null);
@@ -121,6 +145,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     register,
     logout,
+    refreshUser,
     loading,
   };
 

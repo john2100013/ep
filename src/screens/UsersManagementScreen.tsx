@@ -25,12 +25,16 @@ import {
   IconButton,
   Alert,
   Chip,
+  Checkbox,
+  FormControlLabel,
+  Divider,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   People as PeopleIcon,
+  Save as SaveIcon,
 } from '@mui/icons-material';
 import { ApiService } from '../services/api';
 import Sidebar from '../components/Sidebar';
@@ -46,16 +50,34 @@ interface User {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  can_access_analytics?: boolean;
+  can_access_business_settings?: boolean;
+  can_access_financial_accounts?: boolean;
+  can_access_pos?: boolean;
+  can_access_advanced_package?: boolean;
+  can_access_salon?: boolean;
+  can_access_service_billing?: boolean;
+  can_access_hospital?: boolean;
+  can_access_invoices?: boolean;
+  can_access_quotations?: boolean;
+  can_access_items?: boolean;
+  can_access_customers?: boolean;
+  can_access_goods_returns?: boolean;
+  can_access_damage_tracking?: boolean;
+  can_access_signatures?: boolean;
+  can_access_database_settings?: boolean;
 }
 
 const UsersManagementScreen: React.FC = () => {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, refreshUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editingPermissionsUser, setEditingPermissionsUser] = useState<User | null>(null);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -63,6 +85,24 @@ const UsersManagementScreen: React.FC = () => {
     last_name: '',
     role: 'User' as 'Admin' | 'User',
     status: 'active' as 'active' | 'inactive',
+  });
+  const [permissions, setPermissions] = useState({
+    can_access_analytics: false,
+    can_access_business_settings: false,
+    can_access_financial_accounts: false,
+    can_access_pos: true,
+    can_access_advanced_package: false,
+    can_access_salon: false,
+    can_access_service_billing: false,
+    can_access_hospital: false,
+    can_access_invoices: true,
+    can_access_quotations: true,
+    can_access_items: true,
+    can_access_customers: true,
+    can_access_goods_returns: true,
+    can_access_damage_tracking: true,
+    can_access_signatures: true,
+    can_access_database_settings: false,
   });
 
   useEffect(() => {
@@ -127,6 +167,64 @@ const UsersManagementScreen: React.FC = () => {
       role: 'User',
       status: 'active',
     });
+  };
+
+  const handleOpenPermissionsDialog = (user: User) => {
+    setEditingPermissionsUser(user);
+    setPermissions({
+      can_access_analytics: user.can_access_analytics || false,
+      can_access_business_settings: user.can_access_business_settings || false,
+      can_access_financial_accounts: user.can_access_financial_accounts || false,
+      can_access_pos: user.can_access_pos !== undefined ? user.can_access_pos : true,
+      can_access_advanced_package: user.can_access_advanced_package || false,
+      can_access_salon: user.can_access_salon || false,
+      can_access_service_billing: user.can_access_service_billing || false,
+      can_access_hospital: user.can_access_hospital || false,
+      can_access_invoices: user.can_access_invoices !== undefined ? user.can_access_invoices : true,
+      can_access_quotations: user.can_access_quotations !== undefined ? user.can_access_quotations : true,
+      can_access_items: user.can_access_items !== undefined ? user.can_access_items : true,
+      can_access_customers: user.can_access_customers !== undefined ? user.can_access_customers : true,
+      can_access_goods_returns: user.can_access_goods_returns !== undefined ? user.can_access_goods_returns : true,
+      can_access_damage_tracking: user.can_access_damage_tracking !== undefined ? user.can_access_damage_tracking : true,
+      can_access_signatures: user.can_access_signatures !== undefined ? user.can_access_signatures : true,
+      can_access_database_settings: user.can_access_database_settings || false,
+    });
+    setPermissionsDialogOpen(true);
+  };
+
+  const handleClosePermissionsDialog = () => {
+    setPermissionsDialogOpen(false);
+    setEditingPermissionsUser(null);
+  };
+
+  const handleUpdatePermissions = async () => {
+    if (!editingPermissionsUser) return;
+
+    try {
+      setError(null);
+      const response = await ApiService.updateUser(editingPermissionsUser.id, {
+        permissions: permissions
+      } as any);
+      
+      if (response.success) {
+        setSuccess('Permissions updated successfully!');
+        await loadUsers();
+        
+        // If we updated the current user's permissions, refresh their data
+        if (editingPermissionsUser?.id === currentUser?.id) {
+          console.log('🔄 [UsersManagement] Refreshing current user data after permission update');
+          await refreshUser();
+        }
+        
+        handleClosePermissionsDialog();
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        setError(response.message || 'Failed to update permissions');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to update permissions');
+      console.error('Update permissions error:', err);
+    }
   };
 
   const handleSubmit = async () => {
@@ -345,14 +443,25 @@ const UsersManagementScreen: React.FC = () => {
                           onClick={() => handleOpenDialog(user)}
                           color="primary"
                           disabled={user.id === currentUser?.id}
+                          title="Edit User"
                         >
                           <EditIcon />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleOpenPermissionsDialog(user)}
+                          color="secondary"
+                          disabled={user.id === currentUser?.id || (user.role === 'admin' || user.role === 'owner')}
+                          title="Manage Permissions"
+                        >
+                          <SaveIcon />
                         </IconButton>
                         <IconButton
                           size="small"
                           onClick={() => handleDelete(user.id)}
                           color="error"
                           disabled={user.id === currentUser?.id}
+                          title="Delete User"
                         >
                           <DeleteIcon />
                         </IconButton>
@@ -432,6 +541,191 @@ const UsersManagementScreen: React.FC = () => {
               <Button onClick={handleCloseDialog}>Cancel</Button>
               <Button onClick={handleSubmit} variant="contained">
                 {editingUser ? 'Update' : 'Create'}
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* Permissions Dialog */}
+          <Dialog open={permissionsDialogOpen} onClose={handleClosePermissionsDialog} maxWidth="md" fullWidth>
+            <DialogTitle>
+              Manage Permissions - {editingPermissionsUser?.first_name} {editingPermissionsUser?.last_name}
+            </DialogTitle>
+            <DialogContent>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
+                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                  Core Modules
+                </Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 2 }}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={permissions.can_access_invoices}
+                        onChange={(e) => setPermissions({ ...permissions, can_access_invoices: e.target.checked })}
+                      />
+                    }
+                    label="Invoices"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={permissions.can_access_quotations}
+                        onChange={(e) => setPermissions({ ...permissions, can_access_quotations: e.target.checked })}
+                      />
+                    }
+                    label="Quotations"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={permissions.can_access_items}
+                        onChange={(e) => setPermissions({ ...permissions, can_access_items: e.target.checked })}
+                      />
+                    }
+                    label="Items"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={permissions.can_access_customers}
+                        onChange={(e) => setPermissions({ ...permissions, can_access_customers: e.target.checked })}
+                      />
+                    }
+                    label="Customers"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={permissions.can_access_pos}
+                        onChange={(e) => setPermissions({ ...permissions, can_access_pos: e.target.checked })}
+                      />
+                    }
+                    label="POS System"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={permissions.can_access_goods_returns}
+                        onChange={(e) => setPermissions({ ...permissions, can_access_goods_returns: e.target.checked })}
+                      />
+                    }
+                    label="Goods Returns"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={permissions.can_access_damage_tracking}
+                        onChange={(e) => setPermissions({ ...permissions, can_access_damage_tracking: e.target.checked })}
+                      />
+                    }
+                    label="Damage Tracking"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={permissions.can_access_signatures}
+                        onChange={(e) => setPermissions({ ...permissions, can_access_signatures: e.target.checked })}
+                      />
+                    }
+                    label="Signatures"
+                  />
+                </Box>
+
+                <Divider sx={{ my: 2 }} />
+
+                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                  Administrative Modules
+                </Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 2 }}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={permissions.can_access_analytics}
+                        onChange={(e) => setPermissions({ ...permissions, can_access_analytics: e.target.checked })}
+                      />
+                    }
+                    label="Analytics"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={permissions.can_access_business_settings}
+                        onChange={(e) => setPermissions({ ...permissions, can_access_business_settings: e.target.checked })}
+                      />
+                    }
+                    label="Business Settings"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={permissions.can_access_financial_accounts}
+                        onChange={(e) => setPermissions({ ...permissions, can_access_financial_accounts: e.target.checked })}
+                      />
+                    }
+                    label="Financial Accounts"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={permissions.can_access_database_settings}
+                        onChange={(e) => setPermissions({ ...permissions, can_access_database_settings: e.target.checked })}
+                      />
+                    }
+                    label="Database Settings"
+                  />
+                </Box>
+
+                <Divider sx={{ my: 2 }} />
+
+                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                  Advanced Package
+                </Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 2 }}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={permissions.can_access_advanced_package}
+                        onChange={(e) => setPermissions({ ...permissions, can_access_advanced_package: e.target.checked })}
+                      />
+                    }
+                    label="Advanced Package (All)"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={permissions.can_access_salon}
+                        onChange={(e) => setPermissions({ ...permissions, can_access_salon: e.target.checked })}
+                        disabled={!permissions.can_access_advanced_package}
+                      />
+                    }
+                    label="Salon / Barber"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={permissions.can_access_service_billing}
+                        onChange={(e) => setPermissions({ ...permissions, can_access_service_billing: e.target.checked })}
+                        disabled={!permissions.can_access_advanced_package}
+                      />
+                    }
+                    label="Service Billing"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={permissions.can_access_hospital}
+                        onChange={(e) => setPermissions({ ...permissions, can_access_hospital: e.target.checked })}
+                        disabled={!permissions.can_access_advanced_package}
+                      />
+                    }
+                    label="Hospital Management"
+                  />
+                </Box>
+              </Box>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleClosePermissionsDialog}>Cancel</Button>
+              <Button onClick={handleUpdatePermissions} variant="contained" startIcon={<SaveIcon />}>
+                Update Permissions
               </Button>
             </DialogActions>
           </Dialog>
