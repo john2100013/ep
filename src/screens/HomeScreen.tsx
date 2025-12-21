@@ -44,6 +44,7 @@ import {
   TrendingUp as TrendingUpIcon,
   People as PeopleIcon,
   AccountBalance as AccountBalanceIcon,
+  History as HistoryIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -452,6 +453,19 @@ const HomeScreen: React.FC = () => {
               >
                 Add Item
               </Button>
+              
+              {/* Product Modifications - Only visible if user has permission */}
+              {(user?.can_edit_delete_products || user?.role === 'admin' || user?.role === 'owner') && (
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  startIcon={<HistoryIcon />}
+                  onClick={() => navigate('/product-modifications')}
+                  sx={{ py: 2, borderColor: '#7b1fa2', color: '#7b1fa2' }}
+                >
+                  📋 Product Modifications
+                </Button>
+              )}
               
               {/* Inventory Management */}
               <Button

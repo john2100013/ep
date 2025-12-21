@@ -38,6 +38,7 @@ const AddItemScreen: React.FC = () => {
     category_1_id: '',
     category_2_id: '',
     reorder_level: '',
+    modification_reason: '', // Reason for modification (only used when editing)
   });
   const [manufacturingDate, setManufacturingDate] = useState<Date | null>(null);
   const [expiryDate, setExpiryDate] = useState<Date | null>(null);
@@ -187,7 +188,7 @@ const AddItemScreen: React.FC = () => {
           ? parseInt(formData.category_2_id) 
           : null;
         
-        await ApiService.updateItem(parseInt(editItemId), {
+        const updateResponse = await ApiService.updateItem(parseInt(editItemId), {
           item_name: formData.item_name.trim(),
           description: formData.description.trim(),
           quantity: parseFloat(formData.quantity),
@@ -196,8 +197,17 @@ const AddItemScreen: React.FC = () => {
           category_id: categoryId,
           category_1_id: category1Id,
           category_2_id: category2Id,
+          modification_reason: formData.modification_reason.trim() || undefined,
         });
-        setSuccess('Item updated successfully!');
+        
+        const modificationId = updateResponse.data?.modification_id;
+        if (modificationId) {
+          setSuccess('Item updated successfully! Product modification document created.');
+          // Store modification ID for navigation
+          (window as any).lastProductModificationId = modificationId;
+        } else {
+          setSuccess('Item updated successfully!');
+        }
       } else {
         // Create new item
         await ApiService.createItem({
@@ -235,9 +245,15 @@ const AddItemScreen: React.FC = () => {
         setExpiryDate(null);
       }
       
-      // Navigate back after short delay
+      // Navigate back after short delay, or to modification preview if available
       setTimeout(() => {
-        navigate('/items-list');
+        const modId = (window as any).lastProductModificationId;
+        if (isEditMode && modId) {
+          delete (window as any).lastProductModificationId; // Clean up
+          navigate(`/product-modifications/${modId}`);
+        } else {
+          navigate('/items-list');
+        }
       }, 1500);
     } catch (error: any) {
       setError(error.response?.data?.message || (isEditMode ? 'Failed to update item' : 'Failed to add item'));
@@ -474,6 +490,21 @@ const AddItemScreen: React.FC = () => {
                       helperText="Minimum stock level before reordering (optional)"
                     />
                   </Box>
+
+                  {isEditMode && (
+                    <TextField
+                      fullWidth
+                      label="Modification Reason (Optional)"
+                      name="modification_reason"
+                      value={formData.modification_reason}
+                      onChange={handleChange}
+                      margin="normal"
+                      multiline
+                      rows={2}
+                      placeholder="Reason for modifying this product (e.g., Price update, Stock adjustment, etc.)"
+                      helperText="This will be recorded in the product modification document"
+                    />
+                  )}
 
                   {formData.quantity && formData.buying_price && formData.selling_price && (
                     <Box sx={{ mt: 2, p: { xs: 1.5, md: 2 }, bgcolor: 'grey.100', borderRadius: 1 }}>

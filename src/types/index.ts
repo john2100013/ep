@@ -76,6 +76,7 @@ export interface User {
   can_access_damage_tracking?: boolean;
   can_access_signatures?: boolean;
   can_access_database_settings?: boolean;
+  can_edit_delete_products?: boolean;
 }
 
 export interface Business {

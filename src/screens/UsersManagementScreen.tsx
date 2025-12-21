@@ -66,6 +66,7 @@ interface User {
   can_access_damage_tracking?: boolean;
   can_access_signatures?: boolean;
   can_access_database_settings?: boolean;
+  can_edit_delete_products?: boolean;
 }
 
 const UsersManagementScreen: React.FC = () => {
@@ -103,6 +104,7 @@ const UsersManagementScreen: React.FC = () => {
     can_access_damage_tracking: true,
     can_access_signatures: true,
     can_access_database_settings: false,
+    can_edit_delete_products: false,
   });
 
   useEffect(() => {
@@ -188,6 +190,7 @@ const UsersManagementScreen: React.FC = () => {
       can_access_damage_tracking: user.can_access_damage_tracking !== undefined ? user.can_access_damage_tracking : true,
       can_access_signatures: user.can_access_signatures !== undefined ? user.can_access_signatures : true,
       can_access_database_settings: user.can_access_database_settings || false,
+      can_edit_delete_products: user.can_edit_delete_products || false,
     });
     setPermissionsDialogOpen(true);
   };
@@ -582,6 +585,16 @@ const UsersManagementScreen: React.FC = () => {
                       />
                     }
                     label="Items"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={permissions.can_edit_delete_products}
+                        onChange={(e) => setPermissions({ ...permissions, can_edit_delete_products: e.target.checked })}
+                      />
+                    }
+                    label="Edit/Delete Products"
+                    title="Allow user to edit and delete products/items"
                   />
                   <FormControlLabel
                     control={

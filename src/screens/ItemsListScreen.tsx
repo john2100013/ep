@@ -37,6 +37,7 @@ import { useNavigate } from 'react-router-dom';
 import { ApiService } from '../services/api';
 import type { Item } from '../types';
 import Sidebar from '../components/Sidebar';
+import { useAuth } from '../contexts/AuthContext';
 
 const ItemsListScreen: React.FC = () => {
   const [items, setItems] = useState<Item[]>([]);
@@ -60,6 +61,10 @@ const ItemsListScreen: React.FC = () => {
   const [deleting, setDeleting] = useState(false);
 
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  // Check if user has permission to edit/delete products
+  const canEditDeleteProducts = user?.can_edit_delete_products === true || user?.role === 'admin' || user?.role === 'owner' || user?.role === 'Admin';
 
   useEffect(() => {
     loadItems();
@@ -384,9 +389,12 @@ const ItemsListScreen: React.FC = () => {
                           size="small"
                           color="primary"
                           onClick={(e) => handleEdit(item, e)}
+                          disabled={!canEditDeleteProducts}
                           sx={{ 
-                            '&:hover': { bgcolor: 'rgba(0, 102, 255, 0.1)' }
+                            '&:hover': { bgcolor: canEditDeleteProducts ? 'rgba(0, 102, 255, 0.1)' : 'transparent' },
+                            opacity: canEditDeleteProducts ? 1 : 0.5
                           }}
+                          title={canEditDeleteProducts ? 'Edit item' : 'You do not have permission to edit products'}
                         >
                           <EditIcon fontSize="small" />
                         </IconButton>
@@ -394,9 +402,12 @@ const ItemsListScreen: React.FC = () => {
                           size="small"
                           color="error"
                           onClick={(e) => handleDeleteClick(item, e)}
+                          disabled={!canEditDeleteProducts}
                           sx={{ 
-                            '&:hover': { bgcolor: 'rgba(211, 47, 47, 0.1)' }
+                            '&:hover': { bgcolor: canEditDeleteProducts ? 'rgba(211, 47, 47, 0.1)' : 'transparent' },
+                            opacity: canEditDeleteProducts ? 1 : 0.5
                           }}
+                          title={canEditDeleteProducts ? 'Delete item' : 'You do not have permission to delete products'}
                         >
                           <DeleteIcon fontSize="small" />
                         </IconButton>

@@ -130,6 +130,7 @@ const CreatePurchaseInvoiceScreen: React.FC = () => {
   const [searchingCode, setSearchingCode] = useState(false);
   const [codeSearchResult, setCodeSearchResult] = useState<{ found: boolean; confirmation: any } | null>(null);
   const [mpesaMessage, setMpesaMessage] = useState('');
+  const [affectFinancialAccount, setAffectFinancialAccount] = useState(true); // Checkbox to control whether financial account is affected
 
   // Fetch items and quotations
   useEffect(() => {
@@ -647,6 +648,7 @@ const CreatePurchaseInvoiceScreen: React.FC = () => {
         notes,
         amountPaid: calculatedAmountPaid,
         paymentMethod: paymentMethod || undefined,
+        affectFinancialAccount: affectFinancialAccount, // Send checkbox value to backend
         vat_amount: totals.vatAmount,
         discount_amount: totals.discountAmount,
         lines: lines.map(line => ({
@@ -1232,6 +1234,20 @@ const CreatePurchaseInvoiceScreen: React.FC = () => {
                     </FormControl>
                   </Box>
                 </Box>
+                {/* Checkbox to control whether financial account is affected */}
+                {amountPaid > 0 && paymentMethod && (
+                  <Box sx={{ mt: 1 }}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={affectFinancialAccount}
+                          onChange={(e) => setAffectFinancialAccount(e.target.checked)}
+                        />
+                      }
+                      label="Deduct amount from selected financial account"
+                    />
+                  </Box>
+                )}
               </Box>
             </CardContent>
           </Card>

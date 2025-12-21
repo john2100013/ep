@@ -983,6 +983,22 @@ export class ApiService {
     const response = await api.get('/users/analytics/activity', { params });
     return response.data;
   }
+
+  // Product modification endpoints
+  static async getProductModifications(params?: { page?: number; limit?: number; item_id?: number }) {
+    const response = await api.get('/product-modifications', { params });
+    return response.data;
+  }
+
+  static async getProductModification(id: number) {
+    const response = await api.get(`/product-modifications/${id}`);
+    return response.data;
+  }
+
+  static async deleteProductModification(id: number) {
+    const response = await api.delete(`/product-modifications/${id}`);
+    return response.data;
+  }
 }
 
 export default ApiService;

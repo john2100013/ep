@@ -40,6 +40,8 @@ import CustomerInvoicesListScreen from './screens/CustomerInvoicesListScreen';
 import PurchaseInvoiceListScreen from './screens/PurchaseInvoiceListScreen';
 import CreatePurchaseInvoiceScreenWeb from './screens/CreatePurchaseInvoiceScreenWeb';
 import PurchaseInvoicePreviewScreen from './screens/PurchaseInvoicePreviewScreen';
+import ProductModificationPreviewScreen from './screens/ProductModificationPreviewScreen';
+import ProductModificationListScreen from './screens/ProductModificationListScreen';
 import DatabaseSettingsScreen from './screens/DatabaseSettingsScreen';
 import UsersManagementScreen from './screens/UsersManagementScreen';
 import ChangePasswordScreen from './screens/ChangePasswordScreen';
@@ -500,6 +502,28 @@ function App() {
               <ProtectedRoute>
                 <PurchaseInvoicePreviewScreen />
               </ProtectedRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/product-modifications" 
+          element={
+            <Box>
+              <Header />
+              <PermissionRoute requiredPermission="can_edit_delete_products">
+                <ProductModificationListScreen />
+              </PermissionRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/product-modifications/:id" 
+          element={
+            <Box>
+              <Header />
+              <PermissionRoute requiredPermission="can_edit_delete_products">
+                <ProductModificationPreviewScreen />
+              </PermissionRoute>
             </Box>
           } 
         />
