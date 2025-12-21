@@ -160,6 +160,7 @@ export class ApiService {
     category_id?: number | null;
     category_1_id?: number | null;
     category_2_id?: number | null;
+    modification_reason?: string;
   }) {
     const response = await api.put(`/items/${id}`, itemData);
     return response.data;

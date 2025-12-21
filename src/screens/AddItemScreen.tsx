@@ -86,6 +86,7 @@ const AddItemScreen: React.FC = () => {
           category_1_id: item.category_1_id != null ? String(item.category_1_id) : '',
           category_2_id: item.category_2_id != null ? String(item.category_2_id) : '',
           reorder_level: item.reorder_level?.toString() || '',
+          modification_reason: '', // Initialize modification reason as empty when loading item
         });
         console.log('Form data set:', {
           category_id: item.category_id != null ? String(item.category_id) : '',
@@ -240,6 +241,7 @@ const AddItemScreen: React.FC = () => {
           category_1_id: '',
           category_2_id: '',
           reorder_level: '',
+          modification_reason: '', // Reset modification reason
         });
         setManufacturingDate(null);
         setExpiryDate(null);
