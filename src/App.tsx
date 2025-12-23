@@ -30,6 +30,7 @@ import GoodsReturnScreen from './screens/GoodsReturnScreen';
 import DamageTrackingScreen from './screens/DamageTrackingScreen';
 import AnalyticsScreen from './screens/AnalyticsScreen';
 import POSScreen from './screens/POSScreen';
+import RestaurantScreen from './screens/Restaurant/RestaurantScreen';
 import ServiceBillingScreen from './screens/ServiceBilling/ServiceBillingScreen';
 import ServiceBillingAnalyticsScreen from './screens/ServiceBilling/ServiceBillingAnalyticsScreen';
 import CustomersScreen from './screens/CustomersScreen';
@@ -369,6 +370,17 @@ function App() {
               <Header />
               <ProtectedRoute>
                 <POSScreen />
+              </ProtectedRoute>
+            </Box>
+          } 
+        />
+        <Route 
+          path="/restaurant" 
+          element={
+            <Box>
+              <Header />
+              <ProtectedRoute>
+                <RestaurantScreen />
               </ProtectedRoute>
             </Box>
           } 

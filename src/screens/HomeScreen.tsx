@@ -45,6 +45,7 @@ import {
   People as PeopleIcon,
   AccountBalance as AccountBalanceIcon,
   History as HistoryIcon,
+  Restaurant as RestaurantIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -791,6 +792,9 @@ const HomeScreen: React.FC = () => {
               </Button>
               <Button variant="outlined" onClick={() => { setAdvanceOpen(false); navigate('/hospital'); }}>
                 🏥 Hospital Management
+              </Button>
+              <Button variant="outlined" startIcon={<RestaurantIcon />} onClick={() => { setAdvanceOpen(false); navigate('/restaurant'); }}>
+                🍽️ Bar / Restaurant
               </Button>
             </Box>
           </DialogContent>

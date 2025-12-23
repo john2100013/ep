@@ -927,6 +927,59 @@ export class ApiService {
     return response.data;
   }
 
+  // ============ RESTAURANT (BAR) MODULE ENDPOINTS ============
+
+  static async getRestaurantSpacesAndTables() {
+    const response = await api.get('/restaurant/spaces-and-tables');
+    return response.data;
+  }
+
+  static async createRestaurantSpace(data: { title: string; code?: string }) {
+    const response = await api.post('/restaurant/spaces', data);
+    return response.data;
+  }
+
+  static async createRestaurantTable(data: { space_id: number; table_no: string; size?: number; shape?: string; label?: string }) {
+    const response = await api.post('/restaurant/tables', data);
+    return response.data;
+  }
+
+  static async getRestaurantOrders() {
+    const response = await api.get('/restaurant/orders');
+    return response.data;
+  }
+
+  static async getRestaurantOrderDetails(id: number) {
+    const response = await api.get(`/restaurant/orders/${id}`);
+    return response.data;
+  }
+
+  static async saveRestaurantOrder(data: {
+    order_id?: number;
+    table_id: number;
+    items: Array<{ item_id: number; quantity: number; unit_price: number; description?: string; code?: string; uom?: string }>;
+    note?: string;
+  }) {
+    const response = await api.post('/restaurant/orders/save', data);
+    return response.data;
+  }
+
+  static async billRestaurantOrder(
+    id: number,
+    data: {
+      lines: Array<{ item_id: number; quantity: number; unit_price: number; description?: string; code?: string; uom?: string }>;
+      amountPaid?: number;
+      paymentMethod?: number | string | null;
+      payment_terms?: string;
+      mpesa_code?: string;
+      vat_amount?: number;
+      discount_amount?: number;
+    },
+  ) {
+    const response = await api.post(`/restaurant/orders/${id}/bill`, data);
+    return response.data;
+  }
+
   // User management endpoints
   static async getUsers() {
     const response = await api.get('/users');
