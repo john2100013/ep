@@ -48,6 +48,12 @@ import {
   CreditCard as BillingIcon,
   Storage as DatabaseIcon,
   Settings as SettingsIcon,
+  LocalHospital as HospitalIcon,
+  Restaurant as RestaurantIcon,
+  ContentCut as SalonIcon,
+  Phone as PhoneIcon,
+  Email as EmailIcon,
+  LocationOn as LocationIcon,
 } from '@mui/icons-material';
 
 const LandingPage: React.FC = () => {
@@ -92,12 +98,16 @@ const LandingPage: React.FC = () => {
   const pricingPlans = [
     {
       name: 'Standard',
-      price: '$29',
+      price: 'KSH 500',
       period: '/month',
       description: 'Perfect for small businesses and freelancers',
       features: [
-        'Up to 100 invoices/month',
-        'Up to 100 quotations/month',
+        'All Invoices',
+        'All Quotations',
+        'Point of Sale (POS)',
+        'Service Billing',
+        'Salon & Barber',
+        'Bar & Restaurant',
         'Basic analytics',
         'Email support',
         'Single user account',
@@ -110,11 +120,17 @@ const LandingPage: React.FC = () => {
     },
     {
       name: 'Premium',
-      price: '$79',
+      price: 'KSH 1,000',
       period: '/month',
       description: 'Ideal for growing businesses',
       features: [
-        'Unlimited invoices/quotations',
+        'Everything in Standard',
+        'Hospital Management',
+        'Patient Records Management',
+        'Appointment Scheduling',
+        'Medical Billing',
+        'Prescription Management',
+        'Lab Results Tracking',
         'Advanced analytics',
         'Priority email & chat support',
         'Up to 5 team members',
@@ -130,8 +146,8 @@ const LandingPage: React.FC = () => {
     },
     {
       name: 'Enterprise',
-      price: 'Custom',
-      period: 'pricing',
+      price: 'KSH 2,000',
+      period: '/month',
       description: 'For large-scale operations',
       features: [
         'Everything in Premium',
@@ -201,6 +217,16 @@ const LandingPage: React.FC = () => {
       icon: BillingIcon,
       title: 'Comprehensive Billing',
       description: 'Flexible billing options and automated payment processing',
+    },
+    {
+      icon: HospitalIcon,
+      title: 'Hospital Management',
+      description: 'Complete hospital management system with patient records, appointments, and billing',
+    },
+    {
+      icon: RestaurantIcon,
+      title: 'Bar & Restaurant',
+      description: 'Manage tables, orders, and billing for restaurants and bars',
     },
   ];
 
@@ -303,7 +329,7 @@ const LandingPage: React.FC = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexGrow: 1 }}>
             <Receipt sx={{ fontSize: 32, color: '#667eea' }} />
             <Typography variant="h6" fontWeight="bold" sx={{ color: '#667eea' }}>
-              InvoiceHub
+              FlexCore ERP & POS
             </Typography>
           </Box>
 
@@ -779,12 +805,12 @@ const LandingPage: React.FC = () => {
         }}
       >
         <Box sx={{ maxWidth: 'lg', mx: 'auto' }}>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: 4, mb: 4 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(5, 1fr)' }, gap: 4, mb: 4 }}>
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                 <Receipt sx={{ fontSize: 28, color: '#667eea' }} />
                 <Typography variant="h6" fontWeight="bold" sx={{ color: '#fff' }}>
-                  InvoiceHub
+                  FlexCore ERP & POS
                 </Typography>
               </Box>
               <Typography variant="body2">
@@ -830,10 +856,53 @@ const LandingPage: React.FC = () => {
                 </Typography>
               </Stack>
             </Box>
+            <Box>
+              <Typography variant="h6" fontWeight="bold" sx={{ color: '#fff', mb: 2 }}>
+                Contact
+              </Typography>
+              <Stack spacing={1.5}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <PhoneIcon sx={{ fontSize: 18, color: '#667eea' }} />
+                  <Typography
+                    component="a"
+                    href="tel:+254795361135"
+                    sx={{
+                      textDecoration: 'none',
+                      color: 'inherit',
+                      '&:hover': { color: '#667eea' },
+                      cursor: 'pointer',
+                    }}
+                  >
+                    0795361135
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <EmailIcon sx={{ fontSize: 18, color: '#667eea' }} />
+                  <Typography
+                    component="a"
+                    href="mailto:flexcoreerppos@gmail.com"
+                    sx={{
+                      textDecoration: 'none',
+                      color: 'inherit',
+                      '&:hover': { color: '#667eea' },
+                      cursor: 'pointer',
+                    }}
+                  >
+                    flexcoreerppos@gmail.com
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                  <LocationIcon sx={{ fontSize: 18, color: '#667eea', mt: 0.5, flexShrink: 0 }} />
+                  <Typography variant="body2">
+                    Nairobi, HAZINA TOWER 5TH FLOOR
+                  </Typography>
+                </Box>
+              </Stack>
+            </Box>
           </Box>
           <Box sx={{ borderTop: '1px solid #374151', pt: 4, textAlign: 'center' }}>
             <Typography variant="body2">
-              © 2024 InvoiceHub. All rights reserved.
+              © 2024 FlexCore ERP & POS. All rights reserved.
             </Typography>
           </Box>
         </Box>
