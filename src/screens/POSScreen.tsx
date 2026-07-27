@@ -47,6 +47,9 @@ import {
   Close as CloseIcon,
 } from '@mui/icons-material';
 import { Chip } from '@mui/material';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import ApiService, { api } from '../services/api';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -143,6 +146,25 @@ const POSScreen: React.FC = () => {
   });
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [categories, setCategories] = useState<any[]>([]);
+  const [productModalOpen, setProductModalOpen] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<number | null>(null);
+  const [productFormData, setProductFormData] = useState({
+    item_name: '',
+    description: '',
+    quantity: '',
+    buying_price: '',
+    selling_price: '',
+    rate: '',
+    unit: '',
+    category_id: '',
+    category_1_id: '',
+    category_2_id: '',
+    reorder_level: '',
+    modification_reason: '',
+  });
+  const [productManufacturingDate, setProductManufacturingDate] = useState<Date | null>(null);
+  const [productExpiryDate, setProductExpiryDate] = useState<Date | null>(null);
+  const [productSaving, setProductSaving] = useState(false);
   const [includeVAT, setIncludeVAT] = useState(true); // VAT checkbox state
   const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage'); // Default to percentage
   const [discountPercentage, setDiscountPercentage] = useState<number>(0); // Discount percentage
@@ -400,6 +422,161 @@ const POSScreen: React.FC = () => {
 
   // Store all items separately for filtering
   const [allItems, setAllItems] = useState<AvailableItem[]>([]);
+
+  const resetProductForm = () => {
+    setProductFormData({
+      item_name: '',
+      description: '',
+      quantity: '',
+      buying_price: '',
+      selling_price: '',
+      rate: '',
+      unit: '',
+      category_id: '',
+      category_1_id: '',
+      category_2_id: '',
+      reorder_level: '',
+      modification_reason: '',
+    });
+    setProductManufacturingDate(null);
+    setProductExpiryDate(null);
+    setEditingProductId(null);
+  };
+
+  const handleProductFormChanged = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setProductFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const openAddProductModal = () => {
+    resetProductForm();
+    setError('');
+    setSuccess('');
+    setProductModalOpen(true);
+  };
+
+  const loadProductForEdit = async (itemId: number) => {
+    try {
+      setError('');
+      const response = await ApiService.getItem(itemId);
+      if (response.success && response.data) {
+        const item = response.data.item || response.data;
+        setEditingProductId(itemId);
+        setProductFormData({
+          item_name: item.item_name || item.name || '',
+          description: item.description || '',
+          quantity: item.quantity?.toString() || item.stock_quantity?.toString() || '',
+          buying_price: item.buying_price?.toString() || '',
+          selling_price: item.selling_price?.toString() || item.rate?.toString() || item.unit_price?.toString() || '',
+          rate: item.rate?.toString() || item.unit_price?.toString() || '',
+          unit: item.unit || item.uom || '',
+          category_id: item.category_id != null ? String(item.category_id) : '',
+          category_1_id: item.category_1_id != null ? String(item.category_1_id) : '',
+          category_2_id: item.category_2_id != null ? String(item.category_2_id) : '',
+          reorder_level: item.reorder_level?.toString() || '',
+          modification_reason: '',
+        });
+
+        if (item.manufacturing_date) {
+          setProductManufacturingDate(new Date(item.manufacturing_date));
+        } else {
+          setProductManufacturingDate(null);
+        }
+
+        if (item.expiry_date) {
+          setProductExpiryDate(new Date(item.expiry_date));
+        } else {
+          setProductExpiryDate(null);
+        }
+      }
+    } catch (err: any) {
+      console.error('Error loading product:', err);
+      setError(err.response?.data?.message || 'Failed to load product data');
+    }
+  };
+
+  const handleProductSubmit = async () => {
+    if (!productFormData.item_name.trim()) {
+      setError('Item name is required');
+      return;
+    }
+
+    if (!productFormData.category_id && !productFormData.category_1_id && !productFormData.category_2_id) {
+      setError('Please select at least one category');
+      return;
+    }
+
+    if (!productFormData.quantity || parseFloat(productFormData.quantity) < 0) {
+      setError('Valid quantity is required');
+      return;
+    }
+
+    if (!productFormData.buying_price || parseFloat(productFormData.buying_price) < 0) {
+      setError('Valid buying price is required');
+      return;
+    }
+
+    if (!productFormData.selling_price || parseFloat(productFormData.selling_price) < 0) {
+      setError('Valid selling price is required');
+      return;
+    }
+
+    try {
+      setProductSaving(true);
+      setError('');
+
+      if (editingProductId) {
+        const categoryId = productFormData.category_id && productFormData.category_id.trim()
+          ? parseInt(productFormData.category_id)
+          : null;
+        const category1Id = productFormData.category_1_id && productFormData.category_1_id.trim()
+          ? parseInt(productFormData.category_1_id)
+          : null;
+        const category2Id = productFormData.category_2_id && productFormData.category_2_id.trim()
+          ? parseInt(productFormData.category_2_id)
+          : null;
+
+        await ApiService.updateItem(editingProductId, {
+          item_name: productFormData.item_name.trim(),
+          description: productFormData.description.trim(),
+          quantity: parseFloat(productFormData.quantity),
+          rate: parseFloat(productFormData.selling_price || productFormData.rate),
+          unit: productFormData.unit.trim() || undefined,
+          category_id: categoryId,
+          category_1_id: category1Id,
+          category_2_id: category2Id,
+          modification_reason: productFormData.modification_reason.trim() || undefined,
+        });
+        setSuccess('Product updated successfully!');
+      } else {
+        await ApiService.createItem({
+          item_name: productFormData.item_name.trim(),
+          description: productFormData.description.trim(),
+          quantity: parseFloat(productFormData.quantity),
+          buying_price: parseFloat(productFormData.buying_price),
+          selling_price: parseFloat(productFormData.selling_price),
+          rate: parseFloat(productFormData.selling_price || productFormData.rate),
+          unit: productFormData.unit.trim() || undefined,
+          category_id: productFormData.category_id ? parseInt(productFormData.category_id) : undefined,
+          category_1_id: productFormData.category_1_id ? parseInt(productFormData.category_1_id) : undefined,
+          category_2_id: productFormData.category_2_id ? parseInt(productFormData.category_2_id) : undefined,
+          reorder_level: productFormData.reorder_level ? parseInt(productFormData.reorder_level) : undefined,
+          manufacturing_date: productManufacturingDate?.toISOString().split('T')[0] || undefined,
+          expiry_date: productExpiryDate?.toISOString().split('T')[0] || undefined,
+        });
+        setSuccess('Product added successfully!');
+      }
+
+      await fetchAvailableItems();
+      setProductModalOpen(false);
+      resetProductForm();
+    } catch (err: any) {
+      console.error('Error saving product:', err);
+      setError(err.response?.data?.message || 'Failed to save product');
+    } finally {
+      setProductSaving(false);
+    }
+  };
 
   // Fetch available items
   const fetchAvailableItems = async () => {
@@ -1191,7 +1368,7 @@ const POSScreen: React.FC = () => {
               <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
                 Items
               </Typography>
-              <Box sx={{ mb: 2, display: 'flex', gap: 1 }}>
+              <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                 <Button
                   variant="contained"
                   onClick={() => setSearchOpen(true)}
@@ -1199,6 +1376,14 @@ const POSScreen: React.FC = () => {
                   sx={{ backgroundColor: '#1976d2' }}
                 >
                   Lookup Item
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={openAddProductModal}
+                  startIcon={<AddIcon />}
+                  sx={{ color: '#1976d2', borderColor: '#1976d2' }}
+                >
+                  Add Product
                 </Button>
                 <Button
                   variant="outlined"
@@ -1673,14 +1858,27 @@ const POSScreen: React.FC = () => {
                       <TableCell align="right">{item.quantity || 0}</TableCell>
                       <TableCell align="right">{Number(item.selling_price || 0).toFixed(2)}</TableCell>
                       <TableCell align="center">
-                        <Button
-                          size="small"
-                          variant="contained"
-                          onClick={() => addItemToPOS(item)}
-                          sx={{ backgroundColor: '#4caf50', '&:hover': { backgroundColor: '#388e3c' } }}
-                        >
-                          Add
-                        </Button>
+                        <Stack direction="row" spacing={1} justifyContent="center">
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => {
+                              setProductModalOpen(true);
+                              loadProductForEdit(Number(item.id));
+                            }}
+                            sx={{ color: '#1976d2', borderColor: '#1976d2' }}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="contained"
+                            onClick={() => addItemToPOS(item)}
+                            sx={{ backgroundColor: '#4caf50', '&:hover': { backgroundColor: '#388e3c' } }}
+                          >
+                            Add
+                          </Button>
+                        </Stack>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -1690,6 +1888,193 @@ const POSScreen: React.FC = () => {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setSearchOpen(false)}>Close</Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Product Modal */}
+        <Dialog open={productModalOpen} onClose={() => {
+          setProductModalOpen(false);
+          resetProductForm();
+        }} maxWidth="md" fullWidth>
+          <DialogTitle sx={{ backgroundColor: '#1976d2', color: 'white', fontWeight: 'bold' }}>
+            {editingProductId ? 'Edit Product' : 'Add Product'}
+          </DialogTitle>
+          <DialogContent sx={{ pt: 2 }}>
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
+                {error}
+              </Alert>
+            )}
+            {success && (
+              <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>
+                {success}
+              </Alert>
+            )}
+
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  fullWidth
+                  label="Item Name"
+                  name="item_name"
+                  value={productFormData.item_name}
+                  onChange={handleProductFormChanged}
+                  required
+                />
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  fullWidth
+                  label="Description"
+                  name="description"
+                  value={productFormData.description}
+                  onChange={handleProductFormChanged}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  fullWidth
+                  label="Quantity"
+                  name="quantity"
+                  type="number"
+                  value={productFormData.quantity}
+                  onChange={handleProductFormChanged}
+                  inputProps={{ min: 0, step: 0.01 }}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  fullWidth
+                  label="Buying Price"
+                  name="buying_price"
+                  type="number"
+                  value={productFormData.buying_price}
+                  onChange={handleProductFormChanged}
+                  inputProps={{ min: 0, step: 0.01 }}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  fullWidth
+                  label="Selling Price"
+                  name="selling_price"
+                  type="number"
+                  value={productFormData.selling_price}
+                  onChange={handleProductFormChanged}
+                  inputProps={{ min: 0, step: 0.01 }}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  fullWidth
+                  label="Unit"
+                  name="unit"
+                  value={productFormData.unit}
+                  onChange={handleProductFormChanged}
+                  placeholder="PCS"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <FormControl fullWidth>
+                  <InputLabel>{businessCategoryNames.category_name}</InputLabel>
+                  <Select
+                    value={productFormData.category_id}
+                    onChange={(e) => setProductFormData((prev) => ({ ...prev, category_id: e.target.value }))}
+                    label={businessCategoryNames.category_name}
+                  >
+                    <MenuItem value="">None</MenuItem>
+                    {categories.map((category) => (
+                      <MenuItem key={category.id} value={category.id}>{category.name}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <FormControl fullWidth>
+                  <InputLabel>{businessCategoryNames.category_1_name}</InputLabel>
+                  <Select
+                    value={productFormData.category_1_id}
+                    onChange={(e) => setProductFormData((prev) => ({ ...prev, category_1_id: e.target.value }))}
+                    label={businessCategoryNames.category_1_name}
+                  >
+                    <MenuItem value="">None</MenuItem>
+                    {categories.map((category) => (
+                      <MenuItem key={category.id} value={category.id}>{category.name}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <FormControl fullWidth>
+                  <InputLabel>{businessCategoryNames.category_2_name}</InputLabel>
+                  <Select
+                    value={productFormData.category_2_id}
+                    onChange={(e) => setProductFormData((prev) => ({ ...prev, category_2_id: e.target.value }))}
+                    label={businessCategoryNames.category_2_name}
+                  >
+                    <MenuItem value="">None</MenuItem>
+                    {categories.map((category) => (
+                      <MenuItem key={category.id} value={category.id}>{category.name}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  fullWidth
+                  label="Reorder Level"
+                  name="reorder_level"
+                  type="number"
+                  value={productFormData.reorder_level}
+                  onChange={handleProductFormChanged}
+                  inputProps={{ min: 0, step: 1 }}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  fullWidth
+                  label="Modification Reason"
+                  name="modification_reason"
+                  value={productFormData.modification_reason}
+                  onChange={handleProductFormChanged}
+                  placeholder="Optional"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <LocalizationProvider dateAdapter={AdapterDateFns}>
+                  <DatePicker
+                    label="Manufacturing Date"
+                    value={productManufacturingDate}
+                    onChange={(newValue) => setProductManufacturingDate(newValue)}
+                    slotProps={{ textField: { fullWidth: true } }}
+                  />
+                </LocalizationProvider>
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <LocalizationProvider dateAdapter={AdapterDateFns}>
+                  <DatePicker
+                    label="Expiry Date"
+                    value={productExpiryDate}
+                    onChange={(newValue) => setProductExpiryDate(newValue)}
+                    slotProps={{ textField: { fullWidth: true } }}
+                  />
+                </LocalizationProvider>
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => {
+              setProductModalOpen(false);
+              resetProductForm();
+            }}>Cancel</Button>
+            <Button
+              variant="contained"
+              onClick={handleProductSubmit}
+              disabled={productSaving}
+              sx={{ backgroundColor: '#1976d2' }}
+            >
+              {productSaving ? 'Saving...' : editingProductId ? 'Update Product' : 'Save Product'}
+            </Button>
           </DialogActions>
         </Dialog>
 
