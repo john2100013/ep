@@ -830,7 +830,7 @@ const POSScreen: React.FC = () => {
   };
 
   // Save invoice to database
-  const saveInvoice = async () => {
+  const saveInvoice = async (options?: { autoPrint?: boolean }) => {
     if (posItems.length === 0) {
       setError('Cannot save empty invoice');
       return;
@@ -894,6 +894,9 @@ const POSScreen: React.FC = () => {
         }
         
         alert(`Invoice updated successfully! Total: ${total.toFixed(2)}`);
+        if (options?.autoPrint) {
+          await printReceipt();
+        }
         setPosItems([]);
         setSelectedInvoiceId(null);
         setSelectedAccount('');
@@ -931,6 +934,9 @@ const POSScreen: React.FC = () => {
           }
           
           alert(`Invoice ${invoice.invoice_number} saved successfully!`);
+          if (options?.autoPrint) {
+            await printReceipt();
+          }
           setPosItems([]);
           setCurrentDraftId(null);
           setSelectedAccount('');
@@ -1012,6 +1018,9 @@ const POSScreen: React.FC = () => {
         }
         
         alert(`Invoice ${invoiceNumber} saved successfully! Total: ${total.toFixed(2)}`);
+        if (options?.autoPrint) {
+          await printReceipt();
+        }
         setPosItems([]);
         setSelectedAccount('');
         setSelectedInvoiceId(null);
@@ -1031,6 +1040,10 @@ const POSScreen: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const saveAndPrintInvoice = async () => {
+    await saveInvoice({ autoPrint: true });
   };
 
   // Clear all items and start new invoice
@@ -1698,7 +1711,7 @@ const POSScreen: React.FC = () => {
                 <Button
                   variant="contained"
                   fullWidth
-                  onClick={saveInvoice}
+                  onClick={() => saveInvoice()}
                   disabled={posItems.length === 0 || loading || !selectedAccount}
                   sx={{ backgroundColor: '#2196f3', '&:hover': { backgroundColor: '#1976d2' } }}
                   startIcon={<SaveIcon />}
@@ -1713,15 +1726,6 @@ const POSScreen: React.FC = () => {
                   startIcon={<AddIcon />}
                 >
                   ➕ Add New
-                </Button>
-                <Button
-                  variant="contained"
-                  fullWidth
-                  onClick={handlePayment}
-                  disabled={posItems.length === 0}
-                  sx={{ backgroundColor: '#4caf50', '&:hover': { backgroundColor: '#388e3c' } }}
-                >
-                  💰 Cash / Card Payment
                 </Button>
                 <Button
                   variant="contained"
@@ -1747,12 +1751,12 @@ const POSScreen: React.FC = () => {
                 <Button
                   variant="contained"
                   fullWidth
-                  onClick={printReceipt}
-                  disabled={posItems.length === 0}
+                  onClick={() => saveAndPrintInvoice()}
+                  disabled={posItems.length === 0 || loading || !selectedAccount}
                   sx={{ backgroundColor: '#1976d2' }}
                   startIcon={<PrintIcon />}
                 >
-                  Print Receipt
+                  Save & Print
                 </Button>
                 <Button
                   variant="outlined"
